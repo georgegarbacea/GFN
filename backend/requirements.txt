@@ -5,5 +5,5 @@ psycopg[binary]
 pydantic
 pydantic-settings
 python-jose
-passlib[bcrypt]
+passlib
 email-validator

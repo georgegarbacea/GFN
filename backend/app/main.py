@@ -9,7 +9,7 @@ from app.models.control import Control  # noqa: F401
 from app.routers.auth import router as auth_router
 from app.routers.controls import router as controls_router
 
-pwd = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
 
 app = FastAPI(title="GFN Portal API (MVP)")
 

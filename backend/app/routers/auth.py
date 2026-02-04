@@ -13,7 +13,7 @@ from app.models.user import User
 from app.schemas.auth import RegisterRequest, LoginRequest, TokenResponse, ApproveUserRequest
 
 router = APIRouter(prefix="/auth", tags=["auth"])
-pwd = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
 oauth2 = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 def hash_password(p: str) -> str:
