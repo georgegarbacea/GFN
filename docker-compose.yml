@@ -1,0 +1,27 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: gfn
+      POSTGRES_USER: gfn
+      POSTGRES_PASSWORD: gfn
+    ports:
+      - "5432:5432"
+    volumes:
+      - gfn_pgdata:/var/lib/postgresql/data
+
+  backend:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgresql+psycopg://gfn:gfn@db:5432/gfn
+      JWT_SECRET: dev-secret-change
+      DEV_CREATE_IG: "true"
+      DEV_IG_EMAIL: inspector.general@gfn.local
+      DEV_IG_PASSWORD: ChangeMe123!
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+
+volumes:
+  gfn_pgdata:
