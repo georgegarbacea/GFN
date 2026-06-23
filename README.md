@@ -1,11 +1,11 @@
 # GFN – Portal Web Controale
 
-Portal web pentru Garda Forestieră Națională destinat:
+Portal web pentru Garda Forestiera Nationala destinat:
 - introducerii datelor de control din teren (mobile-first, prin browser)
-- managementului utilizatorilor și rolurilor
-- raportării și analizelor centralizate (dashboard, hartă, statistici)
+- managementului utilizatorilor si rolurilor
+- raportarii si analizelor centralizate (dashboard, harta, statistici)
 
 Tehnologii:
 - Backend: Python (FastAPI)
 - Frontend: Web + Leaflet
-- Bază de date: PostgreSQL / PostGIS
+- Baza de date: PostgreSQL / PostGIS

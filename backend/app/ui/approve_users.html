@@ -1,0 +1,1170 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>GFN - Administrare conturi</title>
+
+  <style>
+    :root {
+      --bg: #0f1f1d;
+      --card: rgba(18, 41, 38, 0.84);
+      --card2: rgba(10, 27, 24, 0.90);
+      --bright: #16d977;
+      --green: #16a34a;
+      --teal: #00f5d4;
+      --red: #ff3b3b;
+      --orange: #ffb020;
+      --blue: #18b7ff;
+      --violet: #9b5cff;
+      --text: #effff6;
+      --muted: #b9d8cb;
+      --muted2: #82ad9e;
+      --border: rgba(148, 213, 190, 0.22);
+      --shadow: 0 22px 70px rgba(0, 0, 0, 0.42);
+      --shadow2: 0 12px 34px rgba(0, 0, 0, 0.34);
+      --radius: 28px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 12% 8%, rgba(255, 176, 32, 0.14), transparent 34%),
+        radial-gradient(circle at 88% 18%, rgba(0, 245, 212, 0.10), transparent 30%),
+        linear-gradient(135deg, rgba(7, 19, 17, 0.94), rgba(15, 31, 29, 0.94)),
+        url("https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=1800&q=80");
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+      min-height: 100vh;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+      background-size: 44px 44px;
+      opacity: 0.35;
+      z-index: 0;
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      max-width: 1220px;
+      margin: auto;
+      padding: 24px 18px 80px;
+    }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      background:
+        linear-gradient(135deg, rgba(18, 41, 38, 0.90), rgba(7, 19, 17, 0.80));
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 26px;
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-columns: 96px 1fr;
+      gap: 22px;
+      align-items: center;
+      backdrop-filter: blur(18px);
+      margin-bottom: 18px;
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      right: -110px;
+      top: -135px;
+      width: 310px;
+      height: 310px;
+      background: radial-gradient(circle, rgba(255, 176, 32, 0.26), transparent 62%);
+      pointer-events: none;
+    }
+
+    .logo-wrap {
+      width: 96px;
+      height: 96px;
+      display: grid;
+      place-items: center;
+      border-radius: 24px;
+      border: 1px solid rgba(255, 176, 32, 0.30);
+      background: rgba(255,255,255,0.08);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.12),
+        0 18px 40px rgba(0,0,0,0.28);
+      position: relative;
+      z-index: 1;
+    }
+
+    .logo-wrap img {
+      width: 78px;
+      height: auto;
+      filter: drop-shadow(0 8px 18px rgba(0,0,0,0.36));
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 1;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 11px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 176, 32, 0.34);
+      color: #fff0c9;
+      background: rgba(255, 176, 32, 0.10);
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: 0.25px;
+      margin-bottom: 12px;
+    }
+
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--orange);
+      box-shadow: 0 0 16px rgba(255, 176, 32, 0.95);
+    }
+
+    h1, h2, h3 {
+      margin-top: 0;
+    }
+
+    h1 {
+      margin: 0;
+      color: var(--text);
+      font-size: 38px;
+      line-height: 1;
+      letter-spacing: -1.2px;
+    }
+
+    h1 span {
+      color: var(--orange);
+      text-shadow: 0 0 28px rgba(255, 176, 32, 0.22);
+    }
+
+    .subtitle {
+      max-width: 860px;
+      margin: 12px 0 0;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.5;
+    }
+
+    .status-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 11px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 900;
+      border: 1px solid rgba(148, 213, 190, 0.22);
+      background: rgba(255,255,255,0.06);
+      color: var(--muted);
+    }
+
+    .status-pill.online {
+      color: #d8ffed;
+      border-color: rgba(22, 217, 119, 0.32);
+      background: rgba(22, 217, 119, 0.10);
+    }
+
+    .status-pill.warning {
+      color: #ffe6b0;
+      border-color: rgba(255, 176, 32, 0.32);
+      background: rgba(255, 176, 32, 0.10);
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: 26px;
+      padding: 24px;
+      box-shadow: var(--shadow2);
+      border: 1px solid var(--border);
+      margin-bottom: 18px;
+      backdrop-filter: blur(18px);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::after {
+      content: "";
+      position: absolute;
+      right: -75px;
+      top: -85px;
+      width: 190px;
+      height: 190px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255, 176, 32, 0.14), transparent 66%);
+      pointer-events: none;
+    }
+
+    .card-inner {
+      position: relative;
+      z-index: 1;
+    }
+
+    .auth-card {
+      max-width: 840px;
+      margin: 0 auto 18px;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .full {
+      grid-column: 1 / -1;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 7px;
+      font-size: 13px;
+      font-weight: 900;
+      color: #dfffee;
+    }
+
+    input, select, button {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 13px 13px;
+      border: 1px solid rgba(148, 213, 190, 0.25);
+      border-radius: 15px;
+      font-size: 15px;
+      background: rgba(4, 18, 15, 0.58);
+      color: var(--text);
+    }
+
+    input::placeholder {
+      color: rgba(185, 216, 203, 0.55);
+    }
+
+    select option {
+      background: #0f1f1d;
+      color: var(--text);
+    }
+
+    input:focus, select:focus {
+      outline: none;
+      border-color: rgba(255, 176, 32, 0.80);
+      box-shadow: 0 0 0 4px rgba(255, 176, 32, 0.13);
+    }
+
+    button {
+      border: none;
+      cursor: pointer;
+      font-weight: 900;
+      letter-spacing: 0.1px;
+      transition: transform 0.18s ease, filter 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    button:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn {
+      background: linear-gradient(135deg, var(--green), var(--bright), var(--teal));
+      color: #061510;
+      box-shadow: 0 14px 28px rgba(22, 217, 119, 0.18);
+    }
+
+    .btn-secondary {
+      background: linear-gradient(135deg, var(--blue), var(--teal));
+      color: #041512;
+      box-shadow: 0 14px 28px rgba(24, 183, 255, 0.14);
+    }
+
+    .btn-danger {
+      background: linear-gradient(135deg, #e11d48, var(--red));
+      color: white;
+      box-shadow: 0 14px 28px rgba(255, 59, 59, 0.14);
+    }
+
+    .btn-neutral {
+      background: rgba(255,255,255,0.08);
+      color: var(--text);
+      border: 1px solid rgba(148, 213, 190, 0.22);
+    }
+
+    .btn-warning {
+      background: linear-gradient(135deg, var(--orange), #ffe08a);
+      color: #061510;
+      box-shadow: 0 14px 28px rgba(255, 176, 32, 0.14);
+    }
+
+    button:hover:not(:disabled) {
+      transform: translateY(-2px);
+      filter: brightness(1.08);
+    }
+
+    .inline-buttons {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .inline-buttons button,
+    .inline-buttons a {
+      width: auto;
+      min-width: 145px;
+    }
+
+    .msg {
+      margin-top: 12px;
+      font-size: 14px;
+      line-height: 1.45;
+      padding: 12px 14px;
+      border-radius: 15px;
+      display: none;
+    }
+
+    .msg.ok {
+      display: block;
+      color: #d8ffed;
+      border: 1px solid rgba(22, 217, 119, 0.32);
+      background: rgba(22, 217, 119, 0.10);
+    }
+
+    .msg.err {
+      display: block;
+      color: #ffd6d6;
+      border: 1px solid rgba(255, 59, 59, 0.30);
+      background: rgba(255, 59, 59, 0.10);
+    }
+
+    .section-title {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .section-title h2 {
+      margin: 0;
+      font-size: 24px;
+      letter-spacing: -0.45px;
+    }
+
+    .section-title p {
+      margin: 6px 0 0;
+      color: var(--muted2);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .pill {
+      flex: 0 0 auto;
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 900;
+      color: #082018;
+      background: linear-gradient(135deg, var(--orange), #ffe08a);
+      box-shadow: 0 10px 24px rgba(255, 176, 32, 0.14);
+      white-space: nowrap;
+    }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .summary-card {
+      padding: 15px;
+      border-radius: 20px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(148, 213, 190, 0.14);
+    }
+
+    .summary-value {
+      font-size: 28px;
+      font-weight: 900;
+      line-height: 1;
+      color: var(--bright);
+    }
+
+    .summary-label {
+      margin-top: 7px;
+      color: var(--muted2);
+      font-size: 12px;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      border-radius: 20px;
+      border: 1px solid rgba(148, 213, 190, 0.14);
+      background: rgba(4, 18, 15, 0.36);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 950px;
+    }
+
+    th, td {
+      padding: 14px;
+      border-bottom: 1px solid rgba(148, 213, 190, 0.13);
+      vertical-align: middle;
+    }
+
+    th {
+      text-align: left;
+      font-size: 12px;
+      color: var(--muted2);
+      text-transform: uppercase;
+      letter-spacing: 0.35px;
+      background: rgba(255,255,255,0.04);
+    }
+
+    tr:hover {
+      background: rgba(255,255,255,0.045);
+    }
+
+    .user-name {
+      font-weight: 900;
+      color: var(--text);
+    }
+
+    .user-email {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .role-cell {
+      min-width: 250px;
+    }
+
+    .role-help {
+      margin-top: 7px;
+      color: var(--muted2);
+      font-size: 11.5px;
+      line-height: 1.35;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .pending {
+      background: rgba(255, 176, 32, 0.12);
+      color: #ffe2a9;
+      border: 1px solid rgba(255, 176, 32, 0.28);
+    }
+
+    .approved {
+      background: rgba(22, 217, 119, 0.12);
+      color: #d8ffed;
+      border: 1px solid rgba(22, 217, 119, 0.28);
+    }
+
+    .role-badge {
+      margin-top: 8px;
+      background: rgba(255,255,255,0.07);
+      color: var(--muted);
+      border: 1px solid rgba(255,255,255,0.10);
+    }
+
+    .role-badge.report {
+      background: rgba(155, 92, 255, 0.13);
+      color: #eee5ff;
+      border: 1px solid rgba(155, 92, 255, 0.28);
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .actions button {
+      width: auto;
+      min-width: 46px;
+      padding: 11px 13px;
+      border-radius: 14px;
+    }
+
+    .empty {
+      padding: 18px;
+      color: var(--muted2);
+      text-align: center;
+    }
+
+    .footer-note {
+      margin-top: 14px;
+      padding: 14px;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(148, 213, 190, 0.14);
+      color: var(--muted2);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .footer-note strong {
+      color: var(--text);
+    }
+
+    @media (max-width: 1000px) {
+      .summary {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 760px) {
+      body {
+        background-attachment: scroll;
+      }
+
+      .container {
+        padding: 14px 12px 70px;
+      }
+
+      .hero {
+        grid-template-columns: 1fr;
+        text-align: center;
+        padding: 22px 18px;
+      }
+
+      .logo-wrap {
+        margin: auto;
+      }
+
+      h1 {
+        font-size: 34px;
+      }
+
+      .subtitle {
+        font-size: 15px;
+      }
+
+      .grid,
+      .summary {
+        grid-template-columns: 1fr;
+      }
+
+      input, select, button {
+        font-size: 16px;
+        min-height: 50px;
+      }
+
+      .inline-buttons {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .inline-buttons button,
+      .inline-buttons a {
+        width: 100%;
+        min-width: 0;
+      }
+
+      .card {
+        padding: 18px;
+        border-radius: 22px;
+      }
+
+      .section-title {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <section class="hero">
+    <div class="logo-wrap">
+      <img src="/ui/sigla.png" alt="Sigla Garda Forestiera">
+    </div>
+
+    <div class="hero-content">
+      <div class="eyebrow">
+        <span class="dot"></span>
+        Administrare acces platforma
+      </div>
+
+      <h1>Administrare <span>conturi</span></h1>
+
+      <div class="subtitle">
+        Aprobare utilizatori, schimbare roluri si separarea accesului intre zona interna GFN si raportarea lunara „Memoriu de Paza”.
+      </div>
+
+      <div class="status-row">
+        <div id="authStatus" class="status-pill">Neautentificat</div>
+        <div id="usersStatus" class="status-pill warning">Utilizatori: neincarcati</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="authSection" class="card auth-card">
+    <div class="card-inner">
+      <div class="section-title">
+        <div>
+          <h2>Autentificare administrator</h2>
+          <p>Autentifica-te pentru a vedea utilizatorii si a aproba conturile.</p>
+        </div>
+        <div class="pill">SECURE</div>
+      </div>
+
+      <div class="grid">
+        <div>
+          <label>Email</label>
+          <input id="loginEmail" type="email" placeholder="ex: inspector.general@gfn.gov.ro">
+        </div>
+
+        <div>
+          <label>Parola</label>
+          <input id="loginPassword" type="password" placeholder="Introdu parola">
+        </div>
+
+        <div class="full inline-buttons">
+          <button class="btn" onclick="login()" id="loginBtn">Autentificare</button>
+          <a class="btn-neutral" href="/ui/index.html" style="text-decoration:none; display:inline-flex; align-items:center; justify-content:center; padding:13px 18px; border-radius:15px;">Inapoi la index</a>
+        </div>
+      </div>
+
+      <div id="authMsg" class="msg"></div>
+    </div>
+  </section>
+
+  <section id="usersSection" class="card hidden" style="display:none;">
+    <div class="card-inner">
+
+      <div class="section-title">
+        <div>
+          <h2>Utilizatori</h2>
+          <p>Aproba conturile si seteaza rolul corect. Pentru ocoale/Romsilva foloseste rolul <strong>raportare_paza</strong>.</p>
+        </div>
+        <div class="pill">ROLURI</div>
+      </div>
+
+      <div class="inline-buttons" style="margin-bottom: 16px;">
+        <button class="btn-secondary" onclick="loadUsers()">Reincarca lista</button>
+        <button class="btn-danger" onclick="logout()">Logout</button>
+        <a class="btn-neutral" href="/ui/index.html" style="text-decoration:none; display:inline-flex; align-items:center; justify-content:center; padding:13px 18px; border-radius:15px;">Inapoi la index</a>
+      </div>
+
+      <div class="summary">
+        <div class="summary-card">
+          <div id="totalUsers" class="summary-value">0</div>
+          <div class="summary-label">utilizatori total</div>
+        </div>
+
+        <div class="summary-card">
+          <div id="approvedUsers" class="summary-value">0</div>
+          <div class="summary-label">aprobati</div>
+        </div>
+
+        <div class="summary-card">
+          <div id="pendingUsers" class="summary-value">0</div>
+          <div class="summary-label">in asteptare</div>
+        </div>
+
+        <div class="summary-card">
+          <div id="reportUsers" class="summary-value">0</div>
+          <div class="summary-label">raportare paza</div>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Nume</th>
+              <th>Email</th>
+              <th>Rol</th>
+              <th>Status</th>
+              <th>Actiuni</th>
+            </tr>
+          </thead>
+
+          <tbody id="usersTableBody">
+            <tr>
+              <td colspan="6">
+                <div class="empty">Nu exista date. Autentifica-te pentru a incarca lista.</div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="footer-note">
+        <strong>Recomandare:</strong> utilizatorii de la ocoale silvice / Romsilva care completeaza doar „Memoriu de Paza” trebuie aprobati cu rolul
+        <strong>raportare_paza</strong>. Acest rol trebuie restrictionat si in backend, astfel incat sa nu poata accesa dashboardul intern, harta cu activitatea inspectorilor sau formularul de control.
+      </div>
+
+      <div id="usersMsg" class="msg"></div>
+    </div>
+  </section>
+
+</div>
+
+<script>
+  const ROLE_OPTIONS = [
+    {
+      value: "admin",
+      label: "Admin",
+      help: "Acces complet la administrare si functii interne."
+    },
+    {
+      value: "inspector_general",
+      label: "Inspector general",
+      help: "Acces conducere nationala."
+    },
+    {
+      value: "director_national",
+      label: "Director national",
+      help: "Acces intern extins pentru coordonare."
+    },
+    {
+      value: "inspector_sef",
+      label: "Inspector sef",
+      help: "Acces pentru coordonare la nivel de garda."
+    },
+    {
+      value: "inspector",
+      label: "Inspector",
+      help: "Acces formular control si activitate operationala."
+    },
+    {
+      value: "ministru",
+      label: "Ministru",
+      help: "Acces vizualizare strategica."
+    },
+    {
+      value: "raportare_paza",
+      label: "Raportare paza",
+      help: "Acces limitat: doar Memoriu de Paza."
+    }
+  ];
+
+  function setMsg(id, text, ok = false) {
+    const el = document.getElementById(id);
+    if (!el) return;
+
+    el.textContent = text || "";
+    el.className = "msg " + (text ? (ok ? "ok" : "err") : "");
+  }
+
+  function setAuthStatus(isAuthenticated) {
+    const el = document.getElementById("authStatus");
+
+    if (!el) return;
+
+    if (isAuthenticated) {
+      el.textContent = "Autentificat";
+      el.className = "status-pill online";
+    } else {
+      el.textContent = "Neautentificat";
+      el.className = "status-pill";
+    }
+  }
+
+  function setUsersStatus(text, ok = false) {
+    const el = document.getElementById("usersStatus");
+
+    if (!el) return;
+
+    el.textContent = text;
+    el.className = ok ? "status-pill online" : "status-pill warning";
+  }
+
+  function setAuthenticatedUI(isAuthenticated) {
+    const authSection = document.getElementById("authSection");
+    const usersSection = document.getElementById("usersSection");
+
+    if (isAuthenticated) {
+      authSection.classList.add("hidden");
+      authSection.style.display = "none";
+
+      usersSection.classList.remove("hidden");
+      usersSection.style.display = "block";
+
+      setAuthStatus(true);
+    } else {
+      authSection.classList.remove("hidden");
+      authSection.style.display = "block";
+
+      usersSection.classList.add("hidden");
+      usersSection.style.display = "none";
+
+      setAuthStatus(false);
+      setUsersStatus("Utilizatori: neincarcati", false);
+    }
+  }
+
+  function setLoading(btn, state, textWhenDone = "Autentificare") {
+    if (!btn) return;
+
+    btn.disabled = state;
+    btn.textContent = state ? "Se proceseaza..." : textWhenDone;
+  }
+
+  function saveAuth(token, email) {
+    localStorage.setItem("token", token);
+    localStorage.setItem("email", email);
+
+    localStorage.setItem("gfn_token", token);
+    localStorage.setItem("gfn_email", email);
+  }
+
+  function getToken() {
+    return localStorage.getItem("gfn_token") || localStorage.getItem("token");
+  }
+
+  function getSavedEmail() {
+    return localStorage.getItem("gfn_email") || localStorage.getItem("email") || "";
+  }
+
+  function clearAuth() {
+    localStorage.removeItem("token");
+    localStorage.removeItem("email");
+    localStorage.removeItem("gfn_token");
+    localStorage.removeItem("gfn_email");
+  }
+
+  function logout() {
+    clearAuth();
+    setAuthenticatedUI(false);
+    setMsg("authMsg", "Te-ai delogat.", true);
+    setMsg("usersMsg", "");
+    renderUsers([]);
+  }
+
+  async function login() {
+    const btn = document.getElementById("loginBtn");
+    setLoading(btn, true);
+
+    try {
+      const email = document.getElementById("loginEmail").value.trim();
+      const password = document.getElementById("loginPassword").value;
+
+      if (!email || !password) {
+        throw new Error("Completeaza emailul si parola.");
+      }
+
+      const form = new URLSearchParams();
+      form.append("username", email);
+      form.append("password", password);
+
+      const res = await fetch("/auth/login-form", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: form
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.detail || "Autentificare esuata.");
+      }
+
+      saveAuth(data.access_token, email);
+      setMsg("authMsg", "");
+      setAuthenticatedUI(true);
+      await loadUsers();
+
+      setTimeout(() => {
+        const users = document.getElementById("usersSection");
+        if (users) {
+          users.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      }, 120);
+
+    } catch (e) {
+      setAuthenticatedUI(false);
+      setMsg("authMsg", e.message || "Eroare la autentificare.");
+    }
+
+    setLoading(btn, false);
+  }
+
+  function escapeHtml(value) {
+    return String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  function getRoleHelp(role) {
+    const found = ROLE_OPTIONS.find(r => r.value === role);
+    return found ? found.help : "Rol personalizat.";
+  }
+
+  function getRoleLabel(role) {
+    const found = ROLE_OPTIONS.find(r => r.value === role);
+    return found ? found.label : role;
+  }
+
+  function renderRoleOptions(currentRole) {
+    const options = ROLE_OPTIONS.map(role => {
+      return `
+        <option value="${role.value}" ${currentRole === role.value ? "selected" : ""}>
+          ${role.label}
+        </option>
+      `;
+    }).join("");
+
+    const isKnownRole = ROLE_OPTIONS.some(role => role.value === currentRole);
+
+    if (!isKnownRole && currentRole) {
+      return `
+        <option value="${escapeHtml(currentRole)}" selected>${escapeHtml(currentRole)}</option>
+        ${options}
+      `;
+    }
+
+    return options;
+  }
+
+  function updateSummary(users) {
+    const total = users.length;
+    const approved = users.filter(u => !!u.is_approved).length;
+    const pending = users.filter(u => !u.is_approved).length;
+    const report = users.filter(u => u.role === "raportare_paza").length;
+
+    document.getElementById("totalUsers").textContent = total;
+    document.getElementById("approvedUsers").textContent = approved;
+    document.getElementById("pendingUsers").textContent = pending;
+    document.getElementById("reportUsers").textContent = report;
+  }
+
+  function renderUsers(users) {
+    const tbody = document.getElementById("usersTableBody");
+
+    if (!Array.isArray(users) || users.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="6">
+            <div class="empty">Nu exista date de afisat.</div>
+          </td>
+        </tr>
+      `;
+
+      updateSummary([]);
+      return;
+    }
+
+    updateSummary(users);
+
+    tbody.innerHTML = users.map(u => {
+      const fullName = u.full_name || "-";
+      const email = u.email || "-";
+      const role = u.role || "inspector";
+      const isReportRole = role === "raportare_paza";
+
+      return `
+        <tr>
+          <td>${escapeHtml(u.id)}</td>
+
+          <td>
+            <div class="user-name">${escapeHtml(fullName)}</div>
+            <div class="badge role-badge ${isReportRole ? "report" : ""}">
+              ${escapeHtml(getRoleLabel(role))}
+            </div>
+          </td>
+
+          <td>
+            <div class="user-email">${escapeHtml(email)}</div>
+          </td>
+
+          <td class="role-cell">
+            <select id="role_${u.id}" onchange="updateRoleHelp(${u.id})">
+              ${renderRoleOptions(role)}
+            </select>
+            <div id="roleHelp_${u.id}" class="role-help">
+              ${escapeHtml(getRoleHelp(role))}
+            </div>
+          </td>
+
+          <td>
+            <span class="badge ${u.is_approved ? "approved" : "pending"}">
+              ${u.is_approved ? "aprobat" : "in asteptare"}
+            </span>
+          </td>
+
+          <td>
+            <div class="actions">
+              <button class="btn" title="Aproba / actualizeaza" onclick="approve(${u.id}, true)">✔</button>
+              <button class="btn-danger" title="Respinge / dezaproba" onclick="approve(${u.id}, false)">✖</button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join("");
+  }
+
+  function updateRoleHelp(id) {
+    const select = document.getElementById("role_" + id);
+    const help = document.getElementById("roleHelp_" + id);
+
+    if (!select || !help) return;
+
+    help.textContent = getRoleHelp(select.value);
+  }
+
+  async function loadUsers() {
+    try {
+      const token = getToken();
+
+      if (!token) {
+        setAuthenticatedUI(false);
+        throw new Error("Trebuie sa fii autentificat.");
+      }
+
+      setUsersStatus("Utilizatori: se incarca...", false);
+
+      const res = await fetch("/auth/users", {
+        headers: {
+          "Authorization": "Bearer " + token
+        }
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        if (res.status === 401 || res.status === 403) {
+          clearAuth();
+          setAuthenticatedUI(false);
+        }
+
+        throw new Error(data.detail || "Nu s-au putut incarca utilizatorii.");
+      }
+
+      renderUsers(data);
+      setAuthenticatedUI(true);
+      setUsersStatus("Utilizatori: actualizati", true);
+      setMsg("usersMsg", "Lista a fost actualizata.", true);
+
+    } catch (e) {
+      setMsg("usersMsg", e.message || "Eroare la incarcarea utilizatorilor.");
+      setUsersStatus("Utilizatori: eroare", false);
+    }
+  }
+
+  async function approve(id, state) {
+    const roleSelect = document.getElementById("role_" + id);
+
+    if (!roleSelect) {
+      setMsg("usersMsg", "Nu am gasit rolul utilizatorului.");
+      return;
+    }
+
+    const role = roleSelect.value;
+
+    const label = state
+      ? `Aprobi utilizatorul cu rolul "${getRoleLabel(role)}"?`
+      : `Dezaprobi utilizatorul? Rol selectat: "${getRoleLabel(role)}".`;
+
+    if (!confirm(label)) {
+      return;
+    }
+
+    try {
+      const token = getToken();
+
+      if (!token) {
+        setAuthenticatedUI(false);
+        throw new Error("Trebuie sa fii autentificat.");
+      }
+
+      const res = await fetch("/auth/approve", {
+        method: "POST",
+        headers: {
+          "Authorization": "Bearer " + token,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          user_id: id,
+          is_approved: state,
+          role: role
+        })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.detail || "Nu s-a putut modifica utilizatorul.");
+      }
+
+      setMsg("usersMsg", "Utilizator actualizat.", true);
+      await loadUsers();
+
+    } catch (e) {
+      setMsg("usersMsg", e.message || "Eroare la actualizarea utilizatorului.");
+    }
+  }
+
+  function init() {
+    const savedEmail = getSavedEmail();
+
+    if (savedEmail) {
+      document.getElementById("loginEmail").value = savedEmail;
+    }
+
+    setAuthenticatedUI(false);
+    renderUsers([]);
+
+    if (getToken()) {
+      loadUsers();
+    }
+  }
+
+  init();
+</script>
+
+</body>
+</html>

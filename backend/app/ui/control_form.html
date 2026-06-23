@@ -1,0 +1,2816 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>GFN - Formular control</title>
+
+  <style>
+    :root {
+      --bg: #0f1f1d;
+      --card: rgba(18, 41, 38, 0.84);
+      --card2: rgba(10, 27, 24, 0.90);
+      --bright: #16d977;
+      --green: #16a34a;
+      --teal: #00f5d4;
+      --red: #ff3b3b;
+      --orange: #ffb020;
+      --blue: #18b7ff;
+      --text: #effff6;
+      --muted: #b9d8cb;
+      --muted2: #82ad9e;
+      --border: rgba(148, 213, 190, 0.22);
+      --shadow: 0 22px 70px rgba(0, 0, 0, 0.42);
+      --shadow2: 0 12px 34px rgba(0, 0, 0, 0.34);
+      --radius: 28px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 12% 8%, rgba(22, 217, 119, 0.16), transparent 34%),
+        radial-gradient(circle at 88% 18%, rgba(0, 245, 212, 0.10), transparent 30%),
+        linear-gradient(135deg, rgba(7, 19, 17, 0.94), rgba(15, 31, 29, 0.94)),
+        url("https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=1800&q=80");
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+      min-height: 100vh;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+      background-size: 44px 44px;
+      opacity: 0.35;
+      z-index: 0;
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      max-width: 1120px;
+      margin: auto;
+      padding: 24px 18px 120px;
+    }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      background:
+        linear-gradient(135deg, rgba(18, 41, 38, 0.90), rgba(7, 19, 17, 0.80));
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 26px;
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-columns: 96px 1fr;
+      gap: 22px;
+      align-items: center;
+      backdrop-filter: blur(18px);
+      margin-bottom: 18px;
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      right: -100px;
+      top: -130px;
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(circle, rgba(22, 217, 119, 0.24), transparent 62%);
+      pointer-events: none;
+    }
+
+    .logo-wrap {
+      width: 96px;
+      height: 96px;
+      display: grid;
+      place-items: center;
+      border-radius: 24px;
+      border: 1px solid rgba(22, 217, 119, 0.30);
+      background: rgba(255,255,255,0.08);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.12),
+        0 18px 40px rgba(0,0,0,0.28);
+      position: relative;
+      z-index: 1;
+    }
+
+    .logo-wrap img {
+      width: 78px;
+      height: auto;
+      filter: drop-shadow(0 8px 18px rgba(0,0,0,0.36));
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 1;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 11px;
+      border-radius: 999px;
+      border: 1px solid rgba(22, 217, 119, 0.24);
+      color: #d8ffed;
+      background: rgba(22, 217, 119, 0.08);
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: 0.25px;
+      margin-bottom: 12px;
+    }
+
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--bright);
+      box-shadow: 0 0 16px rgba(22, 217, 119, 0.95);
+    }
+
+    h1, h2, h3 {
+      margin-top: 0;
+    }
+
+    h1 {
+      margin: 0;
+      color: var(--text);
+      font-size: 38px;
+      line-height: 1;
+      letter-spacing: -1.2px;
+    }
+
+    h1 span {
+      color: var(--bright);
+      text-shadow: 0 0 28px rgba(22, 217, 119, 0.22);
+    }
+
+    .subtitle {
+      max-width: 780px;
+      margin: 12px 0 0;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.5;
+    }
+
+    .status-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 11px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 900;
+      border: 1px solid rgba(148, 213, 190, 0.22);
+      background: rgba(255,255,255,0.06);
+      color: var(--muted);
+    }
+
+    .status-pill.online {
+      color: #d8ffed;
+      border-color: rgba(22, 217, 119, 0.32);
+      background: rgba(22, 217, 119, 0.10);
+    }
+
+    .status-pill.offline {
+      color: #ffd6d6;
+      border-color: rgba(255, 59, 59, 0.35);
+      background: rgba(255, 59, 59, 0.10);
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: 26px;
+      padding: 24px;
+      box-shadow: var(--shadow2);
+      border: 1px solid var(--border);
+      margin-bottom: 18px;
+      backdrop-filter: blur(18px);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::after {
+      content: "";
+      position: absolute;
+      right: -75px;
+      top: -85px;
+      width: 190px;
+      height: 190px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(22, 217, 119, 0.13), transparent 66%);
+      pointer-events: none;
+    }
+
+    .card-inner {
+      position: relative;
+      z-index: 1;
+    }
+
+    .auth-card {
+      max-width: 820px;
+      margin: 0 auto 18px;
+    }
+
+    .tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 18px;
+      padding: 5px;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.07);
+    }
+
+    .tabs button {
+      padding: 13px 16px;
+      border: none;
+      border-radius: 14px;
+      cursor: pointer;
+      background: transparent;
+      color: var(--muted);
+      font-weight: 900;
+      font-size: 14px;
+    }
+
+    .tabs button.active {
+      background: linear-gradient(135deg, var(--bright), var(--teal));
+      color: #061510;
+      box-shadow: 0 12px 26px rgba(22, 217, 119, 0.15);
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .full {
+      grid-column: 1 / -1;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 7px;
+      font-size: 13px;
+      font-weight: 900;
+      color: #dfffee;
+    }
+
+    input, select, textarea, button {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 13px 13px;
+      border: 1px solid rgba(148, 213, 190, 0.25);
+      border-radius: 15px;
+      font-size: 15px;
+      background: rgba(4, 18, 15, 0.58);
+      color: var(--text);
+    }
+
+    input::placeholder,
+    textarea::placeholder {
+      color: rgba(185, 216, 203, 0.55);
+    }
+
+    select option {
+      background: #0f1f1d;
+      color: var(--text);
+    }
+
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: rgba(22, 217, 119, 0.75);
+      box-shadow: 0 0 0 4px rgba(22, 217, 119, 0.12);
+    }
+
+    input[readonly] {
+      background: rgba(255,255,255,0.05);
+      color: var(--muted);
+    }
+
+    textarea {
+      min-height: 120px;
+      resize: vertical;
+      line-height: 1.45;
+    }
+
+    .btn,
+    .btn-secondary,
+    .btn-danger,
+    .btn-neutral {
+      border: none;
+      cursor: pointer;
+      font-weight: 900;
+      letter-spacing: 0.1px;
+      transition: transform 0.18s ease, filter 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    .btn {
+      background: linear-gradient(135deg, var(--green), var(--bright), var(--teal));
+      color: #061510;
+      box-shadow: 0 14px 28px rgba(22, 217, 119, 0.18);
+    }
+
+    .btn-secondary {
+      background: linear-gradient(135deg, var(--blue), var(--teal));
+      color: #041512;
+      box-shadow: 0 14px 28px rgba(24, 183, 255, 0.14);
+    }
+
+    .btn-danger {
+      background: linear-gradient(135deg, #e11d48, var(--red));
+      color: white;
+      box-shadow: 0 14px 28px rgba(255, 59, 59, 0.14);
+    }
+
+    .btn-neutral {
+      background: rgba(255,255,255,0.08);
+      color: var(--text);
+      border: 1px solid rgba(148, 213, 190, 0.22);
+    }
+
+    .btn:hover,
+    .btn-secondary:hover,
+    .btn-danger:hover,
+    .btn-neutral:hover {
+      transform: translateY(-2px);
+      filter: brightness(1.08);
+    }
+
+    .msg {
+      margin-top: 12px;
+      font-size: 14px;
+      line-height: 1.45;
+      padding: 12px 14px;
+      border-radius: 15px;
+      display: none;
+    }
+
+    .msg.ok {
+      display: block;
+      color: #d8ffed;
+      border: 1px solid rgba(22, 217, 119, 0.32);
+      background: rgba(22, 217, 119, 0.10);
+    }
+
+    .msg.err {
+      display: block;
+      color: #ffd6d6;
+      border: 1px solid rgba(255, 59, 59, 0.30);
+      background: rgba(255, 59, 59, 0.10);
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+      padding: 14px;
+      border-radius: 20px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(148, 213, 190, 0.16);
+    }
+
+    .user-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .user-meta span {
+      display: inline-flex;
+      gap: 5px;
+      align-items: center;
+      padding: 7px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .inline-buttons {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .inline-buttons button {
+      width: auto;
+      min-width: 145px;
+    }
+
+    .section-title {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+      margin: 22px 0 14px;
+      padding-top: 6px;
+    }
+
+    .section-title h3 {
+      margin: 0;
+      font-size: 20px;
+      letter-spacing: -0.35px;
+    }
+
+    .section-title .nr {
+      width: 34px;
+      height: 34px;
+      display: inline-grid;
+      place-items: center;
+      border-radius: 13px;
+      color: #061510;
+      background: linear-gradient(135deg, var(--bright), var(--teal));
+      font-weight: 900;
+      margin-right: 9px;
+    }
+
+    .section-title small {
+      color: var(--muted2);
+      display: block;
+      margin-top: 5px;
+      line-height: 1.4;
+      font-size: 12px;
+    }
+
+    .section-box {
+      padding: 18px;
+      border-radius: 22px;
+      background: rgba(255,255,255,0.045);
+      border: 1px solid rgba(148, 213, 190, 0.14);
+      margin-bottom: 14px;
+      scroll-margin-top: 20px;
+    }
+
+    .check-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px 14px;
+      margin-top: 6px;
+    }
+
+    .check-grid label,
+    .radio-list label {
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 0;
+      padding: 12px;
+      border-radius: 15px;
+      color: var(--muted);
+      background: rgba(4, 18, 15, 0.40);
+      border: 1px solid rgba(148, 213, 190, 0.14);
+    }
+
+    .check-grid input[type="checkbox"],
+    .radio-list input[type="radio"] {
+      width: 18px;
+      height: 18px;
+      padding: 0;
+      margin: 0;
+      accent-color: var(--bright);
+    }
+
+    .note,
+    .field-hint,
+    .auth-hint {
+      font-size: 12px;
+      color: var(--muted2);
+      margin-top: 6px;
+      line-height: 1.45;
+    }
+
+    .member-box {
+      background: rgba(4, 18, 15, 0.45);
+      border: 1px solid rgba(148, 213, 190, 0.18);
+      border-radius: 16px;
+      padding: 10px;
+      min-height: 54px;
+      color: var(--muted2);
+    }
+
+    .member-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(148, 213, 190, 0.16);
+      border-radius: 14px;
+      margin-bottom: 8px;
+      color: var(--text);
+    }
+
+    .member-item button {
+      width: auto;
+      min-width: 78px;
+      padding: 8px 10px;
+      border-radius: 12px;
+      background: rgba(255, 59, 59, 0.16);
+      color: #ffd6d6;
+      border: 1px solid rgba(255, 59, 59, 0.28);
+    }
+
+    .auth-box {
+      background: rgba(255,255,255,0.045);
+      border: 1px solid rgba(148, 213, 190, 0.16);
+      border-radius: 22px;
+      padding: 18px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(22, 217, 119, 0.10);
+      color: #d8ffed;
+      border: 1px solid rgba(22, 217, 119, 0.26);
+      font-size: 12px;
+      font-weight: 900;
+      padding: 7px 10px;
+      border-radius: 999px;
+      margin-bottom: 14px;
+    }
+
+    .quick-nav {
+      display: none;
+      position: sticky;
+      top: 8px;
+      z-index: 10;
+      margin-bottom: 14px;
+      padding: 10px;
+      border-radius: 20px;
+      background: rgba(6, 18, 16, 0.82);
+      border: 1px solid rgba(148, 213, 190, 0.18);
+      backdrop-filter: blur(16px);
+      overflow-x: auto;
+      gap: 8px;
+    }
+
+    .quick-nav.visible {
+      display: flex;
+    }
+
+    .quick-nav a {
+      flex: 0 0 auto;
+      text-decoration: none;
+      color: var(--muted);
+      padding: 9px 11px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.08);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .quick-nav a:first-child {
+      color: #061510;
+      background: linear-gradient(135deg, var(--bright), var(--teal));
+    }
+
+    .sticky-actions {
+      position: fixed;
+      left: 50%;
+      bottom: 16px;
+      transform: translateX(-50%);
+      z-index: 20;
+      width: min(1080px, calc(100% - 24px));
+      display: none;
+      gap: 10px;
+      padding: 12px;
+      border-radius: 22px;
+      background: rgba(6, 18, 16, 0.88);
+      border: 1px solid rgba(148, 213, 190, 0.20);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.40);
+      backdrop-filter: blur(18px);
+    }
+
+    .sticky-actions.visible {
+      display: flex;
+    }
+
+    .sticky-actions button {
+      flex: 1;
+    }
+
+    @media (max-width: 760px) {
+      body {
+        background-attachment: scroll;
+      }
+
+      .container {
+        padding: 14px 12px 140px;
+      }
+
+      .hero {
+        grid-template-columns: 1fr;
+        text-align: center;
+        padding: 22px 18px;
+      }
+
+      .logo-wrap {
+        margin: auto;
+      }
+
+      h1 {
+        font-size: 34px;
+      }
+
+      .subtitle {
+        font-size: 15px;
+      }
+
+      .grid,
+      .check-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .tabs {
+        grid-template-columns: 1fr;
+      }
+
+      .inline-buttons {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .inline-buttons button {
+        width: 100%;
+        min-width: 0;
+      }
+
+      .card {
+        padding: 18px;
+        border-radius: 22px;
+      }
+
+      .section-box {
+        padding: 14px;
+      }
+
+      input, select, textarea, button {
+        font-size: 16px;
+        min-height: 50px;
+      }
+
+      .topbar {
+        align-items: stretch;
+      }
+
+      .user-meta {
+        flex-direction: column;
+      }
+
+      .user-meta span {
+        justify-content: center;
+      }
+
+      .sticky-actions {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+
+<body>
+<div class="container">
+
+  <section class="hero">
+    <div class="logo-wrap">
+      <img src="/ui/sigla.png" alt="Sigla Garda Forestiera">
+    </div>
+
+    <div class="hero-content">
+      <div class="eyebrow">
+        <span class="dot"></span>
+        Formular intern de teren
+      </div>
+
+      <h1>Formular control <span>GFN</span></h1>
+
+      <div class="subtitle">
+        Completare rapida a controalelor in teren, cu GPS, echipa, date despre entitate, constatari, fapte, prejudicii, confiscari si masuri complementare.
+      </div>
+
+      <div class="status-row">
+        <div id="connectionStatus" class="status-pill online">● Online</div>
+        <div id="draftStatus" class="status-pill">Draft local: neverificat</div>
+        <div id="authStatus" class="status-pill">Neautentificat</div>
+      </div>
+    </div>
+  </section>
+
+  <div id="authCard" class="card auth-card">
+    <div class="card-inner">
+      <div class="tabs">
+        <button id="tabLoginBtn" class="active" onclick="showTab('login')">Autentificare</button>
+        <button id="tabRegisterBtn" onclick="showTab('register')">Creare cont</button>
+      </div>
+
+      <div id="loginTab" class="auth-box">
+        <div class="badge">Acces pentru utilizatori existenti</div>
+
+        <div class="grid">
+          <div class="full">
+            <label>Email institutional</label>
+            <input id="loginEmail" type="email" placeholder="prenume.nume@gfn.gov.ro" />
+          </div>
+          <div class="full">
+            <label>Parola</label>
+            <input id="loginPassword" type="password" placeholder="Introdu parola" />
+          </div>
+        </div>
+
+        <div class="inline-buttons" style="margin-top: 14px;">
+          <button class="btn" onclick="login()">Autentificare</button>
+        </div>
+
+        <div class="auth-hint">
+          Dupa autentificare, formularul devine disponibil pentru completare.
+        </div>
+
+        <div id="loginMsg" class="msg"></div>
+      </div>
+
+      <div id="registerTab" class="hidden auth-box">
+        <div class="badge">Cont nou</div>
+
+        <div class="grid">
+          <div>
+            <label>Nume</label>
+            <input id="registerLastName" type="text" placeholder="Popescu" />
+            <div class="field-hint">Numele de familie</div>
+          </div>
+
+          <div>
+            <label>Prenume</label>
+            <input id="registerFirstName" type="text" placeholder="Ion" />
+            <div class="field-hint">Prenumele utilizatorului</div>
+          </div>
+
+          <div class="full">
+            <label>Email institutional</label>
+            <input id="registerEmail" type="email" placeholder="prenume.nume@gfn.gov.ro" />
+            <div class="field-hint">Foloseste adresa de email cu care vei lucra in platforma</div>
+          </div>
+
+          <div>
+            <label>Parola</label>
+            <input id="registerPassword" type="password" placeholder="Creeaza o parola" />
+          </div>
+
+          <div>
+            <label>Confirmare parola</label>
+            <input id="registerPassword2" type="password" placeholder="Reintrodu parola" />
+          </div>
+        </div>
+
+        <div class="inline-buttons" style="margin-top: 14px;">
+          <button class="btn-secondary" onclick="registerAccount()">Trimite cererea de cont</button>
+        </div>
+
+        <div class="auth-hint">
+          Contul creat intra in asteptare si trebuie aprobat inainte de utilizare.
+        </div>
+
+        <div id="registerMsg" class="msg"></div>
+      </div>
+    </div>
+  </div>
+
+  <nav id="quickNav" class="quick-nav">
+    <a href="#appCard">Start</a>
+    <a href="#sectiune1">GPS</a>
+    <a href="#sectiune4">Echipa</a>
+    <a href="#sectiune7">Entitate</a>
+    <a href="#sesizareBox">Sesizare</a>
+    <a href="#sectiune9">Domeniu</a>
+    <a href="#sectiune10">Rezultat</a>
+    <a href="#sectiune12">Finalizare</a>
+  </nav>
+
+  <div id="appCard" class="card hidden" style="display:none;">
+    <div class="card-inner">
+      <div class="topbar">
+        <div class="user-meta">
+          <span><b>Autentificat ca:</b> <span id="currentUser">-</span></span>
+          <span><b>Rol:</b> <span id="currentRole">-</span></span>
+        </div>
+
+        <div class="inline-buttons">
+          <button class="btn-neutral" type="button" onclick="saveDraft()">Salveaza draft local</button>
+          <button class="btn-neutral" type="button" onclick="loadDraft()">Incarca draft</button>
+          <button class="btn-danger" type="button" onclick="logout()">Logout</button>
+        </div>
+      </div>
+
+      <h2 style="margin-bottom: 6px;">Formular control</h2>
+      <div class="note" style="margin-bottom: 18px;">
+        Formularul se salveaza automat local in browser, ca protectie in cazul pierderii semnalului sau al inchiderii accidentale a paginii.
+      </div>
+
+      <div id="sectiune1" class="section-box">
+        <div class="section-title">
+          <div>
+            <h3><span class="nr">1</span>Initiere sesiune</h3>
+            <small>Data, ora, GPS si reperul de teren.</small>
+          </div>
+        </div>
+
+        <div class="grid">
+          <div>
+            <label>Data sincronizare</label>
+            <input id="dataControl" type="date" />
+          </div>
+          <div>
+            <label>Ora sincronizare</label>
+            <input id="oraControl" type="time" />
+          </div>
+
+          <div class="full">
+            <label>Geolocatie</label>
+            <div class="inline-buttons">
+              <button class="btn-secondary" type="button" onclick="getCurrentLocation()">Preia GPS automat</button>
+            </div>
+            <div class="note">Foloseste GPS-ul telefonului in momentul initierii controlului.</div>
+          </div>
+
+          <div>
+            <label>Latitudine</label>
+            <input id="lat" type="number" step="any" placeholder="45.000000" />
+          </div>
+
+          <div>
+            <label>Longitudine</label>
+            <input id="lon" type="number" step="any" placeholder="25.000000" />
+          </div>
+
+          <div class="full">
+            <label>Reper manual</label>
+            <input id="reperManual" type="text" placeholder="Canton / UP / UA / drum forestier / alt reper" />
+          </div>
+        </div>
+      </div>
+
+      <div id="sectiune2" class="section-box">
+        <div class="section-title">
+          <div>
+            <h3><span class="nr">2</span>Modul de desfasurare</h3>
+            <small>Control propriu sau control mixt cu alte institutii.</small>
+          </div>
+        </div>
+
+        <div class="grid">
+          <div class="full">
+            <label>Tip desfasurare</label>
+            <select id="modDesfasurare" onchange="toggleParteneri()">
+              <option value="control_propriu">CONTROL PROPRIU</option>
+              <option value="control_mixt">CONTROL COMUN (MIXT)</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="parteneriBox" class="hidden" style="margin-top: 14px;">
+          <label>Parteneri</label>
+          <div class="check-grid">
+            <label><input type="checkbox" id="partPolitie" /> Politie</label>
+            <label><input type="checkbox" id="partJandarmerie" /> Jandarmerie</label>
+            <label><input type="checkbox" id="partGardaMediu" /> Garda Mediu</label>
+            <label><input type="checkbox" id="partANAF" /> ANAF</label>
+            <label><input type="checkbox" id="partANSVSA" /> ANSVSA</label>
+            <label><input type="checkbox" id="partAltele" /> Altele</label>
+          </div>
+
+          <div class="grid" style="margin-top: 10px;">
+            <div class="full">
+              <input id="parteneriAlteleText" type="text" placeholder="ISCTR / ITM / alte institutii" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="sectiune3" class="section-box">
+        <div class="section-title">
+          <div>
+            <h3><span class="nr">3</span>Initiatorul actiunii</h3>
+          </div>
+        </div>
+
+        <div class="grid">
+          <div class="full">
+            <label>Institutia / sursa initierii</label>
+            <select id="initiatorActiune">
+              <option value="GFN_GF">GFN/GF</option>
+              <option value="MMAP">MMAP</option>
+              <option value="MAI">MAI</option>
+              <option value="PARCHET_JUSTITIE">PARCHET / JUSTITIE</option>
+              <option value="PREFECTURA">PREFECTURA</option>
+              <option value="ALTA_INSTITUTIE">ALTA INSTITUTIE</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div id="sectiune4" class="section-box">
+        <div class="section-title">
+          <div>
+            <h3><span class="nr">4</span>Echipa GFN/GF</h3>
+            <small>Inspectorul logat este preluat automat. Poti adauga alti membri.</small>
+          </div>
+        </div>
+
+        <div class="grid">
+          <div>
+            <label>Inspector 1</label>
+            <input id="inspector1" type="text" placeholder="User logat" readonly />
+          </div>
+
+          <div>
+            <label>Cauta membru in baza de date</label>
+            <input id="memberSearch" type="text" placeholder="Minimum 2 litere din nume sau email..." oninput="searchMembers()" />
+          </div>
+
+          <div class="full">
+            <label>Rezultate cautare</label>
+            <select id="memberResults" size="6" ondblclick="addSelectedMember()"></select>
+          </div>
+
+          <div class="full">
+            <div class="inline-buttons">
+              <button class="btn-secondary" type="button" onclick="addSelectedMember()">Adauga membru</button>
+              <button class="btn-neutral" type="button" onclick="clearSelectedMembers()">Goleste lista</button>
+            </div>
+          </div>
+
+          <div class="full">
+            <label>Membri echipa selectati</label>
+            <div id="selectedMembersBox" class="member-box">Niciun membru selectat.</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="sectiune5" class="section-box">
+        <div class="section-title">
+          <div>
+            <h3><span class="nr">5</span>Tip control</h3>
+          </div>
+        </div>
+
+        <div class="grid">
+          <div class="full">
+            <label>Tip control</label>
+            <select id="controlType" onchange="toggleSesizareFields()">
+              <option value="fond">DE FOND (PLANIFICAT)</option>
+              <option value="tematic">TEMATIC</option>
+              <option value="inopinat">INOPINAT</option>
+              <option value="sesizare">SESIZARE</option>
+              <option value="ccml">CCML - control circulatia materialului lemnos</option>
+              <option value="depozit_material_lemnos">Control depozit material lemnos</option>
+              <option value="exploatare">Control exploatare</option>
+              <option value="punere_in_valoare">Control punere in valoare arbori</option>
+              <option value="regenerari">Control anual lucrari regenerare</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div id="sesizareBox" class="hidden section-box">
+        <div class="section-title">
+          <div>
+            <h3><span class="nr">5A</span>Date sesizare / petitionar</h3>
+            <small>
+              Se completeaza doar pentru controalele initiate in urma unei sesizari. In dashboardul public va fi folosit doar numarul sesizarii.
+            </small>
+          </div>
+        </div>
+
+        <div class="grid">
+          <div>
+            <label>Numar sesizare</label>
+            <input id="numarSesizare" type="text" placeholder="Ex: GFN-1234/2026" />
+            <div class="field-hint">Acesta va putea fi folosit public pentru verificarea stadiului sesizarii.</div>
+          </div>
+
+          <div>
+            <label>Nume petitionar</label>
+            <input id="numePetitionar" type="text" placeholder="Nume si prenume petitionar" />
+            <div class="field-hint">Data interna. Nu se afiseaza public.</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="sectiune6" class="section-box">
+        <div class="section-title">
+          <div>
+            <h3><span class="nr">6</span>Entitatea controlata</h3>
+            <small>Tipul entitatii schimba automat domeniul silvic / cinegetic.</small>
+          </div>
+        </div>
+
+        <div class="grid">
+          <div class="full">
+            <label>Tip entitate supusa controlului</label>
+            <select id="tipEntitate" onchange="toggleDomenii()">
+              <option value="operator economic">OPERATOR ECONOMIC</option>
+              <option value="ocol silvic">OCOL SILVIC</option>
+              <option value="teren fara administrare">Teren fara administrare / servicii silvice</option>
+              <option value="gestionar fond cinegetic">GESTIONAR FOND CINEGETIC</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div id="sectiune7" class="section-box">
+        <div class="section-title">
+          <div>
+            <h3><span class="nr">7</span>Date identificare</h3>
+          </div>
+        </div>
+
+        <div class="grid">
+          <div>
+            <label>Judet</label>
+            <select id="judet" onchange="syncGardaByJudet()">
+              <option value="">-- selecteaza --</option>
+            </select>
+          </div>
+          <div>
+            <label>Garda</label>
+            <select id="garda">
+              <option value="">-- selecteaza --</option>
+            </select>
+          </div>
+
+          <div>
+            <label>CUI / CIF</label>
+            <input id="cui" type="text" />
+          </div>
+          <div>
+            <label>Denumire</label>
+            <input id="denumire" type="text" />
+          </div>
+
+          <div class="full">
+            <label>Sediu social</label>
+            <input id="sediu" type="text" />
+          </div>
+
+          <div class="full">
+            <label>Localitate</label>
+            <input id="localitate" type="text" />
+          </div>
+        </div>
+      </div>
+
+      <div id="sectiune8" class="section-box">
+        <div class="section-title">
+          <div>
+            <h3><span class="nr">8</span>Reprezentant prezent la control</h3>
+          </div>
+        </div>
+
+        <div class="grid">
+          <div>
+            <label>Nume si prenume</label>
+            <input id="reprezentantNume" type="text" />
+          </div>
+          <div>
+            <label>Calitatea</label>
+            <input id="reprezentantCalitate" type="text" placeholder="Administrator / Director / Padurar / etc." />
+          </div>
+        </div>
+      </div>
+
+      <div id="domeniuSilvicBox" class="section-box">
+        <div class="section-title">
+          <div>
+            <h3><span class="nr">9</span>Domeniul silvic</h3>
+          </div>
+        </div>
+
+        <div class="check-grid">
+          <label><input type="checkbox" id="silvicFond" /> Control de fond</label>
+          <label><input type="checkbox" id="silvicPartial" /> Control partial</label>
+          <label><input type="checkbox" id="silvicDepozite" /> Instalatii / depozite materiale lemnoase</label>
+          <label><input type="checkbox" id="silvicExploatare" /> Exploatarea masei lemnoase</label>
+          <label><input type="checkbox" id="silvicRegenerari" /> Control anual regenerari</label>
+          <label><input type="checkbox" id="silvicImpadurire" /> Lucrari regenerare / impadurire</label>
+          <label><input type="checkbox" id="silvicAPV" /> Verificarea actelor de punere in valoare</label>
+          <label><input type="checkbox" id="silvicCirculatie" /> Controlul circulatiei materialelor lemnoase</label>
+        </div>
+
+        <div class="grid" style="margin-top: 10px;">
+          <div class="full">
+            <label>Altele</label>
+            <input id="silvicAltele" type="text" placeholder="EUDR / MFR / alte observatii" />
+          </div>
+        </div>
+      </div>
+
+      <div id="domeniuCinegeticBox" class="hidden section-box">
+        <div class="section-title">
+          <div>
+            <h3><span class="nr">9</span>Domeniul cinegetic</h3>
+          </div>
+        </div>
+
+        <div class="grid">
+          <div>
+            <label>Numarul fondului cinegetic</label>
+            <input id="fondCinegeticNr" type="text" />
+          </div>
+          <div>
+            <label>Denumirea fondului cinegetic</label>
+            <input id="fondCinegeticDenumire" type="text" />
+          </div>
+        </div>
+
+        <div class="check-grid" style="margin-top: 10px;">
+          <label><input type="checkbox" id="cinegeticFond" /> Control de fond</label>
+          <label><input type="checkbox" id="cinegeticLicentiere" /> Criterii de licentiere</label>
+          <label><input type="checkbox" id="cinegeticVanatoare" /> Respectarea prevederilor legale la vanatoare</label>
+          <label><input type="checkbox" id="cinegeticPopulare" /> Populare / repopulare</label>
+          <label><input type="checkbox" id="cinegeticBraconaj" /> Prevenire / combatere braconaj</label>
+          <label><input type="checkbox" id="cinegeticEvaluare" /> Studii de evaluare in teren</label>
+          <label><input type="checkbox" id="cinegeticPagube" /> Procese verbale de pagube</label>
+        </div>
+
+        <div class="grid" style="margin-top: 10px;">
+          <div class="full">
+            <label>Altele</label>
+            <input id="cinegeticAltele" type="text" />
+          </div>
+        </div>
+      </div>
+
+      <div id="sectiune10" class="section-box">
+        <div class="section-title">
+          <div>
+            <h3><span class="nr">10</span>Rezultatul controlului</h3>
+            <small>
+              Se separa controlul conform, neconformitatea fara sanctiune, contraventia si fapta de natura penala.
+            </small>
+          </div>
+        </div>
+
+        <div class="grid">
+          <div class="full">
+            <label>Rezultat</label>
+            <select id="result" onchange="toggleMasuri()">
+              <option value="conform">CONFORM</option>
+              <option value="neconform">NECONFORM - fara sanctiune</option>
+              <option value="sanctiune">CONTRAVENTIE</option>
+              <option value="sesizare_penala">INFRACTIUNE / SESIZARE PENALA</option>
+            </select>
+            <div class="note">
+              Pentru raportare corecta, contraventiile si infractiunile sunt tratate separat.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="masuriSection" class="hidden section-box">
+        <div class="section-title">
+          <div>
+            <h3><span class="nr">11</span>Incalcarea legislatiei silvice</h3>
+            <small>
+              Se completeaza separat actul normativ incalcat si actul normativ care sanctioneaza fapta.
+            </small>
+          </div>
+        </div>
+
+        <div class="grid">
+          <div>
+            <label>Tip fapta</label>
+            <select id="tipFapta" onchange="toggleLegalSubsections()">
+              <option value="neconform_fara_sanctiune">Neconformitate fara sanctiune</option>
+              <option value="contraventie">Contraventie</option>
+              <option value="infractiune">Infractiune</option>
+            </select>
+          </div>
+
+          <div>
+            <label>Act normativ incalcat</label>
+            <select id="actNormativIncalcat">
+              <option value="">-- selecteaza --</option>
+              <option value="Codul Silvic">Codul Silvic</option>
+              <option value="Legea 171/2010">Legea 171/2010</option>
+              <option value="HG 497/2020">HG 497/2020 - SUMAL 2.0</option>
+              <option value="Regulamentul de valorificare a masei lemnoase">Regulamentul de valorificare a masei lemnoase</option>
+              <option value="Norme tehnice silvice">Norme tehnice silvice</option>
+              <option value="Altele">Altele</option>
+            </select>
+          </div>
+
+          <div>
+            <label>Act normativ sanctionator</label>
+            <select id="actNormativ">
+              <option value="">-- selecteaza --</option>
+              <option value="Legea 171/2010">Legea 171/2010</option>
+              <option value="Cod Silvic">Cod Silvic</option>
+              <option value="Cod Penal">Cod Penal</option>
+              <option value="Legea 407/2006">Legea 407/2006</option>
+              <option value="Altele">Altele</option>
+            </select>
+          </div>
+
+          <div>
+            <label>Articol / alineat</label>
+            <input id="articolAlineat" type="text" placeholder="Ex: art. 107 alin. ..." />
+          </div>
+
+          <div class="full">
+            <label>Descriere fapta</label>
+            <textarea id="descriereFapta" placeholder="Descriere scurta a faptei constatate"></textarea>
+          </div>
+        </div>
+
+        <div id="infractiuneBox" class="hidden" style="margin-top: 18px;">
+          <h3 style="margin-top: 0;">Tip infractiune</h3>
+
+          <div class="grid">
+            <div class="full">
+              <label>Incadrare fapta penala</label>
+              <select id="tipInfractiune" onchange="togglePrejudiciuByInfractiune()">
+                <option value="">-- selecteaza --</option>
+                <option value="taiere_fara_drept_arbori">Taiere fara drept de arbori</option>
+                <option value="furt_arbori_puieti_lastari">Furt de arbori / puieti / lastari</option>
+                <option value="distrugerea_vegetatiei_ffn">Distrugerea vegetatiei din FFN</option>
+                <option value="reducerea_suprafetei_ffn">Reducerea suprafetei FFN / lucrari / amplasare obiective</option>
+                <option value="distrugerea_vegetatiei_spatii_verzi">Distrugerea vegetatiei forestiere instalate pe spatiile verzi</option>
+                <option value="folosirea_ilegala_dispozitiv_marcat">Folosirea ilegala a dispozitivului special de marcat</option>
+                <option value="date_false_sumal">Introducerea / modificarea / stergerea datelor informatice false in SUMAL 2.0</option>
+                <option value="detinere_ilegala_depozit">Detinerea ilegala in depozite a materialelor lemnoase</option>
+                <option value="nedetinere_materiale_depozit">Nedetinerea in depozite a materialelor lemnoase</option>
+                <option value="transport_ilegal_materiale_lemnoase">Transport ilegal materiale lemnoase</option>
+                <option value="diferente_volum_transportat">Diferente volum transportat</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div id="contraventieBox" class="hidden" style="margin-top: 18px;">
+          <h3 style="margin-top: 0;">Contraventie</h3>
+
+          <div class="grid">
+            <div>
+              <label>Cuantum amenda aplicata (lei)</label>
+              <input id="amenda" type="number" step="0.01" placeholder="0" />
+            </div>
+
+            <div>
+              <label>Amenda incasata (lei)</label>
+              <input id="amendaIncasata" type="number" step="0.01" placeholder="0" />
+            </div>
+          </div>
+        </div>
+
+        <div id="prejudiciuSilvicBox" class="hidden" style="margin-top: 18px;">
+          <h3 style="margin-top: 0;">Prejudiciu / paguba silvica</h3>
+
+          <div class="grid">
+            <div>
+              <label>Paguba (lei)</label>
+              <input id="pagubaLei" type="number" step="0.01" placeholder="0" oninput="updatePrejudiciuTotal()" />
+            </div>
+
+            <div id="functiiNerealizateBox">
+              <label>Valoarea functiilor nerealizate ale padurii (lei)</label>
+              <input id="functiiNerealizateLei" type="number" step="0.01" placeholder="0" oninput="updatePrejudiciuTotal()" />
+            </div>
+
+            <div>
+              <label>Prejudiciu total (lei)</label>
+              <input id="prejudiciu" type="number" step="0.01" placeholder="0" readonly />
+            </div>
+
+            <div class="full">
+              <label>Observatii prejudiciu / paguba</label>
+              <textarea id="observatiiPrejudiciu" placeholder="Detalii privind calculul prejudiciului sau al pagubei"></textarea>
+            </div>
+          </div>
+
+          <div class="note">
+            Pentru taierea fara drept se evidentiaza separat paguba si valoarea functiilor nerealizate ale padurii. Pentru furt se evidentiaza paguba.
+          </div>
+        </div>
+
+        <h3 style="margin-top: 20px;">Confiscari silvice</h3>
+
+        <div class="section-box" style="margin-top: 10px;">
+          <div class="section-title">
+            <div>
+              <h3 style="font-size: 18px;">Material lemnos confiscat fizic</h3>
+              <small>Se completeaza cand materialul lemnos este identificat si confiscat fizic.</small>
+            </div>
+          </div>
+
+          <div class="check-grid">
+            <label><input type="checkbox" id="confiscareLemn" /> Material lemnos confiscat fizic</label>
+            <label><input type="checkbox" id="confiscareTransport" /> Mijloc transport</label>
+            <label><input type="checkbox" id="confiscareArme" /> Arme / munitie / vanat</label>
+          </div>
+
+          <div class="grid" style="margin-top: 10px;">
+            <div>
+              <label>Volum confiscat fizic (mc)</label>
+              <input id="volumConfiscat" type="number" step="0.01" placeholder="0" />
+            </div>
+
+            <div>
+              <label>Valoare material confiscat fizic (lei)</label>
+              <input id="valoareConfiscata" type="number" step="0.01" placeholder="0" />
+            </div>
+
+            <div>
+              <label>Sortiment / categorie</label>
+              <input id="sortimentConfiscatFizic" type="text" placeholder="lemn lucru / cherestea / lemn foc / altul" />
+            </div>
+
+            <div>
+              <label>Nr. inmatriculare mijloc transport</label>
+              <input id="nrInmatriculare" type="text" />
+            </div>
+
+            <div class="full">
+              <label>Observatii confiscare fizica</label>
+              <textarea id="observatiiConfiscareFizica" placeholder="Detalii confiscare fizica"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-box">
+          <div class="section-title">
+            <div>
+              <h3 style="font-size: 18px;">Material lemnos confiscat valoric</h3>
+              <small>Se completeaza cand materialul lemnos nu se gaseste fizic si se dispune confiscarea contravalorii.</small>
+            </div>
+          </div>
+
+          <div class="grid">
+            <div>
+              <label>Volum confiscat valoric (mc)</label>
+              <input id="volumConfiscatValoric" type="number" step="0.01" placeholder="0" />
+            </div>
+
+            <div>
+              <label>Contravaloare confiscata (lei)</label>
+              <input id="contravaloareConfiscataLei" type="number" step="0.01" placeholder="0" />
+            </div>
+
+            <div class="full">
+              <label>Motiv / observatii confiscare valorica</label>
+              <textarea id="observatiiConfiscareValorica" placeholder="Ex: material lemnos care nu se gaseste fizic"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <h3 style="margin-top: 20px;">Masuri complementare</h3>
+
+        <div class="check-grid">
+          <label><input type="checkbox" id="masuraSistare" /> Sistare activitate</label>
+          <label><input type="checkbox" id="masuraAPV" /> Anulare APV</label>
+          <label><input type="checkbox" id="masuraImputare" /> Imputare gestiune</label>
+          <label><input type="checkbox" id="masuraSuspendare" /> Suspendare drept practica / gestiune</label>
+          <label><input type="checkbox" id="masuraPermis" /> Retinere permis permanent vanatoare</label>
+          <label><input type="checkbox" id="masuraReziliere" /> Propunere reziliere contract</label>
+          <label><input type="checkbox" id="masuraRetragereLicenta" /> Propunere retragere licenta</label>
+          <label><input type="checkbox" id="masuraNotificare" /> Notificare remediere deficiente</label>
+          <label><input type="checkbox" id="masuraSuspendareSumal" /> Suspendare drept acces in SUMAL 2.0</label>
+          <label><input type="checkbox" id="masuraRetragereAtestatExploatare" /> Propunere retragere atestat exploatare</label>
+        </div>
+
+        <div id="sumalBox" class="grid hidden" style="margin-top: 10px;">
+          <div class="full">
+            <label>Baza suspendarii accesului in SUMAL 2.0</label>
+            <select id="suspendareSumalBaza">
+              <option value="">-- selecteaza --</option>
+              <option value="raport_gf">In baza raportului Garzii Forestiere</option>
+              <option value="organe_cercetare_penala">La solicitarea organelor de cercetare penala</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div id="sectiune12" class="section-box">
+        <div class="section-title">
+          <div>
+            <h3><span class="nr">12</span>Finalizare control</h3>
+            <small>Constatari, documente si trimitere in platforma.</small>
+          </div>
+        </div>
+
+        <div class="grid">
+          <div class="full">
+            <label>Constatari</label>
+            <textarea id="constatari" placeholder="Constatari sumarizate"></textarea>
+          </div>
+
+          <div class="full">
+            <label>Documente incheiate / observatii finale</label>
+            <textarea id="masuriDispuse" placeholder="Proces verbal / nota de constatare / alte documente"></textarea>
+          </div>
+
+          <div class="full">
+            <label>Incarca documente / poze</label>
+            <input id="documenteFinale" type="file" multiple />
+            <div class="note">In aceasta versiune se salveaza numele fisierelor in payload. Incarcarea efectiva a fisierelor cere endpoint separat.</div>
+          </div>
+        </div>
+
+        <div class="inline-buttons" style="margin-top: 16px;">
+          <button class="btn" onclick="submitControl()">Trimite control</button>
+          <button class="btn-neutral" type="button" onclick="saveDraft()">Salveaza draft local</button>
+          <button class="btn-neutral" type="button" onclick="resetForm()">Reseteaza formularul</button>
+          <button class="btn-danger" type="button" onclick="clearDraft()">Sterge draft</button>
+        </div>
+
+        <div id="controlMsg" class="msg"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="stickyActions" class="sticky-actions" style="display:none;">
+  <button class="btn-neutral" type="button" onclick="saveDraft()">Salveaza draft</button>
+  <button class="btn" type="button" onclick="submitControl()">Trimite control</button>
+</div>
+
+<script>
+  const GARZI = [
+    "GF Brasov",
+    "GF Bucuresti",
+    "GF Cluj",
+    "GF Focsani",
+    "GF Oradea",
+    "GF Ploiesti",
+    "GF Ramnicu Valcea",
+    "GF Suceava",
+    "GF Timisoara"
+  ];
+
+  const JUDETE = [
+    "Alba", "Arad", "Arges", "Bacau", "Bihor", "Bistrita-Nasaud", "Botosani", "Brasov",
+    "Braila", "Buzau", "Caras-Severin", "Calarasi", "Cluj", "Constanta", "Covasna",
+    "Dambovita", "Dolj", "Galati", "Giurgiu", "Gorj", "Harghita", "Hunedoara",
+    "Ialomita", "Iasi", "Ilfov", "Maramures", "Mehedinti", "Mures", "Neamt", "Olt",
+    "Prahova", "Satu Mare", "Salaj", "Sibiu", "Suceava", "Teleorman", "Timis",
+    "Tulcea", "Vaslui", "Valcea", "Vrancea", "Bucuresti"
+  ];
+
+  const JUDET_TO_GARDA = {
+    "Brasov": "GF Brasov",
+    "Covasna": "GF Brasov",
+    "Harghita": "GF Brasov",
+    "Mures": "GF Brasov",
+    "Sibiu": "GF Brasov",
+
+    "Bucuresti": "GF Bucuresti",
+    "Calarasi": "GF Bucuresti",
+    "Constanta": "GF Bucuresti",
+    "Giurgiu": "GF Bucuresti",
+    "Ialomita": "GF Bucuresti",
+    "Ilfov": "GF Bucuresti",
+    "Teleorman": "GF Bucuresti",
+
+    "Alba": "GF Cluj",
+    "Bistrita-Nasaud": "GF Cluj",
+    "Cluj": "GF Cluj",
+    "Maramures": "GF Cluj",
+
+    "Braila": "GF Focsani",
+    "Buzau": "GF Focsani",
+    "Galati": "GF Focsani",
+    "Tulcea": "GF Focsani",
+    "Vaslui": "GF Focsani",
+    "Vrancea": "GF Focsani",
+
+    "Arad": "GF Oradea",
+    "Bihor": "GF Oradea",
+    "Satu Mare": "GF Oradea",
+    "Salaj": "GF Oradea",
+
+    "Arges": "GF Ploiesti",
+    "Dambovita": "GF Ploiesti",
+    "Prahova": "GF Ploiesti",
+
+    "Dolj": "GF Ramnicu Valcea",
+    "Gorj": "GF Ramnicu Valcea",
+    "Mehedinti": "GF Ramnicu Valcea",
+    "Olt": "GF Ramnicu Valcea",
+    "Valcea": "GF Ramnicu Valcea",
+
+    "Bacau": "GF Suceava",
+    "Botosani": "GF Suceava",
+    "Iasi": "GF Suceava",
+    "Neamt": "GF Suceava",
+    "Suceava": "GF Suceava",
+
+    "Caras-Severin": "GF Timisoara",
+    "Hunedoara": "GF Timisoara",
+    "Timis": "GF Timisoara"
+  };
+
+  const DRAFT_KEY = "gfn_control_form_draft_legal_v1";
+  let selectedMembers = [];
+  let autosaveTimer = null;
+
+  function setMsg(id, text, ok = false) {
+    const el = document.getElementById(id);
+    if (!el) return;
+
+    el.textContent = text || "";
+    el.className = "msg " + (text ? (ok ? "ok" : "err") : "");
+  }
+
+  function showTab(tab) {
+    document.getElementById("loginTab").classList.toggle("hidden", tab !== "login");
+    document.getElementById("registerTab").classList.toggle("hidden", tab !== "register");
+    document.getElementById("tabLoginBtn").classList.toggle("active", tab === "login");
+    document.getElementById("tabRegisterBtn").classList.toggle("active", tab === "register");
+  }
+
+  function saveAuth(token, email) {
+    localStorage.setItem("gfn_token", token);
+    localStorage.setItem("gfn_email", email);
+  }
+
+  function clearAuth() {
+    localStorage.removeItem("gfn_token");
+    localStorage.removeItem("gfn_email");
+  }
+
+  function getToken() {
+    return localStorage.getItem("gfn_token");
+  }
+
+  function setAuthenticatedUI(isAuthenticated) {
+    const authCard = document.getElementById("authCard");
+    const appCard = document.getElementById("appCard");
+    const stickyActions = document.getElementById("stickyActions");
+    const quickNav = document.getElementById("quickNav");
+    const authStatus = document.getElementById("authStatus");
+
+    if (isAuthenticated) {
+      authCard.classList.add("hidden");
+      authCard.style.display = "none";
+
+      appCard.classList.remove("hidden");
+      appCard.style.display = "block";
+
+      stickyActions.classList.add("visible");
+      stickyActions.style.display = "flex";
+
+      quickNav.classList.add("visible");
+      quickNav.style.display = "flex";
+
+      authStatus.textContent = "Autentificat";
+      authStatus.className = "status-pill online";
+    } else {
+      authCard.classList.remove("hidden");
+      authCard.style.display = "block";
+
+      appCard.classList.add("hidden");
+      appCard.style.display = "none";
+
+      stickyActions.classList.remove("visible");
+      stickyActions.style.display = "none";
+
+      quickNav.classList.remove("visible");
+      quickNav.style.display = "none";
+
+      authStatus.textContent = "Neautentificat";
+      authStatus.className = "status-pill";
+    }
+  }
+
+  function populateSelect(id, values) {
+    const select = document.getElementById(id);
+    values.forEach(v => {
+      const opt = document.createElement("option");
+      opt.value = v;
+      opt.textContent = v;
+      select.appendChild(opt);
+    });
+  }
+
+  function syncGardaByJudet() {
+    const judet = document.getElementById("judet").value;
+    const garda = JUDET_TO_GARDA[judet] || "";
+    document.getElementById("garda").value = garda;
+    scheduleAutosave();
+  }
+
+  function toggleParteneri() {
+    const val = document.getElementById("modDesfasurare").value;
+    document.getElementById("parteneriBox").classList.toggle("hidden", val !== "control_mixt");
+    scheduleAutosave();
+  }
+
+  function toggleSesizareFields() {
+    const controlType = val("controlType");
+    const box = document.getElementById("sesizareBox");
+    if (!box) return;
+
+    const isSesizare = controlType === "sesizare";
+    box.classList.toggle("hidden", !isSesizare);
+
+    if (!isSesizare) {
+      const numar = document.getElementById("numarSesizare");
+      const nume = document.getElementById("numePetitionar");
+
+      if (numar) numar.value = "";
+      if (nume) nume.value = "";
+    }
+
+    scheduleAutosave();
+  }
+
+  function toggleDomenii() {
+    const val = document.getElementById("tipEntitate").value;
+    const esteCinegetic = val === "gestionar fond cinegetic";
+    document.getElementById("domeniuCinegeticBox").classList.toggle("hidden", !esteCinegetic);
+    document.getElementById("domeniuSilvicBox").classList.toggle("hidden", esteCinegetic);
+    scheduleAutosave();
+  }
+
+  function toggleMasuri() {
+    const result = document.getElementById("result").value;
+    const masuriSection = document.getElementById("masuriSection");
+    const tipFapta = document.getElementById("tipFapta");
+
+    const showLegal = result !== "conform";
+    masuriSection.classList.toggle("hidden", !showLegal);
+
+    if (result === "neconform") {
+      tipFapta.value = "neconform_fara_sanctiune";
+    }
+
+    if (result === "sanctiune") {
+      tipFapta.value = "contraventie";
+    }
+
+    if (result === "sesizare_penala") {
+      tipFapta.value = "infractiune";
+    }
+
+    toggleLegalSubsections();
+    scheduleAutosave();
+  }
+
+  function toggleLegalSubsections() {
+    const tipFapta = val("tipFapta");
+    const infractiuneBox = document.getElementById("infractiuneBox");
+    const contraventieBox = document.getElementById("contraventieBox");
+    const prejudiciuSilvicBox = document.getElementById("prejudiciuSilvicBox");
+    const sumalBox = document.getElementById("sumalBox");
+
+    if (infractiuneBox) {
+      infractiuneBox.classList.toggle("hidden", tipFapta !== "infractiune");
+    }
+
+    if (contraventieBox) {
+      contraventieBox.classList.toggle("hidden", tipFapta !== "contraventie");
+    }
+
+    if (prejudiciuSilvicBox) {
+      prejudiciuSilvicBox.classList.toggle("hidden", tipFapta === "neconform_fara_sanctiune");
+    }
+
+    if (sumalBox) {
+      sumalBox.classList.toggle("hidden", !checked("masuraSuspendareSumal"));
+    }
+
+    togglePrejudiciuByInfractiune();
+    updatePrejudiciuTotal();
+    scheduleAutosave();
+  }
+
+  function togglePrejudiciuByInfractiune() {
+    const tipInfractiune = val("tipInfractiune");
+    const functiiBox = document.getElementById("functiiNerealizateBox");
+
+    if (!functiiBox) return;
+
+    const esteFurt = tipInfractiune === "furt_arbori_puieti_lastari";
+    functiiBox.classList.toggle("hidden", esteFurt);
+
+    if (esteFurt) {
+      const functii = document.getElementById("functiiNerealizateLei");
+      if (functii) functii.value = "";
+    }
+
+    updatePrejudiciuTotal();
+  }
+
+  function updatePrejudiciuTotal() {
+    const paguba = parseNumberOrNull(val("pagubaLei")) || 0;
+    const functii = parseNumberOrNull(val("functiiNerealizateLei")) || 0;
+    const total = paguba + functii;
+
+    const prejudiciu = document.getElementById("prejudiciu");
+
+    if (prejudiciu) {
+      prejudiciu.value = total ? total.toFixed(2) : "";
+    }
+  }
+
+  function val(id) {
+    const el = document.getElementById(id);
+    return el ? el.value.trim() : "";
+  }
+
+  function checked(id) {
+    const el = document.getElementById(id);
+    return !!(el && el.checked);
+  }
+
+  function parseNumberOrNull(v) {
+    if (v === null || v === undefined || v === "") return null;
+    const n = Number(String(v).replace(",", "."));
+    return Number.isNaN(n) ? null : n;
+  }
+
+  function filesToNames(inputId) {
+    const input = document.getElementById(inputId);
+    if (!input || !input.files) return [];
+    return Array.from(input.files).map(f => f.name).filter(Boolean);
+  }
+
+  function getSelectedPartners() {
+    const list = [];
+
+    if (checked("partPolitie")) list.push("Politie");
+    if (checked("partJandarmerie")) list.push("Jandarmerie");
+    if (checked("partGardaMediu")) list.push("Garda Mediu");
+    if (checked("partANAF")) list.push("ANAF");
+    if (checked("partANSVSA")) list.push("ANSVSA");
+
+    if (checked("partAltele")) {
+      const alt = val("parteneriAlteleText");
+      list.push(alt || "Altele");
+    }
+
+    return list;
+  }
+
+  function getInitiator() {
+    const map = {
+      "GFN_GF": "GFN/GF",
+      "MMAP": "MMAP",
+      "MAI": "MAI",
+      "PARCHET_JUSTITIE": "Parchet / Justitie",
+      "PREFECTURA": "Prefectura",
+      "ALTA_INSTITUTIE": "Alta institutie"
+    };
+    const raw = val("initiatorActiune");
+    return map[raw] || raw;
+  }
+
+  function buildEchipa() {
+    const team = [];
+    const inspector1 = document.getElementById("inspector1").value.trim();
+
+    if (inspector1) {
+      team.push(parseTeamMemberLabel(inspector1));
+    }
+
+    selectedMembers.forEach(m => {
+      if (!team.find(x => x.email === m.email || x.nume === extractNameFromLabel(m.label))) {
+        team.push(parseTeamMemberLabel(m.label, m.email));
+      }
+    });
+
+    return team;
+  }
+
+  function extractNameFromLabel(label) {
+    if (!label) return "";
+    const parts = label.split(" - ");
+    return parts[0]?.trim() || label.trim();
+  }
+
+  function parseTeamMemberLabel(label, fallbackEmail = null) {
+    const parts = label.split(" - ");
+    const nume = parts[0]?.trim() || label.trim();
+    const email = parts[1]?.trim() || fallbackEmail || null;
+    return { nume, email };
+  }
+
+  function getDomeniuPayload() {
+    const tipEntitate = val("tipEntitate");
+
+    if (tipEntitate === "gestionar fond cinegetic") {
+      const subtipuri = [];
+      if (checked("cinegeticFond")) subtipuri.push("Control de fond");
+      if (checked("cinegeticLicentiere")) subtipuri.push("Criterii de licentiere");
+      if (checked("cinegeticVanatoare")) subtipuri.push("Respectarea prevederilor legale la vanatoare");
+      if (checked("cinegeticPopulare")) subtipuri.push("Populare / repopulare");
+      if (checked("cinegeticBraconaj")) subtipuri.push("Prevenire / combatere braconaj");
+      if (checked("cinegeticEvaluare")) subtipuri.push("Studii de evaluare in teren");
+      if (checked("cinegeticPagube")) subtipuri.push("Procese verbale de pagube");
+      if (val("cinegeticAltele")) subtipuri.push(val("cinegeticAltele"));
+
+      return {
+        tip: "cinegetic",
+        subtipuri,
+        fond_numar: val("fondCinegeticNr"),
+        fond_denumire: val("fondCinegeticDenumire")
+      };
+    }
+
+    const subtipuri = [];
+    if (checked("silvicFond")) subtipuri.push("Control de fond");
+    if (checked("silvicPartial")) subtipuri.push("Control partial");
+    if (checked("silvicDepozite")) subtipuri.push("Instalatii / depozite materiale lemnoase");
+    if (checked("silvicExploatare")) subtipuri.push("Exploatarea masei lemnoase");
+    if (checked("silvicRegenerari")) subtipuri.push("Control anual regenerari");
+    if (checked("silvicImpadurire")) subtipuri.push("Lucrari regenerare / impadurire");
+    if (checked("silvicAPV")) subtipuri.push("Verificarea actelor de punere in valoare");
+    if (checked("silvicCirculatie")) subtipuri.push("Controlul circulatiei materialelor lemnoase");
+    if (val("silvicAltele")) subtipuri.push(val("silvicAltele"));
+
+    return {
+      tip: "silvic",
+      subtipuri
+    };
+  }
+
+  function getConfiscariText() {
+    const bucati = [];
+
+    if (checked("confiscareLemn")) bucati.push("Material lemnos confiscat fizic");
+    if (checked("confiscareTransport")) bucati.push("Mijloc transport");
+    if (checked("confiscareArme")) bucati.push("Arme / munitie / vanat");
+
+    const volum = parseNumberOrNull(val("volumConfiscat"));
+    const valoare = parseNumberOrNull(val("valoareConfiscata"));
+    const nrAuto = val("nrInmatriculare");
+
+    if (volum !== null) bucati.push(`Volum confiscat fizic: ${volum} mc`);
+    if (valoare !== null) bucati.push(`Valoare material confiscat fizic: ${valoare} lei`);
+    if (nrAuto) bucati.push(`Nr. inmatriculare: ${nrAuto}`);
+
+    const volumValoric = parseNumberOrNull(val("volumConfiscatValoric"));
+    const contravaloare = parseNumberOrNull(val("contravaloareConfiscataLei"));
+
+    if (volumValoric !== null) bucati.push(`Volum confiscat valoric: ${volumValoric} mc`);
+    if (contravaloare !== null) bucati.push(`Contravaloare confiscata: ${contravaloare} lei`);
+
+    return bucati.join("; ");
+  }
+
+  function getMasuriComplementareText() {
+    const masuri = [];
+
+    if (checked("masuraSistare")) masuri.push("Sistare activitate");
+    if (checked("masuraAPV")) masuri.push("Anulare APV");
+    if (checked("masuraImputare")) masuri.push("Imputare gestiune");
+    if (checked("masuraSuspendare")) masuri.push("Suspendare drept practica / gestiune");
+    if (checked("masuraPermis")) masuri.push("Retinere permis permanent vanatoare");
+    if (checked("masuraReziliere")) masuri.push("Propunere reziliere contract");
+    if (checked("masuraRetragereLicenta")) masuri.push("Propunere retragere licenta");
+    if (checked("masuraNotificare")) masuri.push("Notificare remediere deficiente");
+
+    if (checked("masuraSuspendareSumal")) {
+      const baza = val("suspendareSumalBaza");
+      masuri.push("Suspendare drept acces in SUMAL 2.0" + (baza ? " - " + baza : ""));
+    }
+
+    if (checked("masuraRetragereAtestatExploatare")) {
+      masuri.push("Propunere retragere atestat exploatare");
+    }
+
+    return masuri;
+  }
+
+  function getLegalPayload() {
+    const result = val("result");
+
+    if (result === "conform") {
+      return null;
+    }
+
+    return {
+      tip_fapta: val("tipFapta") || null,
+      act_normativ_incalcat: val("actNormativIncalcat") || null,
+      act_normativ_sanctionator: val("actNormativ") || null,
+      articol_alineat: val("articolAlineat") || null,
+      tip_infractiune: val("tipInfractiune") || null,
+      descriere_fapta: val("descriereFapta") || null,
+      amenda_aplicata_lei: parseNumberOrNull(val("amenda")),
+      amenda_incasata_lei: parseNumberOrNull(val("amendaIncasata"))
+    };
+  }
+
+  function getPrejudiciuSilvicPayload() {
+    const result = val("result");
+
+    if (result === "conform" || result === "neconform") {
+      return null;
+    }
+
+    return {
+      paguba_lei: parseNumberOrNull(val("pagubaLei")),
+      functii_nerealizate_lei: parseNumberOrNull(val("functiiNerealizateLei")),
+      prejudiciu_total_lei: parseNumberOrNull(val("prejudiciu")),
+      observatii: val("observatiiPrejudiciu") || null
+    };
+  }
+
+  function getConfiscariSilvicPayload() {
+    return {
+      material_lemnos_confiscat_fizic: {
+        bifat: checked("confiscareLemn"),
+        volum_mc: parseNumberOrNull(val("volumConfiscat")),
+        valoare_lei: parseNumberOrNull(val("valoareConfiscata")),
+        sortiment: val("sortimentConfiscatFizic") || null,
+        observatii: val("observatiiConfiscareFizica") || null
+      },
+      material_lemnos_confiscat_valoric: {
+        volum_mc: parseNumberOrNull(val("volumConfiscatValoric")),
+        contravaloare_lei: parseNumberOrNull(val("contravaloareConfiscataLei")),
+        observatii: val("observatiiConfiscareValorica") || null
+      },
+      mijloc_transport: {
+        bifat: checked("confiscareTransport"),
+        nr_inmatriculare: val("nrInmatriculare") || null
+      },
+      arme_munitie_vanat: {
+        bifat: checked("confiscareArme")
+      }
+    };
+  }
+
+  function getMasuriComplementareExtinsePayload() {
+    return {
+      suspendare_activitate: checked("masuraSistare"),
+      anulare_apv: checked("masuraAPV"),
+      imputare_gestiune: checked("masuraImputare"),
+      suspendare_drept_practica_gestiune: checked("masuraSuspendare"),
+      retinere_permis_vanatoare: checked("masuraPermis"),
+      propunere_reziliere_contract: checked("masuraReziliere"),
+      propunere_retragere_licenta: checked("masuraRetragereLicenta"),
+      notificare_remediere_deficiente: checked("masuraNotificare"),
+      suspendare_sumal: checked("masuraSuspendareSumal"),
+      suspendare_sumal_baza: val("suspendareSumalBaza") || null,
+      propunere_retragere_atestat_exploatare: checked("masuraRetragereAtestatExploatare")
+    };
+  }
+
+  function getDocumenteList() {
+    const fisiere = filesToNames("documenteFinale");
+    const finalText = val("masuriDispuse");
+
+    const docs = [...fisiere];
+
+    if (finalText) {
+      docs.push("Observatii finale / documente incheiate");
+    }
+
+    return docs;
+  }
+
+  function mapTipEntitate(raw) {
+    const map = {
+      "operator economic": "operator economic",
+      "ocol silvic": "ocol silvic",
+      "teren fara administrare": "persoana fizica",
+      "gestionar fond cinegetic": "gestionar fond cinegetic"
+    };
+    return map[raw] || raw;
+  }
+
+  function mapModDesfasurare(raw) {
+    const map = {
+      "control_propriu": "control de fond",
+      "control_mixt": "control mixt"
+    };
+    return map[raw] || raw;
+  }
+
+  async function login() {
+    setMsg("loginMsg", "");
+
+    const email = document.getElementById("loginEmail").value.trim();
+    const password = document.getElementById("loginPassword").value;
+
+    if (!email || !password) {
+      setMsg("loginMsg", "Completeaza emailul si parola.");
+      return;
+    }
+
+    try {
+      const formData = new URLSearchParams();
+      formData.append("username", email);
+      formData.append("password", password);
+
+      const res = await fetch("/auth/login-form", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: formData
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.detail || "Autentificare esuata");
+      }
+
+      saveAuth(data.access_token, email);
+      await loadCurrentUser(true);
+
+    } catch (e) {
+      setAuthenticatedUI(false);
+      setMsg("loginMsg", e.message || "Eroare la login");
+    }
+  }
+
+  async function registerAccount() {
+    setMsg("registerMsg", "");
+
+    const email = document.getElementById("registerEmail").value.trim();
+    const password = document.getElementById("registerPassword").value;
+    const password2 = document.getElementById("registerPassword2").value;
+    const first_name = document.getElementById("registerFirstName").value.trim();
+    const last_name = document.getElementById("registerLastName").value.trim();
+
+    if (!first_name || !last_name) {
+      setMsg("registerMsg", "Completeaza nume si prenume.");
+      return;
+    }
+
+    if (password !== password2) {
+      setMsg("registerMsg", "Parolele nu coincid.");
+      return;
+    }
+
+    try {
+      const res = await fetch("/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          password,
+          first_name,
+          last_name
+        })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.detail || "Nu s-a putut crea contul");
+      }
+
+      setMsg("registerMsg", "Cont creat. Asteapta aprobare.", true);
+    } catch (e) {
+      setMsg("registerMsg", e.message || "Eroare la creare cont");
+    }
+  }
+
+  async function loadCurrentUser(scrollToForm = false) {
+    const token = getToken();
+
+    if (!token) {
+      setAuthenticatedUI(false);
+      return;
+    }
+
+    try {
+      const res = await fetch("/auth/me", {
+        headers: { "Authorization": "Bearer " + token }
+      });
+
+      if (!res.ok) {
+        clearAuth();
+        setAuthenticatedUI(false);
+        return;
+      }
+
+      const me = await res.json();
+
+      document.getElementById("currentUser").textContent = me.full_name || me.email;
+      document.getElementById("currentRole").textContent = me.role;
+
+      document.getElementById("inspector1").value = me.full_name
+        ? `${me.full_name} - ${me.email}`
+        : me.email;
+
+      setAuthenticatedUI(true);
+      updateDraftStatus();
+
+      if (scrollToForm) {
+        setTimeout(() => {
+          const form = document.getElementById("appCard");
+          if (form) {
+            form.scrollIntoView({ behavior: "smooth", block: "start" });
+          }
+        }, 150);
+      }
+
+    } catch (e) {
+      clearAuth();
+      setAuthenticatedUI(false);
+    }
+  }
+
+  function logout() {
+    clearAuth();
+    setAuthenticatedUI(false);
+    setMsg("controlMsg", "");
+    setMsg("loginMsg", "Te-ai delogat.", true);
+
+    setTimeout(() => {
+      const auth = document.getElementById("authCard");
+      if (auth) {
+        auth.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }, 100);
+  }
+
+  function getCurrentLocation() {
+    setMsg("controlMsg", "");
+
+    if (!navigator.geolocation) {
+      setMsg("controlMsg", "Browserul nu suporta geolocatia.");
+      return;
+    }
+
+    setMsg("controlMsg", "Se preia locatia GPS...", true);
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        document.getElementById("lat").value = position.coords.latitude.toFixed(6);
+        document.getElementById("lon").value = position.coords.longitude.toFixed(6);
+        setMsg("controlMsg", "Locatia a fost preluata.", true);
+        saveDraft(true);
+      },
+      (error) => {
+        let msg = "Nu s-a putut prelua locatia.";
+        if (error.code === 1) msg = "Accesul la locatie a fost refuzat.";
+        if (error.code === 2) msg = "Locatia nu este disponibila.";
+        if (error.code === 3) msg = "Cererea de locatie a expirat.";
+        setMsg("controlMsg", msg);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      }
+    );
+  }
+
+  async function searchMembers() {
+    const q = document.getElementById("memberSearch").value.trim();
+    const results = document.getElementById("memberResults");
+    const token = getToken();
+
+    results.innerHTML = "";
+
+    if (!token) {
+      const option = document.createElement("option");
+      option.textContent = "Trebuie sa fii logat.";
+      results.appendChild(option);
+      return;
+    }
+
+    if (q.length < 2) {
+      const option = document.createElement("option");
+      option.textContent = "Scrie minimum 2 litere pentru cautare.";
+      results.appendChild(option);
+      return;
+    }
+
+    try {
+      const res = await fetch("/auth/users/search?q=" + encodeURIComponent(q), {
+        headers: {
+          "Authorization": "Bearer " + token
+        }
+      });
+
+      if (!res.ok) {
+        const option = document.createElement("option");
+        option.textContent = "Nu s-au putut incarca utilizatorii.";
+        results.appendChild(option);
+        return;
+      }
+
+      const users = await res.json();
+
+      if (!users.length) {
+        const option = document.createElement("option");
+        option.textContent = "Niciun utilizator gasit.";
+        results.appendChild(option);
+        return;
+      }
+
+      users.forEach(u => {
+        const currentInspector = document.getElementById("inspector1").value.trim();
+
+        if (currentInspector.includes(u.email)) return;
+        if (selectedMembers.find(x => x.email === u.email)) return;
+
+        const option = document.createElement("option");
+        option.value = u.email;
+
+        const fullName = u.full_name || `${u.last_name || ""} ${u.first_name || ""}`.trim() || u.email;
+
+        option.textContent = `${fullName} - ${u.email} (${u.role})`;
+        option.dataset.label = `${fullName} - ${u.email}`;
+
+        results.appendChild(option);
+      });
+
+    } catch (e) {
+      console.error(e);
+      const option = document.createElement("option");
+      option.textContent = "Eroare la cautare.";
+      results.appendChild(option);
+    }
+  }
+
+  function addSelectedMember() {
+    const results = document.getElementById("memberResults");
+    const selectedOption = results.options[results.selectedIndex];
+
+    if (!selectedOption) return;
+
+    const email = selectedOption.value;
+    const label = selectedOption.dataset.label || selectedOption.textContent;
+
+    if (!selectedMembers.find(x => x.email === email)) {
+      selectedMembers.push({ email, label });
+      renderSelectedMembers();
+      saveDraft(true);
+    }
+  }
+
+  function removeSelectedMember(email) {
+    selectedMembers = selectedMembers.filter(x => x.email !== email);
+    renderSelectedMembers();
+    saveDraft(true);
+  }
+
+  function clearSelectedMembers() {
+    selectedMembers = [];
+    renderSelectedMembers();
+    saveDraft(true);
+  }
+
+  function renderSelectedMembers() {
+    const box = document.getElementById("selectedMembersBox");
+
+    if (selectedMembers.length === 0) {
+      box.innerHTML = "Niciun membru selectat.";
+      return;
+    }
+
+    box.innerHTML = selectedMembers.map(item => `
+      <div class="member-item">
+        <span>${item.label}</span>
+        <button type="button" onclick="removeSelectedMember('${item.email}')">Sterge</button>
+      </div>
+    `).join("");
+  }
+
+  async function submitControl() {
+    setMsg("controlMsg", "");
+    const token = getToken();
+
+    if (!token) {
+      setMsg("controlMsg", "Nu esti logat.");
+      setAuthenticatedUI(false);
+      return;
+    }
+
+    const dataControl = val("dataControl");
+    const oraControl = val("oraControl");
+    const judet = val("judet");
+    const garda = val("garda");
+    const localitate = val("localitate");
+    const reper = val("reperManual");
+    const lat = parseNumberOrNull(val("lat"));
+    const lon = parseNumberOrNull(val("lon"));
+    const echipa = buildEchipa();
+    const entitateControlata = val("denumire");
+    const tipEntitate = mapTipEntitate(val("tipEntitate"));
+    const cui = val("cui");
+    const sediu = val("sediu");
+    const reprezentantNume = val("reprezentantNume");
+    const reprezentantCalitate = val("reprezentantCalitate");
+    const modDesfasurare = mapModDesfasurare(val("modDesfasurare"));
+    const parteneri = getSelectedPartners();
+    const initiator = getInitiator();
+    const domeniuPayload = getDomeniuPayload();
+    const confiscariText = getConfiscariText();
+    const masuriComplementare = getMasuriComplementareText();
+    const documente = getDocumenteList();
+    const constatari = val("constatari");
+    const masuriDispuseText = val("masuriDispuse");
+    const articol = val("articolAlineat");
+    const amenda = parseNumberOrNull(val("amenda"));
+    const prejudiciu = parseNumberOrNull(val("prejudiciu"));
+    const result = val("result");
+    const actNormativ = result === "conform" ? "" : val("actNormativ");
+    const controlType = normalizeControlType(val("controlType"));
+    const numarSesizare = val("numarSesizare");
+    const numePetitionar = val("numePetitionar");
+    const esteSesizare = controlType === "sesizare" || !!numarSesizare;
+
+    if (!dataControl) {
+      setMsg("controlMsg", "Completeaza data controlului.");
+      return;
+    }
+
+    if (!oraControl) {
+      setMsg("controlMsg", "Completeaza ora controlului.");
+      return;
+    }
+
+    if (!judet) {
+      setMsg("controlMsg", "Selecteaza judetul.");
+      return;
+    }
+
+    if (!garda) {
+      setMsg("controlMsg", "Selecteaza garda.");
+      return;
+    }
+
+    if (!localitate) {
+      setMsg("controlMsg", "Completeaza localitatea.");
+      return;
+    }
+
+    if (lat === null || lon === null) {
+      setMsg("controlMsg", "Completeaza coordonatele GPS.");
+      return;
+    }
+
+    if (echipa.length === 0) {
+      setMsg("controlMsg", "Adauga cel putin un inspector in echipa.");
+      return;
+    }
+
+    if (!entitateControlata) {
+      setMsg("controlMsg", "Completeaza denumirea entitatii controlate.");
+      return;
+    }
+
+    if (controlType === "sesizare" && !numarSesizare) {
+      setMsg("controlMsg", "Completeaza numarul sesizarii pentru controlul de tip sesizare.");
+      return;
+    }
+
+    if (controlType === "sesizare" && !numePetitionar) {
+      setMsg("controlMsg", "Completeaza numele petitionarului pentru controlul de tip sesizare.");
+      return;
+    }
+
+    const payload = {
+      data_control: dataControl,
+      ora_control: oraControl,
+      judet,
+      garda,
+      localitate,
+      reper,
+      gps: {
+        lat,
+        lon
+      },
+      echipa,
+      entitate_controlata: entitateControlata,
+      tip_entitate: tipEntitate,
+      cui: cui || null,
+      sediu: sediu || null,
+      reprezentant_nume: reprezentantNume || null,
+      reprezentant_calitate: reprezentantCalitate || null,
+      mod_desfasurare: modDesfasurare,
+      parteneri,
+      initiator,
+      este_sesizare: esteSesizare,
+      numar_sesizare: numarSesizare || null,
+      nume_petitionar: numePetitionar || null,
+      domeniu: domeniuPayload.tip,
+      domeniu_detalii: domeniuPayload,
+      constatari: constatari || null,
+      act_normativ: actNormativ || null,
+      articol: articol || null,
+      amenda,
+      prejudiciu,
+      confiscari: confiscariText || null,
+      masuri_complementare: masuriComplementare,
+      masuri_dispuse: masuriDispuseText || null,
+      documente,
+      legal: getLegalPayload(),
+      prejudiciu_silvic: getPrejudiciuSilvicPayload(),
+      confiscari_silvic: getConfiscariSilvicPayload(),
+      masuri_complementare_extinse: getMasuriComplementareExtinsePayload()
+    };
+
+    const body = {
+      control_type: controlType,
+      result,
+      payload
+    };
+
+    console.log("BODY TRIMIS:", body);
+
+    try {
+      const res = await fetch("/controls", {
+        method: "POST",
+        headers: {
+          "Authorization": "Bearer " + token,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(body)
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(
+          data.detail ? JSON.stringify(data.detail) : "Eroare la salvarea controlului"
+        );
+      }
+
+      setMsg("controlMsg", "Control salvat cu succes. ID: " + data.id, true);
+      clearDraft(false);
+      resetForm(false);
+    } catch (e) {
+      console.error("Eroare submit:", e);
+      setMsg("controlMsg", e.message || "Eroare la trimitere. Datele raman salvate local ca draft.");
+      saveDraft(true);
+    }
+  }
+
+  function normalizeControlType(value) {
+    const map = {
+      fond: "fond",
+      tematic: "tematic",
+      inopinat: "operativ",
+      sesizare: "sesizare",
+      ccml: "ccml",
+      depozit_material_lemnos: "depozit_material_lemnos",
+      exploatare: "exploatare",
+      punere_in_valoare: "punere_in_valoare",
+      regenerari: "regenerari"
+    };
+    return map[value] || value;
+  }
+
+  function resetForm(clearInspectori = false) {
+    const today = new Date();
+    document.getElementById("dataControl").value = today.toISOString().slice(0, 10);
+    document.getElementById("oraControl").value = today.toTimeString().slice(0, 5);
+
+    document.getElementById("modDesfasurare").value = "control_propriu";
+    document.getElementById("partPolitie").checked = false;
+    document.getElementById("partJandarmerie").checked = false;
+    document.getElementById("partGardaMediu").checked = false;
+    document.getElementById("partANAF").checked = false;
+    document.getElementById("partANSVSA").checked = false;
+    document.getElementById("partAltele").checked = false;
+    document.getElementById("parteneriAlteleText").value = "";
+
+    document.getElementById("initiatorActiune").value = "GFN_GF";
+    document.getElementById("controlType").value = "fond";
+    document.getElementById("numarSesizare").value = "";
+    document.getElementById("numePetitionar").value = "";
+    document.getElementById("tipEntitate").value = "operator economic";
+
+    document.getElementById("judet").value = "";
+    document.getElementById("garda").value = "";
+    document.getElementById("cui").value = "";
+    document.getElementById("denumire").value = "";
+    document.getElementById("sediu").value = "";
+    document.getElementById("localitate").value = "";
+
+    if (clearInspectori) {
+      document.getElementById("inspector1").value = "";
+    }
+
+    document.getElementById("memberSearch").value = "";
+    document.getElementById("memberResults").innerHTML = "";
+    selectedMembers = [];
+    renderSelectedMembers();
+
+    document.getElementById("reperManual").value = "";
+    document.getElementById("lat").value = "";
+    document.getElementById("lon").value = "";
+    document.getElementById("reprezentantNume").value = "";
+    document.getElementById("reprezentantCalitate").value = "";
+
+    document.getElementById("silvicFond").checked = false;
+    document.getElementById("silvicPartial").checked = false;
+    document.getElementById("silvicDepozite").checked = false;
+    document.getElementById("silvicExploatare").checked = false;
+    document.getElementById("silvicRegenerari").checked = false;
+    document.getElementById("silvicImpadurire").checked = false;
+    document.getElementById("silvicAPV").checked = false;
+    document.getElementById("silvicCirculatie").checked = false;
+    document.getElementById("silvicAltele").value = "";
+
+    document.getElementById("fondCinegeticNr").value = "";
+    document.getElementById("fondCinegeticDenumire").value = "";
+    document.getElementById("cinegeticFond").checked = false;
+    document.getElementById("cinegeticLicentiere").checked = false;
+    document.getElementById("cinegeticVanatoare").checked = false;
+    document.getElementById("cinegeticPopulare").checked = false;
+    document.getElementById("cinegeticBraconaj").checked = false;
+    document.getElementById("cinegeticEvaluare").checked = false;
+    document.getElementById("cinegeticPagube").checked = false;
+    document.getElementById("cinegeticAltele").value = "";
+
+    document.getElementById("result").value = "conform";
+    document.getElementById("tipFapta").value = "neconform_fara_sanctiune";
+    document.getElementById("actNormativIncalcat").value = "";
+    document.getElementById("actNormativ").value = "";
+    document.getElementById("articolAlineat").value = "";
+    document.getElementById("descriereFapta").value = "";
+    document.getElementById("tipInfractiune").value = "";
+    document.getElementById("amenda").value = "";
+    document.getElementById("amendaIncasata").value = "";
+    document.getElementById("pagubaLei").value = "";
+    document.getElementById("functiiNerealizateLei").value = "";
+    document.getElementById("prejudiciu").value = "";
+    document.getElementById("observatiiPrejudiciu").value = "";
+
+    document.getElementById("confiscareLemn").checked = false;
+    document.getElementById("confiscareTransport").checked = false;
+    document.getElementById("confiscareArme").checked = false;
+    document.getElementById("volumConfiscat").value = "";
+    document.getElementById("valoareConfiscata").value = "";
+    document.getElementById("sortimentConfiscatFizic").value = "";
+    document.getElementById("nrInmatriculare").value = "";
+    document.getElementById("observatiiConfiscareFizica").value = "";
+    document.getElementById("volumConfiscatValoric").value = "";
+    document.getElementById("contravaloareConfiscataLei").value = "";
+    document.getElementById("observatiiConfiscareValorica").value = "";
+
+    document.getElementById("masuraSistare").checked = false;
+    document.getElementById("masuraAPV").checked = false;
+    document.getElementById("masuraImputare").checked = false;
+    document.getElementById("masuraSuspendare").checked = false;
+    document.getElementById("masuraPermis").checked = false;
+    document.getElementById("masuraReziliere").checked = false;
+    document.getElementById("masuraRetragereLicenta").checked = false;
+    document.getElementById("masuraNotificare").checked = false;
+    document.getElementById("masuraSuspendareSumal").checked = false;
+    document.getElementById("suspendareSumalBaza").value = "";
+    document.getElementById("masuraRetragereAtestatExploatare").checked = false;
+
+    document.getElementById("constatari").value = "";
+    document.getElementById("masuriDispuse").value = "";
+    document.getElementById("documenteFinale").value = "";
+
+    toggleParteneri();
+    toggleSesizareFields();
+    toggleDomenii();
+    toggleMasuri();
+    toggleLegalSubsections();
+    updatePrejudiciuTotal();
+    updateDraftStatus();
+  }
+
+  function getDraftFieldIds() {
+    return [
+      "dataControl", "oraControl", "lat", "lon", "reperManual",
+      "modDesfasurare", "partPolitie", "partJandarmerie", "partGardaMediu", "partANAF", "partANSVSA", "partAltele", "parteneriAlteleText",
+      "initiatorActiune", "inspector1", "memberSearch",
+      "controlType", "numarSesizare", "numePetitionar", "tipEntitate", "judet", "garda", "cui", "denumire", "sediu", "localitate",
+      "reprezentantNume", "reprezentantCalitate",
+      "silvicFond", "silvicPartial", "silvicDepozite", "silvicExploatare", "silvicRegenerari", "silvicImpadurire", "silvicAPV", "silvicCirculatie", "silvicAltele",
+      "fondCinegeticNr", "fondCinegeticDenumire", "cinegeticFond", "cinegeticLicentiere", "cinegeticVanatoare", "cinegeticPopulare", "cinegeticBraconaj", "cinegeticEvaluare", "cinegeticPagube", "cinegeticAltele",
+      "result", "tipFapta", "actNormativIncalcat", "actNormativ", "articolAlineat", "descriereFapta", "tipInfractiune",
+      "amenda", "amendaIncasata", "pagubaLei", "functiiNerealizateLei", "prejudiciu", "observatiiPrejudiciu",
+      "confiscareLemn", "confiscareTransport", "confiscareArme", "volumConfiscat", "valoareConfiscata", "sortimentConfiscatFizic", "nrInmatriculare", "observatiiConfiscareFizica",
+      "volumConfiscatValoric", "contravaloareConfiscataLei", "observatiiConfiscareValorica",
+      "masuraSistare", "masuraAPV", "masuraImputare", "masuraSuspendare", "masuraPermis", "masuraReziliere", "masuraRetragereLicenta", "masuraNotificare",
+      "masuraSuspendareSumal", "suspendareSumalBaza", "masuraRetragereAtestatExploatare",
+      "constatari", "masuriDispuse"
+    ];
+  }
+
+  function collectDraftData() {
+    const fields = {};
+
+    getDraftFieldIds().forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+
+      if (el.type === "checkbox") {
+        fields[id] = el.checked;
+      } else {
+        fields[id] = el.value;
+      }
+    });
+
+    return {
+      saved_at: new Date().toISOString(),
+      fields,
+      selectedMembers
+    };
+  }
+
+  function applyDraftData(draft) {
+    if (!draft || !draft.fields) return;
+
+    Object.entries(draft.fields).forEach(([id, value]) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+
+      if (el.type === "checkbox") {
+        el.checked = !!value;
+      } else {
+        el.value = value || "";
+      }
+    });
+
+    selectedMembers = Array.isArray(draft.selectedMembers) ? draft.selectedMembers : [];
+    renderSelectedMembers();
+
+    toggleParteneri();
+    toggleSesizareFields();
+    toggleDomenii();
+    toggleMasuri();
+    toggleLegalSubsections();
+    updatePrejudiciuTotal();
+    updateDraftStatus();
+  }
+
+  function saveDraft(silent = false) {
+    try {
+      const draft = collectDraftData();
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+      updateDraftStatus();
+
+      if (!silent) {
+        setMsg("controlMsg", "Draft salvat local pe dispozitiv.", true);
+      }
+    } catch (e) {
+      console.error("Eroare salvare draft:", e);
+      if (!silent) {
+        setMsg("controlMsg", "Nu s-a putut salva draftul local.");
+      }
+    }
+  }
+
+  function loadDraft() {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+
+      if (!raw) {
+        setMsg("controlMsg", "Nu exista draft salvat local.");
+        updateDraftStatus();
+        return;
+      }
+
+      const draft = JSON.parse(raw);
+      applyDraftData(draft);
+      setMsg("controlMsg", "Draftul local a fost incarcat.", true);
+    } catch (e) {
+      console.error("Eroare incarcare draft:", e);
+      setMsg("controlMsg", "Draftul local nu a putut fi incarcat.");
+    }
+  }
+
+  function clearDraft(showMessage = true) {
+    localStorage.removeItem(DRAFT_KEY);
+    updateDraftStatus();
+
+    if (showMessage) {
+      setMsg("controlMsg", "Draftul local a fost sters.", true);
+    }
+  }
+
+  function updateDraftStatus() {
+    const el = document.getElementById("draftStatus");
+    if (!el) return;
+
+    const raw = localStorage.getItem(DRAFT_KEY);
+
+    if (!raw) {
+      el.textContent = "Draft local: nesalvat";
+      return;
+    }
+
+    try {
+      const draft = JSON.parse(raw);
+      const date = draft.saved_at ? new Date(draft.saved_at) : null;
+      const label = date && !Number.isNaN(date.getTime())
+        ? date.toLocaleString("ro-RO", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })
+        : "existent";
+
+      el.textContent = "Draft local: " + label;
+    } catch {
+      el.textContent = "Draft local: existent";
+    }
+  }
+
+  function scheduleAutosave() {
+    clearTimeout(autosaveTimer);
+    autosaveTimer = setTimeout(() => {
+      const appCard = document.getElementById("appCard");
+      if (appCard && !appCard.classList.contains("hidden")) {
+        saveDraft(true);
+      }
+    }, 800);
+  }
+
+  function updateConnectionStatus() {
+    const el = document.getElementById("connectionStatus");
+    if (!el) return;
+
+    if (navigator.onLine) {
+      el.textContent = "● Online";
+      el.className = "status-pill online";
+    } else {
+      el.textContent = "● Offline - se salveaza local";
+      el.className = "status-pill offline";
+    }
+  }
+
+  function attachAutosaveListeners() {
+    getDraftFieldIds().forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+
+      el.addEventListener("input", scheduleAutosave);
+      el.addEventListener("change", scheduleAutosave);
+    });
+
+    const sumalCheck = document.getElementById("masuraSuspendareSumal");
+    if (sumalCheck) {
+      sumalCheck.addEventListener("change", toggleLegalSubsections);
+    }
+  }
+
+  function init() {
+    populateSelect("judet", JUDETE);
+    populateSelect("garda", GARZI);
+
+    const savedEmail = localStorage.getItem("gfn_email");
+    if (savedEmail) {
+      document.getElementById("loginEmail").value = savedEmail;
+    }
+
+    resetForm(false);
+    updateConnectionStatus();
+    updateDraftStatus();
+    attachAutosaveListeners();
+
+    window.addEventListener("online", updateConnectionStatus);
+    window.addEventListener("offline", updateConnectionStatus);
+
+    setAuthenticatedUI(false);
+
+    if (getToken()) {
+      loadCurrentUser(false);
+    }
+  }
+
+  init();
+</script>
+
+</body>
+</html>

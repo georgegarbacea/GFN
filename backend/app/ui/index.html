@@ -1,0 +1,1638 @@
+﻿<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Platforma GFN</title>
+
+  <style>
+    :root {
+      --bg: #0f1f1d;
+      --bg2: #071311;
+      --card: rgba(18, 41, 38, 0.78);
+      --card2: rgba(10, 27, 24, 0.84);
+      --bright: #16d977;
+      --green: #16a34a;
+      --green2: #0d7a39;
+      --teal: #00f5d4;
+      --red: #ff3b3b;
+      --orange: #ffb020;
+      --blue: #18b7ff;
+      --violet: #9b5cff;
+      --text: #effff6;
+      --muted: #b9d8cb;
+      --muted2: #7fa99a;
+      --border: rgba(148, 213, 190, 0.22);
+      --border2: rgba(22, 217, 119, 0.26);
+      --shadow: 0 22px 70px rgba(0, 0, 0, 0.42);
+      --shadow2: 0 12px 34px rgba(0, 0, 0, 0.34);
+      --radius: 28px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 12% 8%, rgba(22, 217, 119, 0.18), transparent 34%),
+        radial-gradient(circle at 88% 18%, rgba(0, 245, 212, 0.10), transparent 30%),
+        linear-gradient(135deg, rgba(7, 19, 17, 0.92), rgba(15, 31, 29, 0.92)),
+        url("https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=1800&q=80");
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+      min-height: 100vh;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+      background-size: 44px 44px;
+      mask-image: linear-gradient(to bottom, rgba(0,0,0,0.75), transparent);
+      opacity: 0.45;
+      z-index: 0;
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      max-width: 1320px;
+      margin: auto;
+      padding: 32px 22px 26px;
+    }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      background:
+        linear-gradient(135deg, rgba(18, 41, 38, 0.88), rgba(7, 19, 17, 0.78));
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 34px;
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-columns: 124px 1fr;
+      gap: 28px;
+      align-items: center;
+      backdrop-filter: blur(18px);
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      right: -120px;
+      top: -120px;
+      width: 310px;
+      height: 310px;
+      background: radial-gradient(circle, rgba(22, 217, 119, 0.26), transparent 62%);
+      pointer-events: none;
+    }
+
+    .hero::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, rgba(22, 217, 119, 0.08), transparent 45%);
+      pointer-events: none;
+    }
+
+    .logo-wrap {
+      width: 124px;
+      height: 124px;
+      display: grid;
+      place-items: center;
+      border-radius: 26px;
+      border: 1px solid rgba(22, 217, 119, 0.28);
+      background: rgba(255,255,255,0.08);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.12),
+        0 18px 40px rgba(0,0,0,0.28);
+      position: relative;
+      z-index: 1;
+    }
+
+    .logo {
+      width: 105px;
+      height: auto;
+      filter: drop-shadow(0 8px 18px rgba(0,0,0,0.36));
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 1;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(22, 217, 119, 0.24);
+      color: #d8ffed;
+      background: rgba(22, 217, 119, 0.08);
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.3px;
+      margin-bottom: 14px;
+    }
+
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--bright);
+      box-shadow: 0 0 16px rgba(22, 217, 119, 0.95);
+    }
+
+    .hero h1 {
+      margin: 0;
+      color: var(--text);
+      font-size: 48px;
+      line-height: 1;
+      letter-spacing: -1.5px;
+    }
+
+    .hero h1 span {
+      color: var(--bright);
+      text-shadow: 0 0 28px rgba(22, 217, 119, 0.22);
+    }
+
+    .hero p {
+      max-width: 860px;
+      margin: 14px 0 0;
+      color: var(--muted);
+      font-size: 18px;
+      line-height: 1.55;
+    }
+
+    .kpi-note {
+      margin: 18px 2px 0;
+      color: var(--muted2);
+      font-size: 13px;
+    }
+
+    .alert {
+      display: none;
+      margin-top: 16px;
+      padding: 12px 14px;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 176, 32, 0.28);
+      background: rgba(255, 176, 32, 0.08);
+      color: #ffe2a9;
+      font-size: 13px;
+    }
+
+    .stats {
+      margin-top: 24px;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .stat-box {
+      position: relative;
+      overflow: hidden;
+      background: var(--card);
+      border-radius: 24px;
+      padding: 20px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow2);
+      backdrop-filter: blur(16px);
+      min-height: 125px;
+    }
+
+    .stat-box::after {
+      content: "";
+      position: absolute;
+      right: -46px;
+      top: -54px;
+      width: 130px;
+      height: 130px;
+      border-radius: 50%;
+      background: rgba(22, 217, 119, 0.11);
+      pointer-events: none;
+    }
+
+    .stat-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .stat-label {
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .stat-icon {
+      width: 38px;
+      height: 38px;
+      display: grid;
+      place-items: center;
+      border-radius: 14px;
+      background: rgba(22, 217, 119, 0.10);
+      border: 1px solid rgba(22, 217, 119, 0.20);
+      font-size: 18px;
+    }
+
+    .stat-value {
+      position: relative;
+      z-index: 1;
+      margin-top: 18px;
+      font-size: 38px;
+      line-height: 1;
+      font-weight: 900;
+      color: var(--text);
+      letter-spacing: -1px;
+    }
+
+    .stat-sub {
+      position: relative;
+      z-index: 1;
+      margin-top: 8px;
+      color: var(--muted2);
+      font-size: 12px;
+    }
+
+    .stat-box.primary {
+      border-color: rgba(22, 217, 119, 0.38);
+      background:
+        linear-gradient(135deg, rgba(22, 217, 119, 0.14), rgba(18, 41, 38, 0.78));
+    }
+
+    .stat-box.danger {
+      border-color: rgba(255, 59, 59, 0.68);
+      background:
+        radial-gradient(circle at 88% 4%, rgba(255, 59, 59, 0.26), transparent 34%),
+        linear-gradient(135deg, rgba(255, 59, 59, 0.24), rgba(18, 41, 38, 0.82));
+      box-shadow:
+        0 18px 45px rgba(0, 0, 0, 0.36),
+        0 0 38px rgba(255, 59, 59, 0.16);
+    }
+
+    .stat-box.danger .stat-value {
+      color: #ff4b4b;
+      text-shadow: 0 0 24px rgba(255, 59, 59, 0.38);
+    }
+
+    .stat-box.danger .stat-icon {
+      background: rgba(255, 59, 59, 0.20);
+      border-color: rgba(255, 59, 59, 0.46);
+    }
+
+    .stat-box.danger::after {
+      background: rgba(255, 59, 59, 0.24);
+    }
+
+    .quick-section {
+      margin-top: 22px;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 14px;
+      padding: 0 2px;
+    }
+
+    .section-title h2 {
+      margin: 0;
+      font-size: 20px;
+      letter-spacing: -0.35px;
+    }
+
+    .section-title p {
+      margin: 5px 0 0;
+      color: var(--muted2);
+      font-size: 13px;
+    }
+
+    .quick-cards {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .quick-card {
+      position: relative;
+      overflow: hidden;
+      background: var(--card);
+      border-radius: 26px;
+      padding: 22px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow2);
+      transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+      backdrop-filter: blur(16px);
+      min-height: 238px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .quick-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.92;
+    }
+
+    .quick-card::after {
+      content: "";
+      position: absolute;
+      right: -55px;
+      top: -65px;
+      width: 170px;
+      height: 170px;
+      border-radius: 50%;
+      pointer-events: none;
+    }
+
+    .quick-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 24px 60px rgba(0,0,0,0.42);
+    }
+
+    .quick-card.dashboard {
+      border-color: rgba(22, 217, 119, 0.48);
+      background:
+        linear-gradient(135deg, rgba(22, 217, 119, 0.18), rgba(18, 41, 38, 0.82));
+    }
+
+    .quick-card.dashboard::before {
+      background: linear-gradient(135deg, rgba(22, 217, 119, 0.12), transparent 58%);
+    }
+
+    .quick-card.dashboard::after {
+      background: radial-gradient(circle, rgba(22, 217, 119, 0.26), transparent 65%);
+    }
+
+    .quick-card.form {
+      border-color: rgba(24, 183, 255, 0.40);
+      background:
+        linear-gradient(135deg, rgba(24, 183, 255, 0.15), rgba(18, 41, 38, 0.82));
+    }
+
+    .quick-card.form::before {
+      background: linear-gradient(135deg, rgba(24, 183, 255, 0.12), transparent 58%);
+    }
+
+    .quick-card.form::after {
+      background: radial-gradient(circle, rgba(24, 183, 255, 0.25), transparent 65%);
+    }
+
+    .quick-card.report {
+      border-color: rgba(155, 92, 255, 0.42);
+      background:
+        linear-gradient(135deg, rgba(155, 92, 255, 0.16), rgba(18, 41, 38, 0.82));
+    }
+
+    .quick-card.report::before {
+      background: linear-gradient(135deg, rgba(155, 92, 255, 0.13), transparent 58%);
+    }
+
+    .quick-card.report::after {
+      background: radial-gradient(circle, rgba(155, 92, 255, 0.28), transparent 65%);
+    }
+
+    .quick-card.cinegetic {
+      border-color: rgba(24, 183, 255, 0.46);
+      background:
+        linear-gradient(135deg, rgba(24, 183, 255, 0.18), rgba(18, 41, 38, 0.82));
+    }
+
+    .quick-card.cinegetic::before {
+      background: linear-gradient(135deg, rgba(24, 183, 255, 0.13), transparent 58%);
+    }
+
+    .quick-card.cinegetic::after {
+      background: radial-gradient(circle, rgba(24, 183, 255, 0.30), transparent 65%);
+    }
+
+    .quick-card.users {
+      border-color: rgba(255, 176, 32, 0.42);
+      background:
+        linear-gradient(135deg, rgba(255, 176, 32, 0.14), rgba(18, 41, 38, 0.82));
+    }
+
+    .quick-card.users::before {
+      background: linear-gradient(135deg, rgba(255, 176, 32, 0.11), transparent 58%);
+    }
+
+    .quick-card.users::after {
+      background: radial-gradient(circle, rgba(255, 176, 32, 0.26), transparent 65%);
+    }
+
+    .quick-content {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+
+    .quick-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .quick-icon {
+      width: 54px;
+      height: 54px;
+      display: grid;
+      place-items: center;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+      font-size: 27px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+    }
+
+    .quick-badge {
+      padding: 7px 10px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing: 0.3px;
+      background: rgba(255,255,255,0.09);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: var(--text);
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    .quick-card.dashboard .quick-badge {
+      color: #061510;
+      background: linear-gradient(135deg, var(--bright), var(--teal));
+    }
+
+    .quick-card h3 {
+      margin: 0;
+      color: var(--text);
+      font-size: 21px;
+      letter-spacing: -0.4px;
+    }
+
+    .quick-card p {
+      color: var(--muted);
+      line-height: 1.5;
+      margin: 11px 0 18px;
+      font-size: 13.5px;
+    }
+
+    .btn {
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      margin-top: auto;
+      color: #061510;
+      text-decoration: none;
+      padding: 13px 16px;
+      border-radius: 16px;
+      font-weight: 900;
+      transition: transform 0.18s ease, filter 0.18s ease;
+      text-align: center;
+      font-size: 13.5px;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      filter: brightness(1.08);
+    }
+
+    .btn.dashboard-btn {
+      background: linear-gradient(135deg, var(--bright), var(--teal));
+      box-shadow: 0 14px 28px rgba(22, 217, 119, 0.18);
+    }
+
+    .btn.form-btn {
+      background: linear-gradient(135deg, var(--blue), var(--teal));
+      box-shadow: 0 14px 28px rgba(24, 183, 255, 0.14);
+    }
+
+    .btn.report-btn {
+      background: linear-gradient(135deg, var(--violet), var(--blue));
+      box-shadow: 0 14px 28px rgba(155, 92, 255, 0.14);
+      color: #061510;
+    }
+
+    .btn.cinegetic-btn {
+      background: linear-gradient(135deg, #18b7ff, #00f5d4);
+      box-shadow: 0 14px 28px rgba(24, 183, 255, 0.16);
+      color: #061510;
+    }
+
+    .btn.users-btn {
+      background: linear-gradient(135deg, var(--orange), #ffe08a);
+      box-shadow: 0 14px 28px rgba(255, 176, 32, 0.14);
+    }
+
+    .timeline-panel {
+      margin-top: 22px;
+      background:
+        linear-gradient(135deg, rgba(18, 41, 38, 0.84), rgba(7, 19, 17, 0.86));
+      border: 1px solid var(--border);
+      border-radius: 28px;
+      padding: 24px;
+      box-shadow: var(--shadow2);
+      backdrop-filter: blur(16px);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .timeline-panel::after {
+      content: "";
+      position: absolute;
+      right: -120px;
+      top: -150px;
+      width: 320px;
+      height: 320px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(0, 245, 212, 0.15), transparent 64%);
+      pointer-events: none;
+    }
+
+    .timeline-header {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+
+    .timeline-header h2 {
+      margin: 0;
+      font-size: 22px;
+      letter-spacing: -0.4px;
+    }
+
+    .timeline-header p {
+      margin: 7px 0 0;
+      color: var(--muted2);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .pill {
+      flex: 0 0 auto;
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 900;
+      color: #082018;
+      background: linear-gradient(135deg, var(--bright), var(--teal));
+      box-shadow: 0 10px 24px rgba(22, 217, 119, 0.14);
+      white-space: nowrap;
+    }
+
+    .timeline-chart {
+      position: relative;
+      z-index: 1;
+      height: 280px;
+      border-radius: 22px;
+      border: 1px solid rgba(148, 213, 190, 0.12);
+      background:
+        linear-gradient(to top, rgba(255,255,255,0.055) 1px, transparent 1px),
+        linear-gradient(to right, rgba(255,255,255,0.035) 1px, transparent 1px);
+      background-size: 100% 25%, 8.33% 100%;
+      overflow: hidden;
+    }
+
+    .area-svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .area-line {
+      fill: none;
+      stroke: var(--teal);
+      stroke-width: 3.2;
+      filter: drop-shadow(0 0 13px rgba(0, 245, 212, 0.50));
+    }
+
+    .area-line-glow {
+      fill: none;
+      stroke: rgba(22, 217, 119, 0.28);
+      stroke-width: 12;
+      filter: blur(2px);
+    }
+
+    .area-fill {
+      fill: url(#areaGradientIndex);
+      opacity: 1;
+    }
+
+    .area-fill-hot {
+      fill: url(#areaHotGradientIndex);
+      opacity: 0.45;
+    }
+
+    .area-point {
+      fill: var(--bright);
+      stroke: rgba(255,255,255,0.88);
+      stroke-width: 2;
+      filter: drop-shadow(0 0 8px rgba(22, 217, 119, 0.45));
+    }
+
+    .area-point.peak {
+      fill: var(--orange);
+      filter: drop-shadow(0 0 12px rgba(255, 176, 32, 0.70));
+    }
+
+    .area-hover-zone {
+      fill: transparent;
+      cursor: pointer;
+    }
+
+    .area-tooltip {
+      position: absolute;
+      z-index: 5;
+      transform: translate(-50%, -115%);
+      min-width: 124px;
+      padding: 8px 10px;
+      border-radius: 12px;
+      background: rgba(3, 12, 10, 0.94);
+      color: var(--text);
+      border: 1px solid rgba(148, 213, 190, 0.25);
+      box-shadow: 0 14px 34px rgba(0,0,0,0.34);
+      font-size: 12px;
+      font-weight: 800;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.15s ease;
+    }
+
+    .area-tooltip.visible {
+      opacity: 1;
+    }
+
+    .area-tooltip small {
+      display: block;
+      margin-top: 3px;
+      color: var(--muted2);
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .area-empty {
+      height: 100%;
+      display: grid;
+      place-items: center;
+      color: var(--muted2);
+      font-size: 13px;
+      padding: 16px;
+      text-align: center;
+    }
+
+    .month-axis {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 8px;
+      height: 18px;
+      z-index: 4;
+      pointer-events: none;
+    }
+
+    .month-label {
+      position: absolute;
+      bottom: 0;
+      transform: translateX(-50%);
+      color: rgba(214, 255, 238, 0.72);
+      font-size: 11px;
+      font-weight: 800;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.42);
+      white-space: nowrap;
+    }
+
+    .timeline-footer {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 12px;
+      color: var(--muted2);
+      font-size: 12px;
+    }
+
+    .section-grid {
+      margin-top: 22px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+
+    .panel {
+      background: var(--card2);
+      border: 1px solid var(--border);
+      border-radius: 26px;
+      padding: 22px;
+      box-shadow: var(--shadow2);
+      backdrop-filter: blur(16px);
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+
+    .panel h2 {
+      margin: 0;
+      font-size: 20px;
+      color: var(--text);
+      letter-spacing: -0.3px;
+    }
+
+    .panel p {
+      margin: 6px 0 0;
+      color: var(--muted2);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .bars {
+      display: grid;
+      gap: 13px;
+    }
+
+    .bar-row {
+      display: grid;
+      grid-template-columns: 140px 1fr 46px;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .bar-name {
+      color: var(--muted);
+      font-size: 13px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .bar-track {
+      height: 12px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .bar-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--green), var(--bright), var(--teal));
+      box-shadow: 0 0 18px rgba(22, 217, 119, 0.24);
+      transition: width 0.45s ease;
+    }
+
+    .bar-value {
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 900;
+      text-align: right;
+    }
+
+    .empty-chart {
+      color: var(--muted2);
+      font-size: 13px;
+      padding: 16px;
+      border-radius: 18px;
+      border: 1px dashed rgba(148, 213, 190, 0.22);
+      background: rgba(255,255,255,0.04);
+    }
+
+    .footer {
+      margin-top: 28px;
+      color: var(--muted2);
+      text-align: center;
+      font-size: 13px;
+      opacity: 0.95;
+    }
+
+    @media (max-width: 1250px) {
+      .quick-cards {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 980px) {
+      .stats,
+      .section-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .quick-cards {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 700px) {
+      body {
+        background-attachment: scroll;
+      }
+
+      .container {
+        padding: 20px 14px;
+      }
+
+      .hero {
+        grid-template-columns: 1fr;
+        text-align: center;
+        padding: 26px 20px;
+      }
+
+      .logo-wrap {
+        margin: auto;
+      }
+
+      .hero h1 {
+        font-size: 38px;
+      }
+
+      .hero p {
+        font-size: 16px;
+      }
+
+      .stats,
+      .section-grid,
+      .quick-cards {
+        grid-template-columns: 1fr;
+      }
+
+      .bar-row {
+        grid-template-columns: 105px 1fr 38px;
+      }
+
+      .timeline-chart {
+        height: 230px;
+      }
+
+      .timeline-header {
+        flex-direction: column;
+      }
+
+      .section-title {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .month-label {
+        font-size: 10px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <section class="hero">
+    <div class="logo-wrap">
+      <img class="logo" src="/ui/sigla.png" alt="Sigla Garda Forestiera">
+    </div>
+
+    <div class="hero-content">
+      <div class="eyebrow">
+        <span class="dot"></span>
+        Platforma operationala digitala
+      </div>
+
+      <h1>Platforma <span>GFN</span></h1>
+
+      <p>
+        Sistem digital pentru controale, harta operationala, statistici, rapoarte, raportari lunare si administrarea utilizatorilor.
+      </p>
+
+      <div class="kpi-note">
+        Date publice actualizate din controalele inregistrate in platforma.
+      </div>
+
+      <div id="statsAlert" class="alert">
+        Statisticile publice nu au putut fi incarcate.
+      </div>
+    </div>
+  </section>
+
+  <section class="stats" aria-label="Indicatori operationali">
+    <div class="stat-box primary">
+      <div class="stat-top">
+        <div class="stat-label">Controale azi</div>
+        <div class="stat-icon">LOC</div>
+      </div>
+      <div id="kpiToday" class="stat-value">0</div>
+      <div class="stat-sub">controale inregistrate astazi</div>
+    </div>
+
+    <div class="stat-box">
+      <div class="stat-top">
+        <div class="stat-label">Ultimele 7 zile</div>
+        <div class="stat-icon">KPI</div>
+      </div>
+      <div id="kpi7" class="stat-value">0</div>
+      <div class="stat-sub">activitate operationala recenta</div>
+    </div>
+
+    <div class="stat-box">
+      <div class="stat-top">
+        <div class="stat-label">Ultimele 30 zile</div>
+        <div class="stat-icon">SAT</div>
+      </div>
+      <div id="kpi30" class="stat-value">0</div>
+      <div class="stat-sub">controale in ultima luna</div>
+    </div>
+
+    <div class="stat-box danger">
+      <div class="stat-top">
+        <div class="stat-label">Neconforme 30 zile</div>
+        <div class="stat-icon">!</div>
+      </div>
+      <div id="kpiBad30" class="stat-value">0</div>
+      <div class="stat-sub">controale cu probleme in ultimele 30 zile</div>
+    </div>
+  </section>
+
+  <section class="quick-section" aria-label="Acces rapid dashboarduri">
+    <div class="section-title">
+      <div>
+        <h2>Dashboarduri, formulare si raportari</h2>
+        <p>Acces rapid catre harta controalelor, formularul de teren, raportarile institutionale si administrarea utilizatorilor.</p>
+      </div>
+      <div class="pill">ACCES RAPID</div>
+    </div>
+
+    <div class="quick-cards">
+
+      <div class="quick-card dashboard">
+        <div class="quick-content">
+          <div class="quick-top">
+            <div class="quick-icon">MAP</div>
+            <div class="quick-badge">PRINCIPAL</div>
+          </div>
+          <h3>Dashboard controale</h3>
+          <p>
+            Harta operationala cu puncte de control, filtre pe garda, perioada, rezultat, tip control si activitate inspectori.
+          </p>
+          <a class="btn dashboard-btn" href="/ui/map.html?v=20260623-coord-normalize-v62">Deschide dashboard -&gt;</a>
+        </div>
+      </div>
+
+      <div class="quick-card form">
+        <div class="quick-content">
+          <div class="quick-top">
+            <div class="quick-icon">FORM</div>
+            <div class="quick-badge">TEREN</div>
+          </div>
+          <h3>Formular control</h3>
+          <p>
+            Introducere controale, echipe, GPS, entitate controlata, constatari, fapte, prejudicii si masuri.
+          </p>
+          <a class="btn form-btn" href="/ui/control_form.html?v=legal2">Deschide formular</a>
+        </div>
+      </div>
+
+      <div class="quick-card report">
+        <div class="quick-content">
+          <div class="quick-top">
+            <div class="quick-icon">SEC</div>
+            <div class="quick-badge">RAPORTARE</div>
+          </div>
+          <h3>Memoriu de Paza</h3>
+          <p>
+            Raportare lunara pentru ocoalele silvice privind activitatea de paza, evenimentele constatate si datele operative.
+          </p>
+          <a class="btn report-btn" href="/ui/memoriu_paza.html?v=1">Completeaza raportarea</a>
+        </div>
+      </div>
+
+      <div class="quick-card cinegetic">
+        <div class="quick-content">
+          <div class="quick-top">
+            <div class="quick-icon">FOND</div>
+            <div class="quick-badge">CINEGETIC</div>
+          </div>
+          <h3>Raportari cinegetice</h3>
+          <p>
+            Raportare pentru fondurile cinegetice: contracte, permise, pagube, recoltari, cote, trofee si situatii lunare.
+          </p>
+          <a class="btn cinegetic-btn" href="/ui/raportari_cinegetice.html?v=1">Completeaza raportarea</a>
+        </div>
+      </div>
+
+      <div class="quick-card users">
+        <div class="quick-content">
+          <div class="quick-top">
+            <div class="quick-icon">USER</div>
+            <div class="quick-badge">ADMIN</div>
+          </div>
+          <h3>Administrare conturi</h3>
+          <p>
+            Aprobare utilizatori, schimbare roluri si gestionarea accesului in platforma.
+          </p>
+          <a class="btn users-btn" href="/ui/approve_users.html?v=dark2">Administrare utilizatori</a>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section class="timeline-panel" aria-label="Evolutia controalelor in timp">
+    <div class="timeline-header">
+      <div>
+        <h2>Evolutia controalelor in ultimele 3 luni</h2>
+        <p>
+          Graficul arata dinamica zilnica a controalelor inregistrate in platforma. Varful de activitate este evidentiat automat.
+        </p>
+      </div>
+      <div class="pill">3 LUNI</div>
+    </div>
+
+    <div id="timelineChart" class="timeline-chart">
+      <div class="area-empty">Se incarca evolutia controalelor...</div>
+    </div>
+
+    <div class="timeline-footer">
+      <span id="timelineStartLabel">acum 3 luni</span>
+      <span id="timelineEndLabel">ieri</span>
+    </div>
+  </section>
+
+  <section class="section-grid" aria-label="Mini grafice operationale">
+    <div class="panel">
+      <div class="panel-header">
+        <div>
+          <h2>Distributie rezultate controale</h2>
+          <p>Rezultatele sunt grupate dupa campul <strong>result</strong>.</p>
+        </div>
+        <div class="pill">LIVE</div>
+      </div>
+      <div id="resultBars" class="bars">
+        <div class="empty-chart">Se incarca datele...</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <div>
+          <h2>Controale pe tipuri</h2>
+          <p>Tipurile sunt citite din <strong>control_type</strong>, daca exista in endpoint.</p>
+        </div>
+        <div class="pill">CSS</div>
+      </div>
+      <div id="typeBars" class="bars">
+        <div class="empty-chart">Se incarca datele...</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="footer">
+    Garda Forestiera Nationala - Platforma operationala digitala
+  </div>
+
+</div>
+
+<script>
+  const PUBLIC_CONTROLS_ENDPOINT = "/public/controls/map";
+
+  const nonConformResults = new Set([
+    "neconform",
+    "sanctiune",
+    "sesizare_penala"
+  ]);
+
+  const labels = {
+    conform: "Conform",
+    neconform: "Neconform",
+    sanctiune: "Sanctiune",
+    sesizare_penala: "Sesizare penala",
+    avertisment: "Avertisment",
+    fond: "Fond",
+    tematic: "Tematic",
+    operativ: "Operativ",
+    sesizare: "Sesizare",
+    mixt: "Mixt",
+    ccml: "CCML",
+    depozit_material_lemnos: "Depozit material lemnos",
+    exploatare: "Exploatare",
+    punere_in_valoare: "Punere in valoare",
+    regenerari: "Regenerari",
+    control_de_fond: "Control de fond",
+    control_tematic: "Control tematic",
+    control_operativ: "Control operativ",
+    control_mixt: "Control mixt",
+    necunoscut: "Necunoscut"
+  };
+
+  function normalizeValue(value) {
+    if (value === null || value === undefined || value === "") {
+      return "necunoscut";
+    }
+
+    return String(value)
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, "_")
+      .replace(/-/g, "_");
+  }
+
+  function prettyLabel(value) {
+    const normalized = normalizeValue(value);
+
+    if (labels[normalized]) {
+      return labels[normalized];
+    }
+
+    return normalized
+      .replace(/_/g, " ")
+      .replace(/\b\w/g, char => char.toUpperCase());
+  }
+
+  function parseControlDate(control) {
+    if (!control || !control.created_at) {
+      return null;
+    }
+
+    const date = new Date(control.created_at);
+
+    if (Number.isNaN(date.getTime())) {
+      return null;
+    }
+
+    return date;
+  }
+
+  function isSameLocalDay(dateA, dateB) {
+    return dateA.getFullYear() === dateB.getFullYear()
+      && dateA.getMonth() === dateB.getMonth()
+      && dateA.getDate() === dateB.getDate();
+  }
+
+  function countByField(items, fieldName) {
+    return items.reduce((acc, item) => {
+      const key = normalizeValue(item[fieldName]);
+      acc[key] = (acc[key] || 0) + 1;
+      return acc;
+    }, {});
+  }
+
+  function setText(id, value) {
+    const element = document.getElementById(id);
+    if (element) {
+      element.textContent = value;
+    }
+  }
+
+  function showStatsAlert(message) {
+    const alert = document.getElementById("statsAlert");
+
+    if (alert) {
+      alert.textContent = message || "Statisticile publice nu au putut fi incarcate.";
+      alert.style.display = "block";
+    }
+  }
+
+  function hideStatsAlert() {
+    const alert = document.getElementById("statsAlert");
+
+    if (alert) {
+      alert.style.display = "none";
+    }
+  }
+
+  function renderBars(containerId, dataObject, emptyMessage) {
+    const container = document.getElementById(containerId);
+
+    if (!container) {
+      return;
+    }
+
+    const entries = Object.entries(dataObject || {})
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 7);
+
+    if (!entries.length) {
+      container.innerHTML = `<div class="empty-chart">${emptyMessage}</div>`;
+      return;
+    }
+
+    const maxValue = Math.max(...entries.map(entry => entry[1]), 1);
+
+    container.innerHTML = entries.map(([key, value]) => {
+      const percent = Math.max(5, Math.round((value / maxValue) * 100));
+
+      return `
+        <div class="bar-row">
+          <div class="bar-name" title="${prettyLabel(key)}">${prettyLabel(key)}</div>
+          <div class="bar-track">
+            <div class="bar-fill" style="width:${percent}%"></div>
+          </div>
+          <div class="bar-value">${value}</div>
+        </div>
+      `;
+    }).join("");
+  }
+
+  function formatShortDate(date) {
+    return date.toLocaleDateString("ro-RO", {
+      day: "2-digit",
+      month: "2-digit"
+    });
+  }
+
+  function formatAxisDate(date) {
+    return date.toLocaleDateString("ro-RO", {
+      day: "2-digit",
+      month: "short"
+    });
+  }
+
+  function formatMonthLabel(date) {
+    return date.toLocaleDateString("ro-RO", {
+      month: "short"
+    }).replace(".", "");
+  }
+
+  function getLocalDateKey(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }
+
+  function renderTimeline(controls) {
+    const container = document.getElementById("timelineChart");
+
+    if (!container) {
+      return;
+    }
+
+    if (!Array.isArray(controls)) {
+      controls = [];
+    }
+
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    yesterday.setHours(0, 0, 0, 0);
+
+    const days = [];
+
+    for (let i = 89; i >= 0; i--) {
+      const date = new Date(yesterday);
+      date.setDate(yesterday.getDate() - i);
+      date.setHours(0, 0, 0, 0);
+
+      days.push({
+        date,
+        key: getLocalDateKey(date),
+        count: 0
+      });
+    }
+
+    const startDate = days[0].date;
+    const endDate = days[days.length - 1].date;
+
+    setText("timelineStartLabel", formatAxisDate(startDate));
+    setText("timelineEndLabel", formatAxisDate(endDate));
+
+    const dayMap = {};
+
+    days.forEach(day => {
+      dayMap[day.key] = day;
+    });
+
+    controls.forEach(control => {
+      const parsedDate = parseControlDate(control);
+
+      if (!parsedDate) {
+        return;
+      }
+
+      const dateOnly = new Date(parsedDate);
+      dateOnly.setHours(0, 0, 0, 0);
+
+      const key = getLocalDateKey(dateOnly);
+
+      if (dayMap[key]) {
+        dayMap[key].count += 1;
+      }
+    });
+
+    const total = days.reduce((sum, day) => sum + day.count, 0);
+
+    if (total === 0) {
+      container.innerHTML = `
+        <div class="area-empty">
+          Nu exista controale inregistrate in ultimele 3 luni.
+        </div>
+      `;
+      return;
+    }
+
+    const maxCount = Math.max(...days.map(day => day.count), 1);
+
+    const width = 1000;
+    const height = 255;
+    const paddingTop = 18;
+    const paddingBottom = 36;
+    const paddingX = 18;
+    const chartHeight = height - paddingTop - paddingBottom;
+    const chartWidth = width - paddingX * 2;
+
+    const points = days.map((day, index) => {
+      const x = paddingX + (index / (days.length - 1)) * chartWidth;
+      const y = paddingTop + chartHeight - ((day.count / maxCount) * chartHeight);
+
+      return {
+        date: day.date,
+        count: day.count,
+        x,
+        y,
+        index
+      };
+    });
+
+    const linePath = points.map((point, index) => {
+      const command = index === 0 ? "M" : "L";
+      return `${command} ${point.x.toFixed(2)} ${point.y.toFixed(2)}`;
+    }).join(" ");
+
+    const areaPath = `
+      ${linePath}
+      L ${points[points.length - 1].x.toFixed(2)} ${height - paddingBottom}
+      L ${points[0].x.toFixed(2)} ${height - paddingBottom}
+      Z
+    `;
+
+    const visiblePoints = points.filter((point, index) => {
+      return point.count > 0 && (index % 6 === 0 || point.count === maxCount);
+    });
+
+    const pointCircles = visiblePoints.map(point => {
+      const isPeak = point.count === maxCount && maxCount > 0;
+
+      return `
+        <circle
+          class="area-point ${isPeak ? "peak" : ""}"
+          cx="${point.x.toFixed(2)}"
+          cy="${point.y.toFixed(2)}"
+          r="${isPeak ? 5 : 3.5}">
+        </circle>
+      `;
+    }).join("");
+
+    const hoverZones = points.map((point) => {
+      const zoneWidth = chartWidth / points.length;
+      const x = Math.max(0, point.x - zoneWidth / 2);
+
+      return `
+        <rect
+          class="area-hover-zone"
+          x="${x.toFixed(2)}"
+          y="0"
+          width="${zoneWidth.toFixed(2)}"
+          height="${height}"
+          data-date="${formatShortDate(point.date)}"
+          data-count="${point.count}"
+          data-x="${point.x.toFixed(2)}"
+          data-y="${point.y.toFixed(2)}">
+        </rect>
+      `;
+    }).join("");
+
+    const monthLabels = [];
+    const seenMonths = new Set();
+
+    points.forEach(point => {
+      const monthKey = `${point.date.getFullYear()}-${point.date.getMonth()}`;
+
+      if (!seenMonths.has(monthKey)) {
+        seenMonths.add(monthKey);
+
+        monthLabels.push(`
+          <span
+            class="month-label"
+            style="left:${(point.x / width) * 100}%">
+            ${formatMonthLabel(point.date)}
+          </span>
+        `);
+      }
+    });
+
+    container.innerHTML = `
+      <svg class="area-svg" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="areaGradientIndex" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#00f5d4" stop-opacity="0.62"></stop>
+            <stop offset="26%" stop-color="#16d977" stop-opacity="0.42"></stop>
+            <stop offset="62%" stop-color="#18b7ff" stop-opacity="0.22"></stop>
+            <stop offset="100%" stop-color="#16a34a" stop-opacity="0.03"></stop>
+          </linearGradient>
+
+          <linearGradient id="areaHotGradientIndex" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stop-color="#16d977" stop-opacity="0.05"></stop>
+            <stop offset="45%" stop-color="#00f5d4" stop-opacity="0.22"></stop>
+            <stop offset="70%" stop-color="#ffb020" stop-opacity="0.20"></stop>
+            <stop offset="100%" stop-color="#18b7ff" stop-opacity="0.08"></stop>
+          </linearGradient>
+        </defs>
+
+        <path class="area-fill" d="${areaPath}"></path>
+        <path class="area-fill-hot" d="${areaPath}"></path>
+        <path class="area-line-glow" d="${linePath}"></path>
+        <path class="area-line" d="${linePath}"></path>
+        ${pointCircles}
+        ${hoverZones}
+      </svg>
+
+      <div class="month-axis">
+        ${monthLabels.join("")}
+      </div>
+
+      <div id="areaTooltip" class="area-tooltip"></div>
+    `;
+
+    const tooltip = document.getElementById("areaTooltip");
+    const zones = container.querySelectorAll(".area-hover-zone");
+
+    if (!tooltip) {
+      return;
+    }
+
+    zones.forEach(zone => {
+      zone.addEventListener("mouseenter", () => {
+        const date = zone.getAttribute("data-date");
+        const count = zone.getAttribute("data-count");
+        const x = Number(zone.getAttribute("data-x"));
+        const y = Number(zone.getAttribute("data-y"));
+
+        tooltip.innerHTML = `${count} controale<small>${date}</small>`;
+        tooltip.style.left = `${(x / width) * 100}%`;
+        tooltip.style.top = `${(y / height) * 100}%`;
+        tooltip.classList.add("visible");
+      });
+
+      zone.addEventListener("mouseleave", () => {
+        tooltip.classList.remove("visible");
+      });
+    });
+  }
+
+  function resetStatsWithError() {
+    setText("kpiToday", 0);
+    setText("kpi7", 0);
+    setText("kpi30", 0);
+    setText("kpiBad30", 0);
+
+    renderTimeline([]);
+
+    renderBars("resultBars", {}, "Nu exista date disponibile pentru rezultate.");
+    renderBars("typeBars", {}, "Nu exista date disponibile pentru tipuri.");
+
+    showStatsAlert("Statisticile publice nu au putut fi incarcate.");
+  }
+
+  async function loadPublicStats() {
+    try {
+      hideStatsAlert();
+
+      const response = await fetch(PUBLIC_CONTROLS_ENDPOINT, {
+        method: "GET",
+        headers: {
+          "Accept": "application/json"
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error("Endpoint indisponibil: " + response.status);
+      }
+
+      const data = await response.json();
+
+      const controls = Array.isArray(data)
+        ? data
+        : Array.isArray(data.controls)
+          ? data.controls
+          : Array.isArray(data.items)
+            ? data.items
+            : [];
+
+      const now = new Date();
+
+      const startOfToday = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate()
+      );
+
+      const last7Days = new Date(now);
+      last7Days.setDate(now.getDate() - 7);
+
+      const last30Days = new Date(now);
+      last30Days.setDate(now.getDate() - 30);
+
+      let todayCount = 0;
+      let sevenDaysCount = 0;
+      let thirtyDaysCount = 0;
+      let badThirtyDaysCount = 0;
+
+      controls.forEach(control => {
+        const createdAt = parseControlDate(control);
+
+        if (!createdAt) {
+          return;
+        }
+
+        if (isSameLocalDay(createdAt, startOfToday)) {
+          todayCount += 1;
+        }
+
+        if (createdAt >= last7Days && createdAt <= now) {
+          sevenDaysCount += 1;
+        }
+
+        if (createdAt >= last30Days && createdAt <= now) {
+          thirtyDaysCount += 1;
+
+          const result = normalizeValue(control.result);
+
+          if (nonConformResults.has(result)) {
+            badThirtyDaysCount += 1;
+          }
+        }
+      });
+
+      setText("kpiToday", todayCount);
+      setText("kpi7", sevenDaysCount);
+      setText("kpi30", thirtyDaysCount);
+      setText("kpiBad30", badThirtyDaysCount);
+
+      try {
+        renderTimeline(controls);
+      } catch (chartError) {
+        console.error("Eroare la randarea graficului de evolutie:", chartError);
+
+        const container = document.getElementById("timelineChart");
+        if (container) {
+          container.innerHTML = `
+            <div class="area-empty">
+              Graficul de evolutie nu a putut fi afisat.
+            </div>
+          `;
+        }
+      }
+
+      try {
+        renderBars(
+          "resultBars",
+          countByField(controls, "result"),
+          "Nu exista rezultate de afisat."
+        );
+
+        renderBars(
+          "typeBars",
+          countByField(controls, "control_type"),
+          "Nu exista tipuri de control de afisat."
+        );
+      } catch (barError) {
+        console.error("Eroare la randarea mini-graficelor:", barError);
+      }
+
+    } catch (error) {
+      console.error("Eroare la incarcarea statisticilor publice:", error);
+      resetStatsWithError();
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", loadPublicStats);
+</script>
+
+</body>
+</html>

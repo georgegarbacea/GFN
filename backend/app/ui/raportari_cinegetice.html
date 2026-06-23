@@ -1,0 +1,2277 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>GFN - Raportari cinegetice</title>
+
+  <style>
+    :root {
+      --bg: #0f1f1d;
+      --card: rgba(18, 41, 38, 0.84);
+      --card2: rgba(10, 27, 24, 0.90);
+      --bright: #16d977;
+      --green: #16a34a;
+      --teal: #00f5d4;
+      --red: #ff3b3b;
+      --orange: #ffb020;
+      --blue: #18b7ff;
+      --violet: #9b5cff;
+      --text: #effff6;
+      --muted: #b9d8cb;
+      --muted2: #82ad9e;
+      --border: rgba(148, 213, 190, 0.22);
+      --shadow: 0 22px 70px rgba(0, 0, 0, 0.42);
+      --shadow2: 0 12px 34px rgba(0, 0, 0, 0.34);
+      --radius: 28px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 12% 8%, rgba(24, 183, 255, 0.16), transparent 34%),
+        radial-gradient(circle at 88% 18%, rgba(0, 245, 212, 0.10), transparent 30%),
+        linear-gradient(135deg, rgba(7, 19, 17, 0.94), rgba(15, 31, 29, 0.94)),
+        url("https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=1800&q=80");
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+      min-height: 100vh;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+      background-size: 44px 44px;
+      opacity: 0.35;
+      z-index: 0;
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      max-width: 1180px;
+      margin: auto;
+      padding: 24px 18px 120px;
+    }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      background: linear-gradient(135deg, rgba(18, 41, 38, 0.90), rgba(7, 19, 17, 0.80));
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 26px;
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-columns: 96px 1fr;
+      gap: 22px;
+      align-items: center;
+      backdrop-filter: blur(18px);
+      margin-bottom: 18px;
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      right: -105px;
+      top: -130px;
+      width: 310px;
+      height: 310px;
+      background: radial-gradient(circle, rgba(24, 183, 255, 0.30), transparent 62%);
+      pointer-events: none;
+    }
+
+    .logo-wrap {
+      width: 96px;
+      height: 96px;
+      display: grid;
+      place-items: center;
+      border-radius: 24px;
+      border: 1px solid rgba(24, 183, 255, 0.32);
+      background: rgba(255,255,255,0.08);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 0 18px 40px rgba(0,0,0,0.28);
+      position: relative;
+      z-index: 1;
+    }
+
+    .logo-wrap img {
+      width: 78px;
+      height: auto;
+      filter: drop-shadow(0 8px 18px rgba(0,0,0,0.36));
+    }
+
+    .hero-content { position: relative; z-index: 1; }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 11px;
+      border-radius: 999px;
+      border: 1px solid rgba(24, 183, 255, 0.34);
+      color: #d9f7ff;
+      background: rgba(24, 183, 255, 0.12);
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: 0.25px;
+      margin-bottom: 12px;
+    }
+
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--blue);
+      box-shadow: 0 0 16px rgba(24, 183, 255, 0.95);
+    }
+
+    h1, h2, h3 { margin-top: 0; }
+
+    h1 {
+      margin: 0;
+      color: var(--text);
+      font-size: 38px;
+      line-height: 1;
+      letter-spacing: -1.2px;
+    }
+
+    h1 span {
+      color: var(--teal);
+      text-shadow: 0 0 28px rgba(0, 245, 212, 0.22);
+    }
+
+    .subtitle {
+      max-width: 880px;
+      margin: 12px 0 0;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.5;
+    }
+
+    .status-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 11px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 900;
+      border: 1px solid rgba(148, 213, 190, 0.22);
+      background: rgba(255,255,255,0.06);
+      color: var(--muted);
+    }
+
+    .status-pill.online {
+      color: #d8ffed;
+      border-color: rgba(22, 217, 119, 0.32);
+      background: rgba(22, 217, 119, 0.10);
+    }
+
+    .status-pill.offline {
+      color: #ffd6d6;
+      border-color: rgba(255, 59, 59, 0.35);
+      background: rgba(255, 59, 59, 0.10);
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: 26px;
+      padding: 24px;
+      box-shadow: var(--shadow2);
+      border: 1px solid var(--border);
+      margin-bottom: 18px;
+      backdrop-filter: blur(18px);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::after {
+      content: "";
+      position: absolute;
+      right: -75px;
+      top: -85px;
+      width: 190px;
+      height: 190px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(24, 183, 255, 0.15), transparent 66%);
+      pointer-events: none;
+    }
+
+    .card-inner { position: relative; z-index: 1; }
+    .auth-card { max-width: 840px; margin: 0 auto 18px; }
+
+    .tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 18px;
+      padding: 5px;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.07);
+    }
+
+    .tabs button {
+      padding: 13px 16px;
+      border: none;
+      border-radius: 14px;
+      cursor: pointer;
+      background: transparent;
+      color: var(--muted);
+      font-weight: 900;
+      font-size: 14px;
+    }
+
+    .tabs button.active {
+      background: linear-gradient(135deg, var(--blue), var(--teal));
+      color: #061510;
+      box-shadow: 0 12px 26px rgba(24, 183, 255, 0.18);
+    }
+
+    .hidden { display: none !important; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .full { grid-column: 1 / -1; }
+
+    label {
+      display: block;
+      margin-bottom: 7px;
+      font-size: 13px;
+      font-weight: 900;
+      color: #dfffee;
+    }
+
+    input, select, textarea, button {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 13px 13px;
+      border: 1px solid rgba(148, 213, 190, 0.25);
+      border-radius: 15px;
+      font-size: 15px;
+      background: rgba(4, 18, 15, 0.58);
+      color: var(--text);
+    }
+
+    input::placeholder, textarea::placeholder { color: rgba(185, 216, 203, 0.55); }
+    select option { background: #0f1f1d; color: var(--text); }
+
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: rgba(24, 183, 255, 0.80);
+      box-shadow: 0 0 0 4px rgba(24, 183, 255, 0.14);
+    }
+
+    input[type="date"] {
+      color: #dfffee;
+      color-scheme: dark;
+      background:
+        linear-gradient(135deg, rgba(4, 18, 15, 0.72), rgba(22, 217, 119, 0.08));
+      border-color: rgba(22, 217, 119, 0.34);
+      font-weight: 800;
+    }
+
+    input[type="date"]::-webkit-calendar-picker-indicator {
+      cursor: pointer;
+      opacity: 1;
+      width: 22px;
+      height: 22px;
+      padding: 6px;
+      border-radius: 12px;
+      background-color: rgba(22, 217, 119, 0.14);
+      filter: brightness(0) saturate(100%) invert(73%) sepia(89%) saturate(486%) hue-rotate(92deg) brightness(105%) contrast(96%);
+    }
+
+    input[type="date"]::-webkit-calendar-picker-indicator:hover {
+      background-color: rgba(22, 217, 119, 0.26);
+      box-shadow: 0 0 18px rgba(22, 217, 119, 0.28);
+    }
+
+    input[type="date"]::-webkit-datetime-edit,
+    input[type="date"]::-webkit-datetime-edit-fields-wrapper,
+    input[type="date"]::-webkit-datetime-edit-text,
+    input[type="date"]::-webkit-datetime-edit-month-field,
+    input[type="date"]::-webkit-datetime-edit-day-field,
+    input[type="date"]::-webkit-datetime-edit-year-field {
+      color: #dfffee;
+    }
+
+    input[type="date"].date-input {
+      padding-right: 10px;
+    }
+
+    textarea {
+      min-height: 90px;
+      resize: vertical;
+      line-height: 1.45;
+    }
+
+    .btn, .btn-secondary, .btn-danger, .btn-neutral {
+      border: none;
+      cursor: pointer;
+      font-weight: 900;
+      letter-spacing: 0.1px;
+      transition: transform 0.18s ease, filter 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    .btn {
+      background: linear-gradient(135deg, var(--blue), var(--teal));
+      color: #061510;
+      box-shadow: 0 14px 28px rgba(24, 183, 255, 0.18);
+    }
+
+    .btn-secondary {
+      background: linear-gradient(135deg, var(--green), var(--bright), var(--teal));
+      color: #041512;
+      box-shadow: 0 14px 28px rgba(22, 217, 119, 0.14);
+    }
+
+    .btn-danger {
+      background: linear-gradient(135deg, #e11d48, var(--red));
+      color: white;
+      box-shadow: 0 14px 28px rgba(255, 59, 59, 0.14);
+    }
+
+    .btn-neutral {
+      background: rgba(255,255,255,0.08);
+      color: var(--text);
+      border: 1px solid rgba(148, 213, 190, 0.22);
+    }
+
+    .btn:hover, .btn-secondary:hover, .btn-danger:hover, .btn-neutral:hover {
+      transform: translateY(-2px);
+      filter: brightness(1.08);
+    }
+
+    .msg {
+      margin-top: 12px;
+      font-size: 14px;
+      line-height: 1.45;
+      padding: 12px 14px;
+      border-radius: 15px;
+      display: none;
+    }
+
+    .msg.ok {
+      display: block;
+      color: #d8ffed;
+      border: 1px solid rgba(22, 217, 119, 0.32);
+      background: rgba(22, 217, 119, 0.10);
+    }
+
+    .msg.err {
+      display: block;
+      color: #ffd6d6;
+      border: 1px solid rgba(255, 59, 59, 0.30);
+      background: rgba(255, 59, 59, 0.10);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(24, 183, 255, 0.12);
+      color: #d9f7ff;
+      border: 1px solid rgba(24, 183, 255, 0.30);
+      font-size: 12px;
+      font-weight: 900;
+      padding: 7px 10px;
+      border-radius: 999px;
+      margin-bottom: 14px;
+    }
+
+    .note, .field-hint, .auth-hint {
+      font-size: 12px;
+      color: var(--muted2);
+      margin-top: 6px;
+      line-height: 1.45;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+      padding: 14px;
+      border-radius: 20px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(148, 213, 190, 0.16);
+    }
+
+    .user-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .user-meta span {
+      display: inline-flex;
+      gap: 5px;
+      align-items: center;
+      padding: 7px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .inline-buttons {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .inline-buttons button, .inline-buttons a {
+      width: auto;
+      min-width: 145px;
+    }
+
+    .quick-nav {
+      display: none;
+      position: sticky;
+      top: 8px;
+      z-index: 10;
+      margin-bottom: 14px;
+      padding: 10px;
+      border-radius: 20px;
+      background: rgba(6, 18, 16, 0.82);
+      border: 1px solid rgba(148, 213, 190, 0.18);
+      backdrop-filter: blur(16px);
+      overflow-x: auto;
+      gap: 8px;
+    }
+
+    .quick-nav.visible { display: flex; }
+
+    .quick-nav a {
+      flex: 0 0 auto;
+      text-decoration: none;
+      color: var(--muted);
+      padding: 9px 11px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.08);
+      font-size: 12px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .quick-nav a:first-child {
+      color: #061510;
+      background: linear-gradient(135deg, var(--blue), var(--teal));
+    }
+
+    .section-box {
+      padding: 18px;
+      border-radius: 22px;
+      background: rgba(255,255,255,0.045);
+      border: 1px solid rgba(148, 213, 190, 0.14);
+      margin-bottom: 14px;
+      scroll-margin-top: 20px;
+    }
+
+    .section-title {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+      margin: 0 0 14px;
+    }
+
+    .section-title h3 {
+      margin: 0;
+      font-size: 20px;
+      letter-spacing: -0.35px;
+    }
+
+    .section-title small {
+      color: var(--muted2);
+      display: block;
+      margin-top: 5px;
+      line-height: 1.4;
+      font-size: 12px;
+    }
+
+    .chapter-pill {
+      padding: 7px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 900;
+      color: #061510;
+      background: linear-gradient(135deg, var(--blue), var(--teal));
+      white-space: nowrap;
+    }
+
+    .summary-box {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .summary-item {
+      padding: 14px;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(148, 213, 190, 0.14);
+    }
+
+    .summary-value {
+      font-size: 25px;
+      font-weight: 900;
+      color: var(--teal);
+      line-height: 1;
+    }
+
+    .summary-label {
+      margin-top: 6px;
+      color: var(--muted2);
+      font-size: 12px;
+    }
+
+    .report-section { scroll-margin-top: 80px; }
+    .rows { display: grid; gap: 14px; }
+
+    .report-row {
+      position: relative;
+      padding: 16px;
+      border-radius: 20px;
+      background: rgba(4, 18, 15, 0.42);
+      border: 1px solid rgba(148, 213, 190, 0.15);
+    }
+
+    .row-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .row-title {
+      font-size: 13px;
+      font-weight: 900;
+      color: var(--muted);
+    }
+
+    .row-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .row-actions button {
+      width: auto;
+      min-width: 82px;
+      padding: 9px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+    }
+
+    .fields-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .field.full-field { grid-column: 1 / -1; }
+
+    .empty-section {
+      color: var(--muted2);
+      font-size: 13px;
+      padding: 16px;
+      border-radius: 18px;
+      border: 1px dashed rgba(148, 213, 190, 0.22);
+      background: rgba(255,255,255,0.04);
+    }
+
+    .sticky-actions {
+      position: fixed;
+      left: 50%;
+      bottom: 16px;
+      transform: translateX(-50%);
+      z-index: 20;
+      width: min(1080px, calc(100% - 24px));
+      display: none;
+      gap: 10px;
+      padding: 12px;
+      border-radius: 22px;
+      background: rgba(6, 18, 16, 0.88);
+      border: 1px solid rgba(148, 213, 190, 0.20);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.40);
+      backdrop-filter: blur(18px);
+    }
+
+    .sticky-actions.visible { display: flex; }
+    .sticky-actions button { flex: 1; }
+
+
+
+    .questionnaire-dashboard {
+      border-color: rgba(24, 183, 255, 0.24);
+      background:
+        radial-gradient(circle at 88% 0%, rgba(24, 183, 255, 0.12), transparent 34%),
+        rgba(255,255,255,0.045);
+    }
+
+    .questionnaire-cards {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      margin-top: 10px;
+    }
+
+    .questionnaire-card {
+      position: relative;
+      overflow: hidden;
+      min-height: 245px;
+      display: flex;
+      flex-direction: column;
+      border-radius: 24px;
+      border: 1px solid rgba(148, 213, 190, 0.18);
+      background: rgba(4, 18, 15, 0.50);
+      box-shadow: 0 14px 34px rgba(0,0,0,0.26);
+      cursor: pointer;
+      transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    .questionnaire-card:hover {
+      transform: translateY(-5px);
+      border-color: rgba(0, 245, 212, 0.48);
+      box-shadow: 0 24px 58px rgba(0,0,0,0.36);
+    }
+
+    .questionnaire-art {
+      position: relative;
+      min-height: 118px;
+      overflow: hidden;
+      border-bottom: 1px solid rgba(148, 213, 190, 0.13);
+      background:
+        radial-gradient(circle at 18% 20%, rgba(255,255,255,0.20), transparent 13%),
+        radial-gradient(circle at 84% 12%, rgba(255,255,255,0.12), transparent 18%),
+        linear-gradient(135deg, rgba(24, 183, 255, 0.32), rgba(0, 245, 212, 0.08));
+    }
+
+    .questionnaire-art::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(120deg, transparent 0 38%, rgba(255,255,255,0.08) 39% 41%, transparent 42% 100%),
+        linear-gradient(to bottom, transparent, rgba(3, 12, 10, 0.46));
+      pointer-events: none;
+    }
+
+    .questionnaire-art::after {
+      content: attr(data-icon);
+      position: absolute;
+      right: 18px;
+      bottom: 10px;
+      font-size: 54px;
+      filter: drop-shadow(0 12px 18px rgba(0,0,0,0.35));
+      opacity: 0.98;
+    }
+
+    .questionnaire-art.contracte {
+      background:
+        radial-gradient(circle at 22% 22%, rgba(255, 224, 138, 0.34), transparent 18%),
+        linear-gradient(135deg, rgba(255, 176, 32, 0.32), rgba(18, 41, 38, 0.92));
+    }
+
+    .questionnaire-art.permise_permanente {
+      background:
+        radial-gradient(circle at 20% 18%, rgba(22, 217, 119, 0.26), transparent 18%),
+        linear-gradient(135deg, rgba(22, 217, 119, 0.30), rgba(18, 41, 38, 0.92));
+    }
+
+    .questionnaire-art.permise_temporare {
+      background:
+        radial-gradient(circle at 18% 22%, rgba(155, 92, 255, 0.30), transparent 18%),
+        linear-gradient(135deg, rgba(155, 92, 255, 0.32), rgba(18, 41, 38, 0.92));
+    }
+
+    .questionnaire-art.pagube_vanat {
+      background:
+        radial-gradient(circle at 18% 22%, rgba(255, 59, 59, 0.28), transparent 18%),
+        linear-gradient(135deg, rgba(255, 59, 59, 0.34), rgba(18, 41, 38, 0.94));
+    }
+
+    .questionnaire-art.recoltari_urs {
+      background:
+        radial-gradient(circle at 20% 18%, rgba(255, 176, 32, 0.24), transparent 18%),
+        linear-gradient(135deg, rgba(116, 74, 34, 0.72), rgba(18, 41, 38, 0.94));
+    }
+
+    .questionnaire-art.cote_mistret {
+      background:
+        radial-gradient(circle at 20% 18%, rgba(0, 245, 212, 0.22), transparent 18%),
+        linear-gradient(135deg, rgba(0, 245, 212, 0.26), rgba(18, 41, 38, 0.94));
+    }
+
+    .questionnaire-art.trofee {
+      background:
+        radial-gradient(circle at 20% 18%, rgba(255, 224, 138, 0.34), transparent 18%),
+        linear-gradient(135deg, rgba(255, 176, 32, 0.38), rgba(155, 92, 255, 0.20), rgba(18, 41, 38, 0.94));
+    }
+
+    .questionnaire-body {
+      position: relative;
+      z-index: 1;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+    }
+
+    .questionnaire-card h3 {
+      margin: 0;
+      font-size: 18px;
+      letter-spacing: -0.35px;
+    }
+
+    .questionnaire-card p {
+      margin: 9px 0 14px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .module-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-top: auto;
+    }
+
+    .module-badge {
+      padding: 7px 10px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 900;
+      color: #061510;
+      background: linear-gradient(135deg, var(--blue), var(--teal));
+      white-space: nowrap;
+    }
+
+    .module-count {
+      color: var(--muted2);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .active-banner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      padding: 18px;
+      margin-bottom: 14px;
+      border-radius: 22px;
+      border: 1px solid rgba(0, 245, 212, 0.24);
+      background:
+        radial-gradient(circle at 92% 4%, rgba(0, 245, 212, 0.16), transparent 30%),
+        rgba(255,255,255,0.05);
+      box-shadow: 0 14px 34px rgba(0,0,0,0.25);
+    }
+
+    .active-banner h3 {
+      margin: 3px 0 0;
+      font-size: 22px;
+    }
+
+    .active-banner p {
+      margin: 6px 0 0;
+      color: var(--muted2);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .active-eyebrow {
+      display: inline-flex;
+      padding: 6px 9px;
+      border-radius: 999px;
+      background: rgba(0, 245, 212, 0.10);
+      border: 1px solid rgba(0, 245, 212, 0.22);
+      color: #d8fffa;
+      font-size: 11px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.35px;
+    }
+
+    @media (max-width: 860px) {
+      .summary-box { grid-template-columns: 1fr 1fr; }
+      .fields-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 760px) {
+      body { background-attachment: scroll; }
+      .container { padding: 14px 12px 140px; }
+      .hero { grid-template-columns: 1fr; text-align: center; padding: 22px 18px; }
+      .logo-wrap { margin: auto; }
+      h1 { font-size: 34px; }
+      .subtitle { font-size: 15px; }
+      .grid, .summary-box { grid-template-columns: 1fr; }
+      .tabs { grid-template-columns: 1fr; }
+      .inline-buttons { flex-direction: column; align-items: stretch; }
+      .inline-buttons button, .inline-buttons a { width: 100%; min-width: 0; }
+      .card { padding: 18px; border-radius: 22px; }
+      .section-box { padding: 14px; }
+      input, select, textarea, button { font-size: 16px; min-height: 50px; }
+      .topbar { align-items: stretch; }
+      .user-meta { flex-direction: column; }
+      .user-meta span { justify-content: center; }
+      .sticky-actions { flex-direction: column; }
+      .section-title { flex-direction: column; }
+      .row-header { align-items: flex-start; flex-direction: column; }
+      .row-actions { width: 100%; }
+      .row-actions button { width: 100%; }
+    }
+  </style>
+</head>
+
+<body>
+<div class="container">
+
+  <section class="hero">
+    <div class="logo-wrap">
+      <img src="/ui/sigla.png" alt="Sigla Garda Forestiera">
+    </div>
+
+    <div class="hero-content">
+      <div class="eyebrow">
+        <span class="dot"></span>
+        Raportare fonduri cinegetice
+      </div>
+
+      <h1>Raportari cinegetice <span>GFN</span></h1>
+
+      <div class="subtitle">
+        Formular digital pentru gestionarii fondurilor cinegetice: contracte de gestionare, permise de vanatoare, pagube produse de vanat, recoltari urs brun, cote mistret si trofee.
+      </div>
+
+      <div class="status-row">
+        <div id="connectionStatus" class="status-pill online">● Online</div>
+        <div id="draftStatus" class="status-pill">Draft local: neverificat</div>
+        <div id="authStatus" class="status-pill">Neautentificat</div>
+      </div>
+    </div>
+  </section>
+
+  <div id="authCard" class="card auth-card">
+    <div class="card-inner">
+      <div class="tabs">
+        <button id="tabLoginBtn" class="active" onclick="showTab('login')">Autentificare</button>
+        <button id="tabRegisterBtn" onclick="showTab('register')">Creare cont</button>
+      </div>
+
+      <div id="loginTab" class="auth-box">
+        <div class="badge">Acces pentru raportare cinegetica</div>
+
+        <div class="grid">
+          <div class="full">
+            <label>Email institutional</label>
+            <input id="loginEmail" type="email" placeholder="prenume.nume@gfn.gov.ro" />
+          </div>
+
+          <div class="full">
+            <label>Parola</label>
+            <input id="loginPassword" type="password" placeholder="Introdu parola" />
+          </div>
+        </div>
+
+        <div class="inline-buttons" style="margin-top: 14px;">
+          <button class="btn" onclick="login()">Autentificare</button>
+        </div>
+
+        <div class="auth-hint">
+          Dupa autentificare, se deschide formularul de raportare pentru fondul cinegetic.
+        </div>
+
+        <div id="loginMsg" class="msg"></div>
+      </div>
+
+      <div id="registerTab" class="hidden auth-box">
+        <div class="badge">Cont nou</div>
+
+        <div class="grid">
+          <div>
+            <label>Nume</label>
+            <input id="registerLastName" type="text" placeholder="Popescu" />
+          </div>
+
+          <div>
+            <label>Prenume</label>
+            <input id="registerFirstName" type="text" placeholder="Ion" />
+          </div>
+
+          <div class="full">
+            <label>Email institutional</label>
+            <input id="registerEmail" type="email" placeholder="prenume.nume@gfn.gov.ro" />
+            <div class="field-hint">Foloseste adresa de email cu care vei lucra in platforma.</div>
+          </div>
+
+          <div>
+            <label>Parola</label>
+            <input id="registerPassword" type="password" placeholder="Creeaza o parola" />
+          </div>
+
+          <div>
+            <label>Confirmare parola</label>
+            <input id="registerPassword2" type="password" placeholder="Reintrodu parola" />
+          </div>
+        </div>
+
+        <div class="inline-buttons" style="margin-top: 14px;">
+          <button class="btn-secondary" onclick="registerAccount()">Trimite cererea de cont</button>
+        </div>
+
+        <div class="auth-hint">
+          Contul creat intra in asteptare si trebuie aprobat inainte de utilizare.
+        </div>
+
+        <div id="registerMsg" class="msg"></div>
+      </div>
+    </div>
+  </div>
+
+  <nav id="quickNav" class="quick-nav">
+    <a href="#appCard">Start</a>
+    <a href="#questionnaireDashboard">Chestionare</a>
+    <a id="activeQuestionnaireNav" href="#sectionsContainer">Chestionar activ</a>
+    <a href="#finalizare">Finalizare</a>
+  </nav>
+
+  <div id="appCard" class="card hidden" style="display:none;">
+    <div class="card-inner">
+
+      <div class="topbar">
+        <div class="user-meta">
+          <span><b>Autentificat ca:</b> <span id="currentUser">-</span></span>
+          <span><b>Rol:</b> <span id="currentRole">-</span></span>
+        </div>
+
+        <div class="inline-buttons">
+          <a class="btn-neutral" href="/ui/index.html" style="text-decoration:none; display:inline-flex; align-items:center; justify-content:center; padding:13px 18px; border-radius:15px;">Inapoi la index</a>
+          <button class="btn-neutral" type="button" onclick="saveDraft()">Salveaza draft</button>
+          <button class="btn-neutral" type="button" onclick="loadDraft()">Incarca draft</button>
+          <button class="btn-danger" type="button" onclick="logout()">Logout</button>
+        </div>
+      </div>
+
+      <div class="section-box">
+        <div class="section-title">
+          <div>
+            <h3>Date generale raportare</h3>
+            <small>Aceste date identifica gestionarul si fondul cinegetic pentru care se transmite raportarea.</small>
+          </div>
+          <div class="chapter-pill">START</div>
+        </div>
+
+        <div class="grid">
+          <div>
+            <label>Luna raportarii</label>
+            <select id="lunaRaportare">
+              <option value="">-- selecteaza luna --</option>
+              <option value="01">Ianuarie</option>
+              <option value="02">Februarie</option>
+              <option value="03">Martie</option>
+              <option value="04">Aprilie</option>
+              <option value="05">Mai</option>
+              <option value="06">Iunie</option>
+              <option value="07">Iulie</option>
+              <option value="08">August</option>
+              <option value="09">Septembrie</option>
+              <option value="10">Octombrie</option>
+              <option value="11">Noiembrie</option>
+              <option value="12">Decembrie</option>
+            </select>
+          </div>
+
+          <div>
+            <label>An raportare</label>
+            <input id="anRaportare" type="number" min="2024" max="2100" placeholder="2026" />
+          </div>
+
+          <div>
+            <label>Garda Forestiera</label>
+            <select id="gardaForestiera">
+              <option value="">-- selecteaza --</option>
+              <option value="GF Brasov">GF Brasov</option>
+              <option value="GF Bucuresti">GF Bucuresti</option>
+              <option value="GF Cluj">GF Cluj</option>
+              <option value="GF Focsani">GF Focsani</option>
+              <option value="GF Oradea">GF Oradea</option>
+              <option value="GF Ploiesti">GF Ploiesti</option>
+              <option value="GF Ramnicu Valcea">GF Ramnicu Valcea</option>
+              <option value="GF Suceava">GF Suceava</option>
+              <option value="GF Timisoara">GF Timisoara</option>
+            </select>
+          </div>
+
+          <div>
+            <label>Judet</label>
+            <select id="judet">
+              <option value="">-- selecteaza judetul --</option>
+              <option value="Alba">Alba</option>
+              <option value="Arad">Arad</option>
+              <option value="Arges">Arges</option>
+              <option value="Bacau">Bacau</option>
+              <option value="Bihor">Bihor</option>
+              <option value="Bistrita-Nasaud">Bistrita-Nasaud</option>
+              <option value="Botosani">Botosani</option>
+              <option value="Brasov">Brasov</option>
+              <option value="Braila">Braila</option>
+              <option value="Buzau">Buzau</option>
+              <option value="Caras-Severin">Caras-Severin</option>
+              <option value="Calarasi">Calarasi</option>
+              <option value="Cluj">Cluj</option>
+              <option value="Constanta">Constanta</option>
+              <option value="Covasna">Covasna</option>
+              <option value="Dambovita">Dambovita</option>
+              <option value="Dolj">Dolj</option>
+              <option value="Galati">Galati</option>
+              <option value="Giurgiu">Giurgiu</option>
+              <option value="Gorj">Gorj</option>
+              <option value="Harghita">Harghita</option>
+              <option value="Hunedoara">Hunedoara</option>
+              <option value="Ialomita">Ialomita</option>
+              <option value="Iasi">Iasi</option>
+              <option value="Ilfov">Ilfov</option>
+              <option value="Maramures">Maramures</option>
+              <option value="Mehedinti">Mehedinti</option>
+              <option value="Mures">Mures</option>
+              <option value="Neamt">Neamt</option>
+              <option value="Olt">Olt</option>
+              <option value="Prahova">Prahova</option>
+              <option value="Satu Mare">Satu Mare</option>
+              <option value="Salaj">Salaj</option>
+              <option value="Sibiu">Sibiu</option>
+              <option value="Suceava">Suceava</option>
+              <option value="Teleorman">Teleorman</option>
+              <option value="Timis">Timis</option>
+              <option value="Tulcea">Tulcea</option>
+              <option value="Vaslui">Vaslui</option>
+              <option value="Valcea">Valcea</option>
+              <option value="Vrancea">Vrancea</option>
+              <option value="Bucuresti">Bucuresti</option>
+            </select>
+          </div>
+
+          <div class="full">
+            <label>Denumire gestionar</label>
+            <input id="denumireGestionar" type="text" placeholder="Denumirea gestionarului fondului cinegetic" />
+          </div>
+
+          <div class="full">
+            <label>Date identificare gestionar</label>
+            <textarea id="dateIdentificareGestionar" placeholder="Adresa, CIF/CUI, telefon, email"></textarea>
+          </div>
+
+          <div>
+            <label>Fond cinegetic - numar</label>
+            <input id="fondNr" type="text" placeholder="Ex: 12" />
+          </div>
+
+          <div>
+            <label>Fond cinegetic - denumire</label>
+            <input id="fondDenumire" type="text" placeholder="Ex: Valea ..." />
+          </div>
+
+          <div class="full">
+            <label>Observatii generale</label>
+            <textarea id="observatiiGenerale" placeholder="Observatii generale pentru aceasta raportare"></textarea>
+          </div>
+
+          <div class="full">
+            <div class="update-info">
+              <strong>Important:</strong> datele se actualizeaza ori de cate ori apar modificari si, in orice caz, cel putin lunar.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="summary-box">
+        <div class="summary-item">
+          <div id="summaryRows" class="summary-value">0</div>
+          <div class="summary-label">randuri raportate</div>
+        </div>
+        <div class="summary-item">
+          <div id="summaryCompleted" class="summary-value">0</div>
+          <div class="summary-label">campuri completate</div>
+        </div>
+        <div class="summary-item">
+          <div id="summarySections" class="summary-value">7</div>
+          <div class="summary-label">sectiuni</div>
+        </div>
+        <div class="summary-item">
+          <div id="summaryLastSave" class="summary-value">-</div>
+          <div class="summary-label">ultima salvare locala</div>
+        </div>
+      </div>
+
+      <div id="questionnaireDashboard" class="section-box questionnaire-dashboard">
+        <div class="section-title">
+          <div>
+            <h3>Alege chestionarul de completat</h3>
+            <small>Fiecare raportare este separata. Completezi doar chestionarul relevant si il trimiti separat.</small>
+          </div>
+          <div class="chapter-pill">DASHBOARD</div>
+        </div>
+
+        <div id="questionnaireCards" class="questionnaire-cards"></div>
+      </div>
+
+      <div id="activeQuestionnaireBanner" class="active-banner hidden" style="display:none;">
+        <div>
+          <div class="active-eyebrow">Chestionar activ</div>
+          <h3 id="activeQuestionnaireTitle">-</h3>
+          <p id="activeQuestionnaireHint">Completeaza randurile necesare, apoi salveaza sau trimite raportarea.</p>
+        </div>
+        <button class="btn-neutral" type="button" onclick="backToQuestionnaireDashboard()">Alege alt chestionar</button>
+      </div>
+
+      <div id="sectionsContainer"></div>
+
+      <div id="finalizare" class="section-box hidden" style="display:none;">
+        <div class="section-title">
+          <div>
+            <h3>Finalizare raportare</h3>
+            <small>Poti salva draftul local, exporta JSON sau transmite raportarea cand endpointul backend este disponibil.</small>
+          </div>
+          <div class="chapter-pill">FINAL</div>
+        </div>
+
+        <div class="inline-buttons">
+          <button class="btn" type="button" onclick="submitReport()">Trimite raportarea</button>
+          <button class="btn-neutral" type="button" onclick="saveDraft()">Salveaza draft local</button>
+          <button class="btn-secondary" type="button" onclick="exportJson()">Exporta JSON</button>
+          <button class="btn-danger" type="button" onclick="clearDraft()">Sterge draft</button>
+        </div>
+
+        <div id="reportMsg" class="msg"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div id="stickyActions" class="sticky-actions" style="display:none;">
+  <button class="btn-neutral" type="button" onclick="saveDraft()">Salveaza draft</button>
+  <button class="btn" type="button" onclick="submitReport()">Trimite raportarea</button>
+</div>
+
+<script>
+  const REPORT_ENDPOINT = "/raportari-cinegetice";
+  const DRAFT_KEY = "gfn_raportari_cinegetice_draft_v5_judete_calendar";
+
+  let autosaveTimer = null;
+  let sectionRows = {};
+  let currentSectionKey = null;
+
+  const JUDETE = [
+    "Alba",
+    "Arad",
+    "Arges",
+    "Bacau",
+    "Bihor",
+    "Bistrita-Nasaud",
+    "Botosani",
+    "Brasov",
+    "Braila",
+    "Buzau",
+    "Caras-Severin",
+    "Calarasi",
+    "Cluj",
+    "Constanta",
+    "Covasna",
+    "Dambovita",
+    "Dolj",
+    "Galati",
+    "Giurgiu",
+    "Gorj",
+    "Harghita",
+    "Hunedoara",
+    "Ialomita",
+    "Iasi",
+    "Ilfov",
+    "Maramures",
+    "Mehedinti",
+    "Mures",
+    "Neamt",
+    "Olt",
+    "Prahova",
+    "Satu Mare",
+    "Salaj",
+    "Sibiu",
+    "Suceava",
+    "Teleorman",
+    "Timis",
+    "Tulcea",
+    "Vaslui",
+    "Valcea",
+    "Vrancea",
+    "Bucuresti"
+  ];
+
+  function buildJudetOptions(selectedValue = "") {
+    return ["", ...JUDETE].map(judet => {
+      const label = judet || "-- selecteaza judetul --";
+      const selected = String(selectedValue) === String(judet) ? "selected" : "";
+      return `<option value="${escapeHtml(judet)}" ${selected}>${escapeHtml(label)}</option>`;
+    }).join("");
+  }
+
+  function populateGeneralJudet(selectedValue = "") {
+    const select = document.getElementById("judet");
+    if (!select) return;
+    select.innerHTML = buildJudetOptions(selectedValue);
+  }
+
+  const reportSections = [
+    {
+      key: "contracte",
+      title: "Contracte de gestionare",
+      badge: "CONTRACTE",
+      hint: "Date privind contractul de gestionare a fondului cinegetic.",
+      fields: [
+        { key: "nr_contract", label: "Nr. contract", type: "text" },
+        { key: "data_contract", label: "Incheiat la data", type: "date" },
+        { key: "valabil_pana", label: "Valabil pana la data", type: "date" },
+        { key: "act_prelungire_nr", label: "Act aditional prelungire - nr.", type: "text" },
+        { key: "act_prelungire_data", label: "Act aditional prelungire - data", type: "date" },
+        { key: "act_prelungire_valabilitate", label: "Valabilitate act prelungire", type: "text" },
+        { key: "act_modificare_tarif_nr", label: "Act aditional modificare tarif - nr.", type: "text" },
+        { key: "act_modificare_tarif_data", label: "Act aditional modificare tarif - data", type: "date" },
+        { key: "act_cesiune_nr", label: "Act aditional cesiune - nr.", type: "text" },
+        { key: "act_cesiune_data", label: "Act aditional cesiune - data", type: "date" },
+        { key: "tarif_gestionare_euro", label: "Valoarea tarifului de gestionare (euro)", type: "number" },
+        { key: "tip_atribuire", label: "Tip atribuire", type: "select", options: ["", "Atribuire directa", "Licitatie"] },
+        { key: "observatii", label: "Observatii", type: "textarea", full: true }
+      ]
+    },
+    {
+      key: "permise_permanente",
+      title: "Permise de vanatoare permanente",
+      badge: "PERMANENTE",
+      hint: "Situatia permiselor permanente eliberate.",
+      fields: [
+        { key: "asociatie", label: "Asociatia de vanatoare / gestionar", type: "text" },
+        { key: "titular", label: "Titular permis permanent - nume si prenume", type: "text" },
+        { key: "serie_numar", label: "Seria si numarul permisului permanent", type: "text" },
+        { key: "data_eliberarii", label: "Data eliberarii", type: "date" },
+        { key: "observatii", label: "Observatii", type: "textarea", full: true }
+      ]
+    },
+    {
+      key: "permise_temporare",
+      title: "Permise de vanatoare temporare",
+      badge: "TEMPORARE",
+      hint: "Situatia permiselor temporare eliberate.",
+      fields: [
+        { key: "asociatie", label: "Asociatia de vanatoare / gestionar", type: "text" },
+        { key: "titular", label: "Titular permis temporar - nume si prenume", type: "text" },
+        { key: "serie_numar", label: "Seria si numarul permisului temporar", type: "text" },
+        { key: "data_eliberarii", label: "Data eliberarii", type: "date" },
+        { key: "observatii", label: "Observatii", type: "textarea", full: true }
+      ]
+    },
+    {
+      key: "pagube_vanat",
+      title: "Pagube produse de vanat",
+      badge: "PAGUBE",
+      hint: "Pagube produse de exemplare din specii de interes cinegetic.",
+      fields: [
+        { key: "localitate_sector", label: "Localitatea / sectorul de drum unde s-a produs paguba", type: "text", full: true },
+        { key: "persoana_pagubita", label: "Persoana pagubita - nume si prenume", type: "text" },
+        { key: "cerere_nr", label: "Cererea persoanei pagubite - nr.", type: "text" },
+        { key: "cerere_data", label: "Cererea persoanei pagubite - data", type: "date" },
+        { key: "convocare_uat_nr", label: "Convocare UAT - nr.", type: "text" },
+        { key: "convocare_uat_data", label: "Convocare UAT - data", type: "date" },
+        { key: "proces_verbal_nr", label: "Proces-verbal pagube - nr.", type: "text" },
+        { key: "proces_verbal_data", label: "Proces-verbal pagube - data", type: "date" },
+        { key: "decizie_nr", label: "Decizia - nr.", type: "text" },
+        { key: "decizie_data", label: "Decizia - data", type: "date" },
+        { key: "bun_afectat", label: "Cultura agricola / silvica / animale / accident rutier", type: "textarea", full: true },
+        { key: "suprafata_sau_animale", label: "Suprafata afectata (ha) / nr. animale afectate", type: "text" },
+        { key: "specie_paguba", label: "Specia care a produs paguba", type: "text" },
+        { key: "valoare_despagubire_lei", label: "Valoarea despagubirii aprobate (lei)", type: "number" },
+        { key: "raspundere_civila", label: "Raspundere civila", type: "select", options: ["", "Gestionarul fondului cinegetic", "Garda forestiera", "Administratorul drumului", "Conducatorul autovehiculului", "Alta situatie"] },
+        { key: "plata_despagubire", label: "S-a efectuat plata despagubirii?", type: "select", options: ["", "DA", "NU", "Nu este cazul"] },
+        { key: "document_plata", label: "Document justificativ plata", type: "text" },
+        { key: "observatii", label: "Observatii", type: "textarea", full: true }
+      ]
+    },
+    {
+      key: "recoltari_urs",
+      title: "Recoltari urs brun",
+      badge: "URS BRUN",
+      hint: "Raportarea actiunilor de recoltare a exemplarelor din specia urs brun.",
+      fields: [
+        { key: "cota_preventie", label: "Cota aprobata - preventie", type: "number" },
+        { key: "cota_interventie", label: "Cota aprobata - interventie", type: "number" },
+        { key: "comisie", label: "Comisie", type: "textarea", full: true },
+        { key: "data_recoltarii", label: "Data recoltarii", type: "date" },
+        { key: "metoda_recoltarii", label: "Metoda recoltarii", type: "text" },
+        { key: "sex", label: "Sex", type: "select", options: ["", "Mascul", "Femela", "Necunoscut"] },
+        { key: "varsta", label: "Varsta", type: "text" },
+        { key: "puncte_cic_craniu", label: "Puncte CIC craniu", type: "number" },
+        { key: "puncte_cic_blana", label: "Puncte CIC blana", type: "number" },
+        { key: "documente_justificative", label: "Documente justificative - tip, nr., data", type: "textarea", full: true }
+      ]
+    },
+    {
+      key: "cote_mistret",
+      title: "Realizare cote mistret",
+      badge: "MISTRET",
+      hint: "Situatia realizarii cotelor de recolta la specia mistret.",
+      fields: [
+        { key: "recoltate_mascul", label: "Exemplare recoltate - mascul", type: "number" },
+        { key: "recoltate_femela_adulta", label: "Exemplare recoltate - femela adulta", type: "number" },
+        { key: "recoltate_femela_subadulta", label: "Exemplare recoltate - femela subadulta", type: "number" },
+        { key: "morti_mascul", label: "Mistreti gasiti morti - mascul", type: "number" },
+        { key: "morti_femela_adulta", label: "Mistreti gasiti morti - femela adulta", type: "number" },
+        { key: "morti_femela_subadulta", label: "Mistreti gasiti morti - femela subadulta", type: "number" },
+        { key: "data_recoltarii", label: "Data recoltarii exemplarului", type: "date" },
+        { key: "rezultat_laborator", label: "Rezultatul analizelor de laborator", type: "text" },
+        { key: "cota_aprobata", label: "Cota aprobata / suplimentari / reasezari", type: "number" },
+        { key: "cota_nerealizata", label: "Cota nerealizata", type: "number" },
+        { key: "observatii", label: "Observatii", type: "textarea", full: true }
+      ]
+    },
+    {
+      key: "trofee",
+      title: "Trofee specii de interes cinegetic",
+      badge: "TROFEE",
+      hint: "Situatia numarului de trofee de vanat recoltate de pe fondurile cinegetice gestionate.",
+      fields: [
+        { key: "fond_nr", label: "Fond cinegetic - nr.", type: "text" },
+        { key: "fond_denumire", label: "Fond cinegetic - denumire", type: "text" },
+        { key: "judet", label: "Judet", type: "select", options: JUDETE },
+        { key: "gestionar", label: "Gestionar", type: "text" },
+        { key: "garda_forestiera", label: "Garda Forestiera", type: "text" },
+
+        { key: "cerb_comun_total", label: "Cerb comun - total trofee", type: "number" },
+        { key: "cerb_comun_aur", label: "Cerb comun - aur", type: "number" },
+        { key: "cerb_comun_argint", label: "Cerb comun - argint", type: "number" },
+        { key: "cerb_comun_bronz", label: "Cerb comun - bronz", type: "number" },
+        { key: "cerb_comun_nemedaliabil", label: "Cerb comun - nemedaliabil", type: "number" },
+
+        { key: "cerb_lopatar_total", label: "Cerb lopatar - total trofee", type: "number" },
+        { key: "cerb_lopatar_aur", label: "Cerb lopatar - aur", type: "number" },
+        { key: "cerb_lopatar_argint", label: "Cerb lopatar - argint", type: "number" },
+        { key: "cerb_lopatar_bronz", label: "Cerb lopatar - bronz", type: "number" },
+        { key: "cerb_lopatar_nemedaliabil", label: "Cerb lopatar - nemedaliabil", type: "number" },
+
+        { key: "caprior_total", label: "Caprior - total trofee", type: "number" },
+        { key: "caprior_aur", label: "Caprior - aur", type: "number" },
+        { key: "caprior_argint", label: "Caprior - argint", type: "number" },
+        { key: "caprior_bronz", label: "Caprior - bronz", type: "number" },
+        { key: "caprior_nemedaliabil", label: "Caprior - nemedaliabil", type: "number" },
+
+        { key: "capra_neagra_mascul_total", label: "Capra neagra mascul - total trofee", type: "number" },
+        { key: "capra_neagra_mascul_aur", label: "Capra neagra mascul - aur", type: "number" },
+        { key: "capra_neagra_mascul_argint", label: "Capra neagra mascul - argint", type: "number" },
+        { key: "capra_neagra_mascul_bronz", label: "Capra neagra mascul - bronz", type: "number" },
+        { key: "capra_neagra_mascul_nemedaliabil", label: "Capra neagra mascul - nemedaliabil", type: "number" },
+
+        { key: "capra_neagra_femela_total", label: "Capra neagra femela - total trofee", type: "number" },
+        { key: "capra_neagra_femela_aur", label: "Capra neagra femela - aur", type: "number" },
+        { key: "capra_neagra_femela_argint", label: "Capra neagra femela - argint", type: "number" },
+        { key: "capra_neagra_femela_bronz", label: "Capra neagra femela - bronz", type: "number" },
+        { key: "capra_neagra_femela_nemedaliabil", label: "Capra neagra femela - nemedaliabil", type: "number" },
+
+        { key: "mistret_total", label: "Mistret - total trofee", type: "number" },
+        { key: "mistret_aur", label: "Mistret - aur", type: "number" },
+        { key: "mistret_argint", label: "Mistret - argint", type: "number" },
+        { key: "mistret_bronz", label: "Mistret - bronz", type: "number" },
+        { key: "mistret_nemedaliabil", label: "Mistret - nemedaliabil", type: "number" },
+
+        { key: "urs_blana_total", label: "Urs blana - total trofee", type: "number" },
+        { key: "urs_blana_aur", label: "Urs blana - aur", type: "number" },
+        { key: "urs_blana_argint", label: "Urs blana - argint", type: "number" },
+        { key: "urs_blana_bronz", label: "Urs blana - bronz", type: "number" },
+        { key: "urs_blana_nemedaliabil", label: "Urs blana - nemedaliabil", type: "number" },
+
+        { key: "urs_craniu_total", label: "Urs craniu - total trofee", type: "number" },
+        { key: "urs_craniu_aur", label: "Urs craniu - aur", type: "number" },
+        { key: "urs_craniu_argint", label: "Urs craniu - argint", type: "number" },
+        { key: "urs_craniu_bronz", label: "Urs craniu - bronz", type: "number" },
+        { key: "urs_craniu_nemedaliabil", label: "Urs craniu - nemedaliabil", type: "number" },
+
+        { key: "observatii", label: "Observatii", type: "textarea", full: true }
+      ]
+    }
+  ];
+
+  function setMsg(id, text, ok = false) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = text || "";
+    el.className = "msg " + (text ? (ok ? "ok" : "err") : "");
+  }
+
+  function showTab(tab) {
+    document.getElementById("loginTab").classList.toggle("hidden", tab !== "login");
+    document.getElementById("registerTab").classList.toggle("hidden", tab !== "register");
+    document.getElementById("tabLoginBtn").classList.toggle("active", tab === "login");
+    document.getElementById("tabRegisterBtn").classList.toggle("active", tab === "register");
+  }
+
+  function saveAuth(token, email) {
+    localStorage.setItem("gfn_token", token);
+    localStorage.setItem("gfn_email", email);
+  }
+
+  function clearAuth() {
+    localStorage.removeItem("gfn_token");
+    localStorage.removeItem("gfn_email");
+  }
+
+  function getToken() {
+    return localStorage.getItem("gfn_token");
+  }
+
+  function setAuthenticatedUI(isAuthenticated) {
+    const authCard = document.getElementById("authCard");
+    const appCard = document.getElementById("appCard");
+    const stickyActions = document.getElementById("stickyActions");
+    const quickNav = document.getElementById("quickNav");
+    const authStatus = document.getElementById("authStatus");
+
+    if (isAuthenticated) {
+      authCard.style.display = "none";
+      authCard.classList.add("hidden");
+      appCard.style.display = "block";
+      appCard.classList.remove("hidden");
+      stickyActions.style.display = "flex";
+      stickyActions.classList.add("visible");
+      quickNav.style.display = "flex";
+      quickNav.classList.add("visible");
+      authStatus.textContent = "Autentificat";
+      authStatus.className = "status-pill online";
+    } else {
+      authCard.style.display = "block";
+      authCard.classList.remove("hidden");
+      appCard.style.display = "none";
+      appCard.classList.add("hidden");
+      stickyActions.style.display = "none";
+      stickyActions.classList.remove("visible");
+      quickNav.style.display = "none";
+      quickNav.classList.remove("visible");
+      authStatus.textContent = "Neautentificat";
+      authStatus.className = "status-pill";
+    }
+  }
+
+  async function login() {
+    setMsg("loginMsg", "");
+    const email = document.getElementById("loginEmail").value.trim();
+    const password = document.getElementById("loginPassword").value;
+
+    if (!email || !password) {
+      setMsg("loginMsg", "Completeaza emailul si parola.");
+      return;
+    }
+
+    try {
+      const formData = new URLSearchParams();
+      formData.append("username", email);
+      formData.append("password", password);
+
+      const res = await fetch("/auth/login-form", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: formData
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || "Autentificare esuata");
+
+      saveAuth(data.access_token, email);
+      await loadCurrentUser(true);
+    } catch (e) {
+      setAuthenticatedUI(false);
+      setMsg("loginMsg", e.message || "Eroare la login");
+    }
+  }
+
+  async function registerAccount() {
+    setMsg("registerMsg", "");
+    const email = document.getElementById("registerEmail").value.trim();
+    const password = document.getElementById("registerPassword").value;
+    const password2 = document.getElementById("registerPassword2").value;
+    const first_name = document.getElementById("registerFirstName").value.trim();
+    const last_name = document.getElementById("registerLastName").value.trim();
+
+    if (!first_name || !last_name) {
+      setMsg("registerMsg", "Completeaza nume si prenume.");
+      return;
+    }
+
+    if (password !== password2) {
+      setMsg("registerMsg", "Parolele nu coincid.");
+      return;
+    }
+
+    try {
+      const res = await fetch("/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password, first_name, last_name })
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || "Nu s-a putut crea contul");
+      setMsg("registerMsg", "Cont creat. Asteapta aprobare.", true);
+    } catch (e) {
+      setMsg("registerMsg", e.message || "Eroare la creare cont");
+    }
+  }
+
+  async function loadCurrentUser(scrollToForm = false) {
+    const token = getToken();
+    if (!token) {
+      setAuthenticatedUI(false);
+      return;
+    }
+
+    try {
+      const res = await fetch("/auth/me", { headers: { "Authorization": "Bearer " + token } });
+      if (!res.ok) {
+        clearAuth();
+        setAuthenticatedUI(false);
+        return;
+      }
+
+      const me = await res.json();
+      document.getElementById("currentUser").textContent = me.full_name || me.email;
+      document.getElementById("currentRole").textContent = me.role;
+      setAuthenticatedUI(true);
+      updateDraftStatus();
+      updateSummary();
+
+      if (scrollToForm) {
+        setTimeout(() => document.getElementById("appCard").scrollIntoView({ behavior: "smooth", block: "start" }), 150);
+      }
+    } catch (e) {
+      clearAuth();
+      setAuthenticatedUI(false);
+    }
+  }
+
+  function logout() {
+    clearAuth();
+    setAuthenticatedUI(false);
+    setMsg("reportMsg", "");
+    setMsg("loginMsg", "Te-ai delogat.", true);
+  }
+
+  function escapeHtml(value) {
+    return String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  function createId() {
+    return "r_" + Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
+  }
+
+  function getSectionConfig(sectionKey) {
+    return reportSections.find(s => s.key === sectionKey);
+  }
+
+  function renderField(sectionKey, rowId, field, value = "") {
+    const id = `${sectionKey}_${rowId}_${field.key}`;
+    const cls = field.full ? "field full-field" : "field";
+
+    if (field.type === "textarea") {
+      return `
+        <div class="${cls}">
+          <label for="${id}">${escapeHtml(field.label)}</label>
+          <textarea id="${id}" data-section="${sectionKey}" data-row="${rowId}" data-field="${field.key}" placeholder="${escapeHtml(field.placeholder || "")}">${escapeHtml(value)}</textarea>
+        </div>
+      `;
+    }
+
+    if (field.type === "select") {
+      const options = (field.options || []).map(opt => {
+        return `<option value="${escapeHtml(opt)}" ${String(value) === String(opt) ? "selected" : ""}>${escapeHtml(opt || "-- selecteaza --")}</option>`;
+      }).join("");
+
+      return `
+        <div class="${cls}">
+          <label for="${id}">${escapeHtml(field.label)}</label>
+          <select id="${id}" data-section="${sectionKey}" data-row="${rowId}" data-field="${field.key}">
+            ${options}
+          </select>
+        </div>
+      `;
+    }
+
+    const type = field.type || "text";
+    const dateAttrs = type === "date"
+      ? 'class="date-input" onclick="openDatePicker(this)"'
+      : '';
+
+    return `
+      <div class="${cls}">
+        <label for="${id}">${escapeHtml(field.label)}</label>
+        <input id="${id}" ${dateAttrs} type="${type}" step="any" data-section="${sectionKey}" data-row="${rowId}" data-field="${field.key}" value="${escapeHtml(value)}" placeholder="${escapeHtml(field.placeholder || "")}" />
+      </div>
+    `;
+  }
+
+  function openDatePicker(input) {
+    if (!input || input.type !== "date") return;
+
+    if (typeof input.showPicker === "function") {
+      try {
+        input.showPicker();
+      } catch (e) {
+        // Browserul poate bloca deschiderea programatica in unele contexte.
+      }
+    }
+  }
+
+
+  function getSectionVisual(sectionKey) {
+    const visuals = {
+      contracte: { icon: "📜", short: "Contracte, acte aditionale, tarife si valabilitate." },
+      permise_permanente: { icon: "🎫", short: "Permise permanente eliberate catre vanatori." },
+      permise_temporare: { icon: "⏳", short: "Permise temporare si situatii asociate." },
+      pagube_vanat: { icon: "⚠️", short: "Pagube produse de vanat si despagubiri." },
+      recoltari_urs: { icon: "🐻", short: "Cote, interventii, preventie si recoltari urs brun." },
+      cote_mistret: { icon: "🐗", short: "Realizare cote, exemplare recoltate si mortalitati." },
+      trofee: { icon: "🏆", short: "Trofee pe specii si clase de medalie." }
+    };
+
+    return visuals[sectionKey] || { icon: "🦌", short: "Raportare cinegetica." };
+  }
+
+  function renderQuestionnaireDashboard() {
+    const container = document.getElementById("questionnaireCards");
+    if (!container) return;
+
+    container.innerHTML = reportSections.map(section => {
+      const visual = getSectionVisual(section.key);
+      const rows = sectionRows[section.key] || [];
+      const rowLabel = rows.length === 1 ? "1 rand" : `${rows.length} randuri`;
+
+      return `
+        <article class="questionnaire-card" onclick="openQuestionnaire('${section.key}')">
+          <div class="questionnaire-art ${section.key}" data-icon="${escapeHtml(visual.icon)}"></div>
+          <div class="questionnaire-body">
+            <h3>${escapeHtml(section.title)}</h3>
+            <p>${escapeHtml(visual.short)}</p>
+            <div class="module-meta">
+              <span class="module-badge">${escapeHtml(section.badge)}</span>
+              <span class="module-count">${rowLabel}</span>
+            </div>
+          </div>
+        </article>
+      `;
+    }).join("");
+  }
+
+  function openQuestionnaire(sectionKey) {
+    const section = getSectionConfig(sectionKey);
+    if (!section) return;
+
+    currentSectionKey = sectionKey;
+
+    if (!sectionRows[sectionKey]) {
+      sectionRows[sectionKey] = [];
+    }
+
+    if (sectionRows[sectionKey].length === 0) {
+      sectionRows[sectionKey].push({ id: createId(), values: {} });
+      renderSectionRows(sectionKey);
+    }
+
+    showOnlyActiveSection(sectionKey);
+    updateSummary();
+    renderQuestionnaireDashboard();
+
+    setTimeout(() => {
+      const active = document.getElementById("activeQuestionnaireBanner");
+      if (active) active.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 80);
+  }
+
+  function showOnlyActiveSection(sectionKey) {
+    const dashboard = document.getElementById("questionnaireDashboard");
+    const banner = document.getElementById("activeQuestionnaireBanner");
+    const finalizare = document.getElementById("finalizare");
+    const nav = document.getElementById("activeQuestionnaireNav");
+    const activeSection = getSectionConfig(sectionKey);
+
+    if (dashboard) dashboard.classList.add("hidden");
+    if (dashboard) dashboard.style.display = "none";
+
+    if (banner) banner.classList.remove("hidden");
+    if (banner) banner.style.display = "flex";
+
+    if (finalizare) finalizare.classList.remove("hidden");
+    if (finalizare) finalizare.style.display = "block";
+
+    if (activeSection) {
+      const title = document.getElementById("activeQuestionnaireTitle");
+      const hint = document.getElementById("activeQuestionnaireHint");
+      if (title) title.textContent = activeSection.title;
+      if (hint) hint.textContent = activeSection.hint;
+      if (nav) nav.textContent = activeSection.title;
+    }
+
+    document.querySelectorAll(".questionnaire-section").forEach(sectionEl => {
+      const isActive = sectionEl.id === "section_" + sectionKey;
+      sectionEl.classList.toggle("hidden", !isActive);
+      sectionEl.style.display = isActive ? "block" : "none";
+    });
+  }
+
+  function backToQuestionnaireDashboard() {
+    currentSectionKey = null;
+
+    const dashboard = document.getElementById("questionnaireDashboard");
+    const banner = document.getElementById("activeQuestionnaireBanner");
+    const finalizare = document.getElementById("finalizare");
+    const nav = document.getElementById("activeQuestionnaireNav");
+
+    if (dashboard) dashboard.classList.remove("hidden");
+    if (dashboard) dashboard.style.display = "block";
+
+    if (banner) banner.classList.add("hidden");
+    if (banner) banner.style.display = "none";
+
+    if (finalizare) finalizare.classList.add("hidden");
+    if (finalizare) finalizare.style.display = "none";
+
+    if (nav) nav.textContent = "Chestionar activ";
+
+    document.querySelectorAll(".questionnaire-section").forEach(sectionEl => {
+      sectionEl.classList.add("hidden");
+      sectionEl.style.display = "none";
+    });
+
+    renderQuestionnaireDashboard();
+
+    setTimeout(() => {
+      const dash = document.getElementById("questionnaireDashboard");
+      if (dash) dash.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 80);
+  }
+
+  function renderSections() {
+    const container = document.getElementById("sectionsContainer");
+    container.innerHTML = reportSections.map(section => {
+      return `
+        <section id="section_${section.key}" class="section-box report-section questionnaire-section hidden" style="display:none;">
+          <div class="section-title">
+            <div>
+              <h3>${escapeHtml(section.title)}</h3>
+              <small>${escapeHtml(section.hint)}</small>
+            </div>
+            <div class="chapter-pill">${escapeHtml(section.badge)}</div>
+          </div>
+
+          <div class="inline-buttons" style="margin-bottom: 14px;">
+            <button class="btn-secondary" type="button" onclick="addRow('${section.key}')">Adauga rand</button>
+            <button class="btn-neutral" type="button" onclick="clearSectionRows('${section.key}')">Goleste sectiunea</button>
+            <button class="btn-neutral" type="button" onclick="backToQuestionnaireDashboard()">Inapoi la chestionare</button>
+          </div>
+
+          <div id="rows_${section.key}" class="rows">
+            <div class="empty-section">Nu exista randuri in aceasta sectiune. Apasa „Adauga rand”.</div>
+          </div>
+        </section>
+      `;
+    }).join("");
+  }
+
+  function renderSectionRows(sectionKey) {
+    const section = getSectionConfig(sectionKey);
+    const container = document.getElementById("rows_" + sectionKey);
+    if (!section || !container) return;
+
+    const rows = sectionRows[sectionKey] || [];
+    if (!rows.length) {
+      container.innerHTML = `<div class="empty-section">Nu exista randuri in aceasta sectiune. Apasa „Adauga rand”.</div>`;
+      updateSummary();
+      return;
+    }
+
+    container.innerHTML = rows.map((row, index) => {
+      const fields = section.fields.map(field => renderField(sectionKey, row.id, field, row.values?.[field.key] || "")).join("");
+      return `
+        <div class="report-row" data-section="${sectionKey}" data-row="${row.id}">
+          <div class="row-header">
+            <div class="row-title">${escapeHtml(section.title)} • rand ${index + 1}</div>
+            <div class="row-actions">
+              <button class="btn-neutral" type="button" onclick="duplicateRow('${sectionKey}', '${row.id}')">Duplica</button>
+              <button class="btn-danger" type="button" onclick="removeRow('${sectionKey}', '${row.id}')">Sterge</button>
+            </div>
+          </div>
+          <div class="fields-grid">
+            ${fields}
+          </div>
+        </div>
+      `;
+    }).join("");
+
+    attachRowListeners(sectionKey);
+    updateSummary();
+  }
+
+  function addRow(sectionKey, values = {}) {
+    if (!sectionRows[sectionKey]) sectionRows[sectionKey] = [];
+    sectionRows[sectionKey].push({ id: createId(), values: { ...values } });
+    renderSectionRows(sectionKey);
+    renderQuestionnaireDashboard();
+    scheduleAutosave();
+  }
+
+  function removeRow(sectionKey, rowId) {
+    sectionRows[sectionKey] = (sectionRows[sectionKey] || []).filter(row => row.id !== rowId);
+    renderSectionRows(sectionKey);
+    renderQuestionnaireDashboard();
+    scheduleAutosave();
+  }
+
+  function duplicateRow(sectionKey, rowId) {
+    syncRowsFromDom();
+    const row = (sectionRows[sectionKey] || []).find(item => item.id === rowId);
+    if (!row) return;
+    addRow(sectionKey, { ...row.values });
+  }
+
+  function clearSectionRows(sectionKey) {
+    if (!confirm("Golesti aceasta sectiune?")) return;
+    sectionRows[sectionKey] = [];
+    renderSectionRows(sectionKey);
+    renderQuestionnaireDashboard();
+    scheduleAutosave();
+  }
+
+  function attachRowListeners(sectionKey) {
+    const container = document.getElementById("rows_" + sectionKey);
+    if (!container) return;
+
+    container.querySelectorAll("input, select, textarea").forEach(el => {
+      el.addEventListener("input", () => {
+        syncRowsFromDom();
+        updateSummary();
+        scheduleAutosave();
+      });
+
+      el.addEventListener("change", () => {
+        syncRowsFromDom();
+        updateSummary();
+        scheduleAutosave();
+      });
+    });
+  }
+
+  function syncRowsFromDom() {
+    reportSections.forEach(section => {
+      const rows = sectionRows[section.key] || [];
+      rows.forEach(row => {
+        if (!row.values) row.values = {};
+        section.fields.forEach(field => {
+          const id = `${section.key}_${row.id}_${field.key}`;
+          const el = document.getElementById(id);
+          if (el) row.values[field.key] = el.value;
+        });
+      });
+    });
+  }
+
+  function getGeneralIds() {
+    return [
+      "lunaRaportare",
+      "anRaportare",
+      "gardaForestiera",
+      "judet",
+      "denumireGestionar",
+      "dateIdentificareGestionar",
+      "fondNr",
+      "fondDenumire",
+      "observatiiGenerale"
+    ];
+  }
+
+  function valueOf(id) {
+    const el = document.getElementById(id);
+    return el ? el.value.trim() : "";
+  }
+
+  function numberOrNull(value) {
+    if (value === null || value === undefined || value === "") return null;
+    const n = Number(String(value).replace(",", "."));
+    return Number.isNaN(n) ? null : n;
+  }
+
+  function normalizeRowsForPayload(onlySectionKey = null) {
+    syncRowsFromDom();
+    const payload = {};
+
+    const sections = onlySectionKey
+      ? reportSections.filter(section => section.key === onlySectionKey)
+      : reportSections;
+
+    sections.forEach(section => {
+      payload[section.key] = (sectionRows[section.key] || []).map((row, index) => {
+        const values = {};
+        section.fields.forEach(field => {
+          const raw = row.values?.[field.key] ?? "";
+          values[field.key] = field.type === "number" ? numberOrNull(raw) : (raw || null);
+        });
+        return { nr_crt: index + 1, ...values };
+      });
+    });
+
+    return payload;
+  }
+
+  function collectReportData(onlyActive = false) {
+    const selectedKey = onlyActive && currentSectionKey ? currentSectionKey : null;
+    const activeSection = selectedKey ? getSectionConfig(selectedKey) : null;
+    const raportari = normalizeRowsForPayload(selectedKey);
+
+    return {
+      tip_raportare: "cinegetic",
+      chestionar_selectat: selectedKey,
+      chestionar_titlu: activeSection ? activeSection.title : null,
+      luna_raportare: valueOf("lunaRaportare"),
+      an_raportare: valueOf("anRaportare") ? Number(valueOf("anRaportare")) : null,
+      garda_forestiera: valueOf("gardaForestiera"),
+      judet: valueOf("judet"),
+      denumire_gestionar: valueOf("denumireGestionar"),
+      date_identificare_gestionar: valueOf("dateIdentificareGestionar") || null,
+      fond_cinegetic: {
+        numar: valueOf("fondNr"),
+        denumire: valueOf("fondDenumire")
+      },
+      observatii_generale: valueOf("observatiiGenerale") || null,
+      raportari,
+      saved_at: new Date().toISOString()
+    };
+  }
+
+  function applyReportData(data) {
+    if (!data) return;
+
+    document.getElementById("lunaRaportare").value = data.luna_raportare || "";
+    document.getElementById("anRaportare").value = data.an_raportare || "";
+    document.getElementById("gardaForestiera").value = data.garda_forestiera || "";
+    populateGeneralJudet(data.judet || "");
+    document.getElementById("judet").value = data.judet || "";
+    document.getElementById("denumireGestionar").value = data.denumire_gestionar || "";
+    document.getElementById("dateIdentificareGestionar").value = data.date_identificare_gestionar || "";
+    document.getElementById("fondNr").value = data.fond_cinegetic?.numar || "";
+    document.getElementById("fondDenumire").value = data.fond_cinegetic?.denumire || "";
+    document.getElementById("observatiiGenerale").value = data.observatii_generale || "";
+
+    sectionRows = {};
+    reportSections.forEach(section => {
+      const list = data.raportari?.[section.key] || [];
+      sectionRows[section.key] = list.map(item => {
+        const values = {};
+        section.fields.forEach(field => {
+          values[field.key] = item[field.key] ?? "";
+        });
+        return { id: createId(), values };
+      });
+      renderSectionRows(section.key);
+    });
+
+    currentSectionKey = data.chestionar_selectat || null;
+    updateSummary();
+
+    if (currentSectionKey) {
+      showOnlyActiveSection(currentSectionKey);
+    } else {
+      backToQuestionnaireDashboard();
+    }
+
+    renderQuestionnaireDashboard();
+  }
+
+  function validateReport() {
+    if (!currentSectionKey) {
+      setMsg("reportMsg", "Alege mai intai chestionarul pe care vrei sa il trimiti.");
+      const dashboard = document.getElementById("questionnaireDashboard");
+      if (dashboard) dashboard.scrollIntoView({ behavior: "smooth", block: "start" });
+      return false;
+    }
+
+    if (!valueOf("denumireGestionar")) {
+      setMsg("reportMsg", "Completeaza denumirea gestionarului.");
+      return false;
+    }
+    if (!valueOf("fondNr") && !valueOf("fondDenumire")) {
+      setMsg("reportMsg", "Completeaza fondul cinegetic - numar sau denumire.");
+      return false;
+    }
+    if (!valueOf("lunaRaportare")) {
+      setMsg("reportMsg", "Selecteaza luna raportarii.");
+      return false;
+    }
+    if (!valueOf("anRaportare")) {
+      setMsg("reportMsg", "Completeaza anul raportarii.");
+      return false;
+    }
+    return true;
+  }
+
+  function saveDraft(silent = false) {
+    try {
+      const data = collectReportData();
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(data));
+      updateDraftStatus();
+      updateSummary();
+      if (!silent) setMsg("reportMsg", "Draft salvat local pe dispozitiv.", true);
+    } catch (e) {
+      console.error(e);
+      if (!silent) setMsg("reportMsg", "Nu s-a putut salva draftul local.");
+    }
+  }
+
+  function loadDraft() {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (!raw) {
+        setMsg("reportMsg", "Nu exista draft salvat local.");
+        return;
+      }
+      const data = JSON.parse(raw);
+      applyReportData(data);
+      updateDraftStatus();
+      setMsg("reportMsg", "Draftul local a fost incarcat.", true);
+    } catch (e) {
+      console.error(e);
+      setMsg("reportMsg", "Draftul local nu a putut fi incarcat.");
+    }
+  }
+
+  function clearDraft() {
+    if (!confirm("Stergi draftul local?")) return;
+    localStorage.removeItem(DRAFT_KEY);
+    updateDraftStatus();
+    setMsg("reportMsg", "Draftul local a fost sters.", true);
+  }
+
+  function updateDraftStatus() {
+    const el = document.getElementById("draftStatus");
+    const last = document.getElementById("summaryLastSave");
+    if (!el) return;
+
+    const raw = localStorage.getItem(DRAFT_KEY);
+    if (!raw) {
+      el.textContent = "Draft local: nesalvat";
+      if (last) last.textContent = "-";
+      return;
+    }
+
+    try {
+      const data = JSON.parse(raw);
+      const date = data.saved_at ? new Date(data.saved_at) : null;
+      const label = date && !Number.isNaN(date.getTime())
+        ? date.toLocaleString("ro-RO", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })
+        : "existent";
+      el.textContent = "Draft local: " + label;
+      if (last) last.textContent = label;
+    } catch {
+      el.textContent = "Draft local: existent";
+      if (last) last.textContent = "existent";
+    }
+  }
+
+  function updateSummary() {
+    syncRowsFromDom();
+    let rowCount = 0;
+    let completed = 0;
+
+    reportSections.forEach(section => {
+      const rows = sectionRows[section.key] || [];
+      rowCount += rows.length;
+      rows.forEach(row => {
+        section.fields.forEach(field => {
+          const value = row.values?.[field.key];
+          if (value !== null && value !== undefined && String(value).trim() !== "") completed += 1;
+        });
+      });
+    });
+
+    getGeneralIds().forEach(id => {
+      if (valueOf(id)) completed += 1;
+    });
+
+    document.getElementById("summaryRows").textContent = rowCount;
+    document.getElementById("summaryCompleted").textContent = completed;
+    document.getElementById("summarySections").textContent = reportSections.length;
+  }
+
+  function scheduleAutosave() {
+    clearTimeout(autosaveTimer);
+    autosaveTimer = setTimeout(() => {
+      const appCard = document.getElementById("appCard");
+      if (appCard && !appCard.classList.contains("hidden")) saveDraft(true);
+    }, 900);
+  }
+
+  function attachGeneralListeners() {
+    getGeneralIds().forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener("input", () => { updateSummary(); scheduleAutosave(); });
+      el.addEventListener("change", () => { updateSummary(); scheduleAutosave(); });
+    });
+  }
+
+  function updateConnectionStatus() {
+    const el = document.getElementById("connectionStatus");
+    if (!el) return;
+    if (navigator.onLine) {
+      el.textContent = "● Online";
+      el.className = "status-pill online";
+    } else {
+      el.textContent = "● Offline - se salveaza local";
+      el.className = "status-pill offline";
+    }
+  }
+
+  async function submitReport() {
+    setMsg("reportMsg", "");
+    const token = getToken();
+
+    if (!token) {
+      setAuthenticatedUI(false);
+      setMsg("loginMsg", "Trebuie sa fii autentificat pentru raportare.");
+      return;
+    }
+
+    if (!validateReport()) return;
+
+    const body = collectReportData(true);
+
+    try {
+      const res = await fetch(REPORT_ENDPOINT, {
+        method: "POST",
+        headers: {
+          "Authorization": "Bearer " + token,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(body)
+      });
+
+      let data = {};
+      try { data = await res.json(); } catch {}
+
+      if (!res.ok) throw new Error(data.detail ? JSON.stringify(data.detail) : "Endpointul de raportare nu este disponibil inca.");
+
+      setMsg("reportMsg", "Raportarea a fost transmisa cu succes.", true);
+      localStorage.removeItem(DRAFT_KEY);
+      updateDraftStatus();
+    } catch (e) {
+      console.error(e);
+      saveDraft(true);
+      setMsg("reportMsg", (e.message || "Nu s-a putut transmite raportarea.") + " Datele au fost salvate local ca draft.");
+    }
+  }
+
+  function exportJson() {
+    if (!validateReport()) return;
+    const data = collectReportData(true);
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+
+    const safeGestionar = (data.denumire_gestionar || "gestionar").replace(/[^a-zA-Z0-9aiastAIAST_-]+/g, "_");
+    const safeFond = ((data.fond_cinegetic?.numar || "") + "_" + (data.fond_cinegetic?.denumire || "fond")).replace(/[^a-zA-Z0-9aiastAIAST_-]+/g, "_");
+    const safeChestionar = (data.chestionar_selectat || "chestionar").replace(/[^a-zA-Z0-9aiastAIAST_-]+/g, "_");
+    const filename = `raportari_cinegetice_${safeChestionar}_${safeGestionar}_${safeFond}_${data.an_raportare || "an"}_${data.luna_raportare || "luna"}.json`;
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+
+    setMsg("reportMsg", "Fisierul JSON a fost exportat.", true);
+  }
+
+  function setDefaultReportingDate() {
+    const now = new Date();
+    document.getElementById("anRaportare").value = now.getFullYear();
+    document.getElementById("lunaRaportare").value = String(now.getMonth() + 1).padStart(2, "0");
+  }
+
+  function initRows() {
+    sectionRows = {};
+    reportSections.forEach(section => {
+      sectionRows[section.key] = [];
+      renderSectionRows(section.key);
+    });
+    currentSectionKey = null;
+    renderQuestionnaireDashboard();
+    backToQuestionnaireDashboard();
+  }
+
+  function init() {
+    renderSections();
+    setDefaultReportingDate();
+    attachGeneralListeners();
+
+    const savedEmail = localStorage.getItem("gfn_email");
+    if (savedEmail) document.getElementById("loginEmail").value = savedEmail;
+
+    updateConnectionStatus();
+    updateDraftStatus();
+    initRows();
+    updateSummary();
+
+    window.addEventListener("online", updateConnectionStatus);
+    window.addEventListener("offline", updateConnectionStatus);
+
+    setAuthenticatedUI(false);
+
+    if (getToken()) loadCurrentUser(false);
+  }
+
+  init();
+</script>
+
+</body>
+</html>

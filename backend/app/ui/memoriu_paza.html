@@ -1,0 +1,1703 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>GFN - Memoriu de Paza</title>
+
+  <style>
+    :root {
+      --bg: #0f1f1d;
+      --card: rgba(18, 41, 38, 0.84);
+      --card2: rgba(10, 27, 24, 0.90);
+      --bright: #16d977;
+      --green: #16a34a;
+      --teal: #00f5d4;
+      --red: #ff3b3b;
+      --orange: #ffb020;
+      --blue: #18b7ff;
+      --violet: #9b5cff;
+      --text: #effff6;
+      --muted: #b9d8cb;
+      --muted2: #82ad9e;
+      --border: rgba(148, 213, 190, 0.22);
+      --shadow: 0 22px 70px rgba(0, 0, 0, 0.42);
+      --shadow2: 0 12px 34px rgba(0, 0, 0, 0.34);
+      --radius: 28px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 12% 8%, rgba(155, 92, 255, 0.16), transparent 34%),
+        radial-gradient(circle at 88% 18%, rgba(0, 245, 212, 0.10), transparent 30%),
+        linear-gradient(135deg, rgba(7, 19, 17, 0.94), rgba(15, 31, 29, 0.94)),
+        url("https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=1800&q=80");
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+      min-height: 100vh;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+      background-size: 44px 44px;
+      opacity: 0.35;
+      z-index: 0;
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      max-width: 1180px;
+      margin: auto;
+      padding: 24px 18px 120px;
+    }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      background:
+        linear-gradient(135deg, rgba(18, 41, 38, 0.90), rgba(7, 19, 17, 0.80));
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 26px;
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-columns: 96px 1fr;
+      gap: 22px;
+      align-items: center;
+      backdrop-filter: blur(18px);
+      margin-bottom: 18px;
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      right: -100px;
+      top: -130px;
+      width: 310px;
+      height: 310px;
+      background: radial-gradient(circle, rgba(155, 92, 255, 0.30), transparent 62%);
+      pointer-events: none;
+    }
+
+    .logo-wrap {
+      width: 96px;
+      height: 96px;
+      display: grid;
+      place-items: center;
+      border-radius: 24px;
+      border: 1px solid rgba(22, 217, 119, 0.30);
+      background: rgba(255,255,255,0.08);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.12),
+        0 18px 40px rgba(0,0,0,0.28);
+      position: relative;
+      z-index: 1;
+    }
+
+    .logo-wrap img {
+      width: 78px;
+      height: auto;
+      filter: drop-shadow(0 8px 18px rgba(0,0,0,0.36));
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 1;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 11px;
+      border-radius: 999px;
+      border: 1px solid rgba(155, 92, 255, 0.34);
+      color: #eee5ff;
+      background: rgba(155, 92, 255, 0.12);
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: 0.25px;
+      margin-bottom: 12px;
+    }
+
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--violet);
+      box-shadow: 0 0 16px rgba(155, 92, 255, 0.95);
+    }
+
+    h1, h2, h3 {
+      margin-top: 0;
+    }
+
+    h1 {
+      margin: 0;
+      color: var(--text);
+      font-size: 38px;
+      line-height: 1;
+      letter-spacing: -1.2px;
+    }
+
+    h1 span {
+      color: var(--bright);
+      text-shadow: 0 0 28px rgba(22, 217, 119, 0.22);
+    }
+
+    .subtitle {
+      max-width: 860px;
+      margin: 12px 0 0;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.5;
+    }
+
+    .status-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 11px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 900;
+      border: 1px solid rgba(148, 213, 190, 0.22);
+      background: rgba(255,255,255,0.06);
+      color: var(--muted);
+    }
+
+    .status-pill.online {
+      color: #d8ffed;
+      border-color: rgba(22, 217, 119, 0.32);
+      background: rgba(22, 217, 119, 0.10);
+    }
+
+    .status-pill.offline {
+      color: #ffd6d6;
+      border-color: rgba(255, 59, 59, 0.35);
+      background: rgba(255, 59, 59, 0.10);
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: 26px;
+      padding: 24px;
+      box-shadow: var(--shadow2);
+      border: 1px solid var(--border);
+      margin-bottom: 18px;
+      backdrop-filter: blur(18px);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::after {
+      content: "";
+      position: absolute;
+      right: -75px;
+      top: -85px;
+      width: 190px;
+      height: 190px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(155, 92, 255, 0.15), transparent 66%);
+      pointer-events: none;
+    }
+
+    .card-inner {
+      position: relative;
+      z-index: 1;
+    }
+
+    .auth-card {
+      max-width: 820px;
+      margin: 0 auto 18px;
+    }
+
+    .tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 18px;
+      padding: 5px;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.07);
+    }
+
+    .tabs button {
+      padding: 13px 16px;
+      border: none;
+      border-radius: 14px;
+      cursor: pointer;
+      background: transparent;
+      color: var(--muted);
+      font-weight: 900;
+      font-size: 14px;
+    }
+
+    .tabs button.active {
+      background: linear-gradient(135deg, var(--violet), var(--blue));
+      color: #061510;
+      box-shadow: 0 12px 26px rgba(155, 92, 255, 0.18);
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .full {
+      grid-column: 1 / -1;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 7px;
+      font-size: 13px;
+      font-weight: 900;
+      color: #dfffee;
+    }
+
+    input, select, textarea, button {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 13px 13px;
+      border: 1px solid rgba(148, 213, 190, 0.25);
+      border-radius: 15px;
+      font-size: 15px;
+      background: rgba(4, 18, 15, 0.58);
+      color: var(--text);
+    }
+
+    input::placeholder,
+    textarea::placeholder {
+      color: rgba(185, 216, 203, 0.55);
+    }
+
+    select option {
+      background: #0f1f1d;
+      color: var(--text);
+    }
+
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: rgba(155, 92, 255, 0.80);
+      box-shadow: 0 0 0 4px rgba(155, 92, 255, 0.14);
+    }
+
+    textarea {
+      min-height: 110px;
+      resize: vertical;
+      line-height: 1.45;
+    }
+
+    .btn,
+    .btn-secondary,
+    .btn-danger,
+    .btn-neutral {
+      border: none;
+      cursor: pointer;
+      font-weight: 900;
+      letter-spacing: 0.1px;
+      transition: transform 0.18s ease, filter 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    .btn {
+      background: linear-gradient(135deg, var(--violet), var(--blue));
+      color: #061510;
+      box-shadow: 0 14px 28px rgba(155, 92, 255, 0.18);
+    }
+
+    .btn-secondary {
+      background: linear-gradient(135deg, var(--blue), var(--teal));
+      color: #041512;
+      box-shadow: 0 14px 28px rgba(24, 183, 255, 0.14);
+    }
+
+    .btn-danger {
+      background: linear-gradient(135deg, #e11d48, var(--red));
+      color: white;
+      box-shadow: 0 14px 28px rgba(255, 59, 59, 0.14);
+    }
+
+    .btn-neutral {
+      background: rgba(255,255,255,0.08);
+      color: var(--text);
+      border: 1px solid rgba(148, 213, 190, 0.22);
+    }
+
+    .btn:hover,
+    .btn-secondary:hover,
+    .btn-danger:hover,
+    .btn-neutral:hover {
+      transform: translateY(-2px);
+      filter: brightness(1.08);
+    }
+
+    .msg {
+      margin-top: 12px;
+      font-size: 14px;
+      line-height: 1.45;
+      padding: 12px 14px;
+      border-radius: 15px;
+      display: none;
+    }
+
+    .msg.ok {
+      display: block;
+      color: #d8ffed;
+      border: 1px solid rgba(22, 217, 119, 0.32);
+      background: rgba(22, 217, 119, 0.10);
+    }
+
+    .msg.err {
+      display: block;
+      color: #ffd6d6;
+      border: 1px solid rgba(255, 59, 59, 0.30);
+      background: rgba(255, 59, 59, 0.10);
+    }
+
+    .auth-box {
+      background: rgba(255,255,255,0.045);
+      border: 1px solid rgba(148, 213, 190, 0.16);
+      border-radius: 22px;
+      padding: 18px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(155, 92, 255, 0.12);
+      color: #eee5ff;
+      border: 1px solid rgba(155, 92, 255, 0.30);
+      font-size: 12px;
+      font-weight: 900;
+      padding: 7px 10px;
+      border-radius: 999px;
+      margin-bottom: 14px;
+    }
+
+    .note,
+    .field-hint,
+    .auth-hint {
+      font-size: 12px;
+      color: var(--muted2);
+      margin-top: 6px;
+      line-height: 1.45;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+      padding: 14px;
+      border-radius: 20px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(148, 213, 190, 0.16);
+    }
+
+    .user-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .user-meta span {
+      display: inline-flex;
+      gap: 5px;
+      align-items: center;
+      padding: 7px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .inline-buttons {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .inline-buttons button,
+    .inline-buttons a {
+      width: auto;
+      min-width: 145px;
+    }
+
+    .quick-nav {
+      display: none;
+      position: sticky;
+      top: 8px;
+      z-index: 10;
+      margin-bottom: 14px;
+      padding: 10px;
+      border-radius: 20px;
+      background: rgba(6, 18, 16, 0.82);
+      border: 1px solid rgba(148, 213, 190, 0.18);
+      backdrop-filter: blur(16px);
+      overflow-x: auto;
+      gap: 8px;
+    }
+
+    .quick-nav.visible {
+      display: flex;
+    }
+
+    .quick-nav a {
+      flex: 0 0 auto;
+      text-decoration: none;
+      color: var(--muted);
+      padding: 9px 11px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.08);
+      font-size: 12px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .quick-nav a:first-child {
+      color: #061510;
+      background: linear-gradient(135deg, var(--violet), var(--blue));
+    }
+
+    .section-box {
+      padding: 18px;
+      border-radius: 22px;
+      background: rgba(255,255,255,0.045);
+      border: 1px solid rgba(148, 213, 190, 0.14);
+      margin-bottom: 14px;
+      scroll-margin-top: 20px;
+    }
+
+    .section-title {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+      margin: 0 0 14px;
+    }
+
+    .section-title h3 {
+      margin: 0;
+      font-size: 20px;
+      letter-spacing: -0.35px;
+    }
+
+    .section-title small {
+      color: var(--muted2);
+      display: block;
+      margin-top: 5px;
+      line-height: 1.4;
+      font-size: 12px;
+    }
+
+    .chapter-pill {
+      padding: 7px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 900;
+      color: #061510;
+      background: linear-gradient(135deg, var(--violet), var(--blue));
+      white-space: nowrap;
+    }
+
+    .fields-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .field-card {
+      background: rgba(4, 18, 15, 0.42);
+      border: 1px solid rgba(148, 213, 190, 0.15);
+      border-radius: 18px;
+      padding: 13px;
+    }
+
+    .field-card label {
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+      line-height: 1.35;
+      min-height: 38px;
+    }
+
+    .field-no {
+      flex: 0 0 auto;
+      min-width: 28px;
+      height: 24px;
+      display: inline-grid;
+      place-items: center;
+      border-radius: 9px;
+      background: rgba(155, 92, 255, 0.14);
+      color: #eee5ff;
+      border: 1px solid rgba(155, 92, 255, 0.25);
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    .field-card input {
+      margin-top: 8px;
+    }
+
+    .summary-box {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .summary-item {
+      padding: 14px;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(148, 213, 190, 0.14);
+    }
+
+    .summary-value {
+      font-size: 25px;
+      font-weight: 900;
+      color: var(--bright);
+      line-height: 1;
+    }
+
+    .summary-label {
+      margin-top: 6px;
+      color: var(--muted2);
+      font-size: 12px;
+    }
+
+    .sticky-actions {
+      position: fixed;
+      left: 50%;
+      bottom: 16px;
+      transform: translateX(-50%);
+      z-index: 20;
+      width: min(1080px, calc(100% - 24px));
+      display: none;
+      gap: 10px;
+      padding: 12px;
+      border-radius: 22px;
+      background: rgba(6, 18, 16, 0.88);
+      border: 1px solid rgba(148, 213, 190, 0.20);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.40);
+      backdrop-filter: blur(18px);
+    }
+
+    .sticky-actions.visible {
+      display: flex;
+    }
+
+    .sticky-actions button {
+      flex: 1;
+    }
+
+    @media (max-width: 860px) {
+      .summary-box {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .fields-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 760px) {
+      body {
+        background-attachment: scroll;
+      }
+
+      .container {
+        padding: 14px 12px 140px;
+      }
+
+      .hero {
+        grid-template-columns: 1fr;
+        text-align: center;
+        padding: 22px 18px;
+      }
+
+      .logo-wrap {
+        margin: auto;
+      }
+
+      h1 {
+        font-size: 34px;
+      }
+
+      .subtitle {
+        font-size: 15px;
+      }
+
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      .tabs {
+        grid-template-columns: 1fr;
+      }
+
+      .inline-buttons {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .inline-buttons button,
+      .inline-buttons a {
+        width: 100%;
+        min-width: 0;
+      }
+
+      .card {
+        padding: 18px;
+        border-radius: 22px;
+      }
+
+      .section-box {
+        padding: 14px;
+      }
+
+      input, select, textarea, button {
+        font-size: 16px;
+        min-height: 50px;
+      }
+
+      .topbar {
+        align-items: stretch;
+      }
+
+      .user-meta {
+        flex-direction: column;
+      }
+
+      .user-meta span {
+        justify-content: center;
+      }
+
+      .summary-box {
+        grid-template-columns: 1fr;
+      }
+
+      .sticky-actions {
+        flex-direction: column;
+      }
+
+      .section-title {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+
+<body>
+<div class="container">
+
+  <section class="hero">
+    <div class="logo-wrap">
+      <img src="/ui/sigla.png" alt="Sigla Garda Forestiera">
+    </div>
+
+    <div class="hero-content">
+      <div class="eyebrow">
+        <span class="dot"></span>
+        Raportare lunara ocoale silvice
+      </div>
+
+      <h1>Memoriu de Paza <span>GFN</span></h1>
+
+      <div class="subtitle">
+        Formular digital pentru raportarea lunara a datelor privind administrarea padurilor, sustrageri de arbori, pasunat abuziv, incendieri, circulatia materialului lemnos si alte activitati de paza.
+      </div>
+
+      <div class="status-row">
+        <div id="connectionStatus" class="status-pill online">● Online</div>
+        <div id="draftStatus" class="status-pill">Draft local: neverificat</div>
+        <div id="authStatus" class="status-pill">Neautentificat</div>
+      </div>
+    </div>
+  </section>
+
+  <div id="authCard" class="card auth-card">
+    <div class="card-inner">
+      <div class="tabs">
+        <button id="tabLoginBtn" class="active" onclick="showTab('login')">Autentificare</button>
+        <button id="tabRegisterBtn" onclick="showTab('register')">Creare cont</button>
+      </div>
+
+      <div id="loginTab" class="auth-box">
+        <div class="badge">Acces pentru raportare lunara</div>
+
+        <div class="grid">
+          <div class="full">
+            <label>Email institutional</label>
+            <input id="loginEmail" type="email" placeholder="prenume.nume@gfn.gov.ro" />
+          </div>
+          <div class="full">
+            <label>Parola</label>
+            <input id="loginPassword" type="password" placeholder="Introdu parola" />
+          </div>
+        </div>
+
+        <div class="inline-buttons" style="margin-top: 14px;">
+          <button class="btn" onclick="login()">Autentificare</button>
+        </div>
+
+        <div class="auth-hint">
+          Dupa autentificare, se deschide formularul de raportare lunara.
+        </div>
+
+        <div id="loginMsg" class="msg"></div>
+      </div>
+
+      <div id="registerTab" class="hidden auth-box">
+        <div class="badge">Cont nou</div>
+
+        <div class="grid">
+          <div>
+            <label>Nume</label>
+            <input id="registerLastName" type="text" placeholder="Popescu" />
+          </div>
+
+          <div>
+            <label>Prenume</label>
+            <input id="registerFirstName" type="text" placeholder="Ion" />
+          </div>
+
+          <div class="full">
+            <label>Email institutional</label>
+            <input id="registerEmail" type="email" placeholder="prenume.nume@gfn.gov.ro" />
+            <div class="field-hint">Foloseste adresa de email cu care vei lucra in platforma.</div>
+          </div>
+
+          <div>
+            <label>Parola</label>
+            <input id="registerPassword" type="password" placeholder="Creeaza o parola" />
+          </div>
+
+          <div>
+            <label>Confirmare parola</label>
+            <input id="registerPassword2" type="password" placeholder="Reintrodu parola" />
+          </div>
+        </div>
+
+        <div class="inline-buttons" style="margin-top: 14px;">
+          <button class="btn-secondary" onclick="registerAccount()">Trimite cererea de cont</button>
+        </div>
+
+        <div class="auth-hint">
+          Contul creat intra in asteptare si trebuie aprobat inainte de utilizare.
+        </div>
+
+        <div id="registerMsg" class="msg"></div>
+      </div>
+    </div>
+  </div>
+
+  <nav id="quickNav" class="quick-nav">
+    <a href="#appCard">Start</a>
+    <a href="#cap1">Administrare</a>
+    <a href="#cap2">Sustrageri</a>
+    <a href="#cap6">Circulatie lemn</a>
+    <a href="#cap8">Controale</a>
+    <a href="#cap9">Sanctiuni</a>
+    <a href="#finalizare">Finalizare</a>
+  </nav>
+
+  <div id="appCard" class="card hidden" style="display:none;">
+    <div class="card-inner">
+
+      <div class="topbar">
+        <div class="user-meta">
+          <span><b>Autentificat ca:</b> <span id="currentUser">-</span></span>
+          <span><b>Rol:</b> <span id="currentRole">-</span></span>
+        </div>
+
+        <div class="inline-buttons">
+          <a class="btn-neutral" href="/ui/index.html" style="text-decoration:none; display:inline-flex; align-items:center; justify-content:center;">Inapoi la index</a>
+          <button class="btn-neutral" type="button" onclick="saveDraft()">Salveaza draft</button>
+          <button class="btn-neutral" type="button" onclick="loadDraft()">Incarca draft</button>
+          <button class="btn-danger" type="button" onclick="logout()">Logout</button>
+        </div>
+      </div>
+
+      <div class="section-box">
+        <div class="section-title">
+          <div>
+            <h3>Date generale raportare</h3>
+            <small>Primul camp este ocolul silvic. Raportarea se face lunar.</small>
+          </div>
+          <div class="chapter-pill">START</div>
+        </div>
+
+        <div class="grid">
+          <div class="full">
+            <label>Ocol silvic</label>
+            <input id="ocolSilvic" list="ocoaleList" type="text" placeholder="Selecteaza sau scrie denumirea ocolului silvic" />
+            <datalist id="ocoaleList">
+              <option value="Ocol Silvic Brasov"></option>
+              <option value="Ocol Silvic Bucuresti"></option>
+              <option value="Ocol Silvic Cluj"></option>
+              <option value="Ocol Silvic Focsani"></option>
+              <option value="Ocol Silvic Oradea"></option>
+              <option value="Ocol Silvic Ploiesti"></option>
+              <option value="Ocol Silvic Ramnicu Valcea"></option>
+              <option value="Ocol Silvic Suceava"></option>
+              <option value="Ocol Silvic Timisoara"></option>
+            </datalist>
+            <div class="note">Lista poate fi completata ulterior cu toate ocoalele silvice.</div>
+          </div>
+
+          <div>
+            <label>Luna raportarii</label>
+            <select id="lunaRaportare">
+              <option value="">-- selecteaza luna --</option>
+              <option value="01">Ianuarie</option>
+              <option value="02">Februarie</option>
+              <option value="03">Martie</option>
+              <option value="04">Aprilie</option>
+              <option value="05">Mai</option>
+              <option value="06">Iunie</option>
+              <option value="07">Iulie</option>
+              <option value="08">August</option>
+              <option value="09">Septembrie</option>
+              <option value="10">Octombrie</option>
+              <option value="11">Noiembrie</option>
+              <option value="12">Decembrie</option>
+            </select>
+          </div>
+
+          <div>
+            <label>An raportare</label>
+            <input id="anRaportare" type="number" min="2024" max="2100" placeholder="2026" />
+          </div>
+
+          <div>
+            <label>Judet</label>
+            <input id="judetRaportare" type="text" placeholder="Ex: Brasov" />
+          </div>
+
+          <div>
+            <label>Directie / structura</label>
+            <input id="structuraRaportare" type="text" placeholder="Ex: Romsilva / OS / alta structura" />
+          </div>
+
+          <div class="full">
+            <label>Observatii generale</label>
+            <textarea id="observatiiGenerale" placeholder="Observatii generale pentru raportarea lunara"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="summary-box">
+        <div class="summary-item">
+          <div id="summaryFields" class="summary-value">0</div>
+          <div class="summary-label">campuri completate</div>
+        </div>
+        <div class="summary-item">
+          <div id="summaryTotal" class="summary-value">103</div>
+          <div class="summary-label">indicatori in formular</div>
+        </div>
+        <div class="summary-item">
+          <div id="summaryChapters" class="summary-value">9</div>
+          <div class="summary-label">capitole raportare</div>
+        </div>
+        <div class="summary-item">
+          <div id="summaryLastSave" class="summary-value">-</div>
+          <div class="summary-label">ultima salvare locala</div>
+        </div>
+      </div>
+
+      <div id="chaptersContainer"></div>
+
+      <div id="finalizare" class="section-box">
+        <div class="section-title">
+          <div>
+            <h3>Finalizare raportare</h3>
+            <small>Poti salva draftul local, exporta JSON sau transmite raportarea cand endpointul backend este disponibil.</small>
+          </div>
+          <div class="chapter-pill">FINAL</div>
+        </div>
+
+        <div class="inline-buttons">
+          <button class="btn" type="button" onclick="submitReport()">Trimite raportarea</button>
+          <button class="btn-neutral" type="button" onclick="saveDraft()">Salveaza draft local</button>
+          <button class="btn-secondary" type="button" onclick="exportJson()">Exporta JSON</button>
+          <button class="btn-danger" type="button" onclick="clearDraft()">Sterge draft</button>
+        </div>
+
+        <div id="reportMsg" class="msg"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div id="stickyActions" class="sticky-actions" style="display:none;">
+  <button class="btn-neutral" type="button" onclick="saveDraft()">Salveaza draft</button>
+  <button class="btn" type="button" onclick="submitReport()">Trimite raportarea</button>
+</div>
+
+<script>
+  const REPORT_ENDPOINT = "/memoriu-paza";
+  const DRAFT_KEY = "gfn_memoriu_paza_draft_v1";
+
+  let autosaveTimer = null;
+
+  const chapters = [
+    {
+      id: "cap1",
+      title: "Cap. I. Administrarea padurilor",
+      fields: [
+        [1, "Suprafata padurilor (ha) - total, din care"],
+        [2, "Proprietate publica de stat"],
+        [3, "Proprietate publica a unitatilor administrativ-teritoriale"],
+        [4, "Proprietate privata a unitatilor de cult, invatamant, Academiei Romane etc."],
+        [5, "Proprietate privata indiviza a formelor asociative"],
+        [6, "Proprietate privata a persoanelor fizice si juridice"],
+        [7, "Proprietate privata a unitatilor administrativ-teritoriale"],
+        [8, "Vegetatie forestiera din afara fondului forestier"],
+        [9, "Nr. retrageri de autorizatii de functionare a structurilor silvice proprii de administrare"],
+        [10, "Nr. contraventii aplicate de GF pentru neasigurare contracte administrare/servicii"],
+        [11, "Valoare amenzi aplicate pentru contraventii neasigurare contracte administrare/servicii - lei"],
+        [12, "Valoare amenzi incasate pentru contraventii neasigurare contracte administrare/servicii - lei"],
+        [13, "Controale in paduri (de fond, partiale, integritatea padurii, pasunat, PSI) - nr. total"]
+      ]
+    },
+    {
+      id: "cap2",
+      title: "Cap. II. Sustrageri de arbori",
+      fields: [
+        [14, "Nr. infractiuni taieri de arbori"],
+        [15, "Nr. infractiuni folosire ilegala a ciocanului silvic"],
+        [16, "Nr. contraventii taieri de arbori"],
+        [17, "Valoarea amenzilor aplicate pentru contraventii taieri de arbori - lei"],
+        [18, "Valoarea amenzilor incasate pentru contraventii taieri de arbori - lei"],
+        [19, "Volum taiat ilegal total - din care (mc)"],
+        [20, "Din infractiuni"],
+        [21, "Din contraventii"],
+        [22, "Acordat risc normal"],
+        [23, "Nejustificat"],
+        [24, "Material abandonat"],
+        [25, "Valoarea pagubelor din taieri ilegale total - din care (lei)"],
+        [26, "Din infractiuni, inclusiv prin folosirea ilegala a ciocanului silvic"],
+        [27, "Din contraventii"],
+        [28, "Acordat risc normal"],
+        [29, "Nejustificat si imputat"]
+      ]
+    },
+    {
+      id: "cap3",
+      title: "Cap. III. Pasunatul abuziv",
+      fields: [
+        [30, "Nr. infractiuni pasunat abuziv"],
+        [31, "Nr. contraventii pasunat abuziv"],
+        [32, "Valoarea amenzilor aplicate pentru contraventii pasunat abuziv - lei"],
+        [33, "Valoarea amenzilor incasate pentru contraventii pasunat abuziv - lei"],
+        [34, "Valoarea pagubelor din pasunat abuziv total - din care (lei)"],
+        [35, "Din infractiuni"],
+        [36, "Din contraventii"],
+        [37, "Nejustificat"]
+      ]
+    },
+    {
+      id: "cap4",
+      title: "Cap. IV. Incendierea padurilor",
+      fields: [
+        [38, "Nr. infractiuni de incendiere a padurilor"],
+        [39, "Nr. contraventii de incendiere a padurilor"],
+        [40, "Valoarea amenzilor aplicate privind incendiile - lei"],
+        [41, "Valoarea amenzilor incasate privind incendiile - lei"],
+        [42, "Valoarea pagubelor din incendierea padurilor total - din care (lei)"],
+        [43, "Din infractiuni"],
+        [44, "Din contraventii"]
+      ]
+    },
+    {
+      id: "cap5",
+      title: "Cap. V. Integritatea si permanenta padurilor",
+      fields: [
+        [45, "Nr. infractiuni de reducere si ocupare a suprafetei padurilor"],
+        [46, "Nr. contraventii de reducere si ocupare a suprafetei padurilor"],
+        [47, "Valoarea amenzilor aplicate pentru reducere si ocupare suprafete paduri - lei"],
+        [48, "Valoarea amenzilor incasate pentru reducere si ocupare suprafete paduri - lei"],
+        [49, "Valoarea pagubelor din reducere si ocupare suprafete paduri total - din care (lei)"],
+        [50, "Din infractiuni"],
+        [51, "Din contraventii"],
+        [52, "Infractiuni pentru neexecutarea lucrarilor de impadurire conform art. 114 din Codul Silvic"],
+        [53, "Nr. contraventii de neexecutare a lucrarilor de regenerare a padurilor"],
+        [54, "Valoarea amenzilor aplicate pentru neexecutarea lucrarilor de regenerare - lei"],
+        [55, "Valoarea amenzilor incasate pentru neexecutarea lucrarilor de regenerare - lei"]
+      ]
+    },
+    {
+      id: "cap6",
+      title: "Cap. VI. Controlul circulatiei materialului lemnos",
+      fields: [
+        [56, "Controlul circulatiei materialului lemnos - nr. actiuni total"],
+        [57, "Contraventii constatate"],
+        [58, "Valoarea amenzilor aplicate - lei"],
+        [59, "Valoarea amenzilor incasate - lei"],
+        [60, "Material lemnos confiscat total - din care (mc)"],
+        [61, "Lemn de lucru"],
+        [62, "Cherestea"],
+        [63, "Lemn de foc"],
+        [64, "Pomi de Craciun confiscati - buc."]
+      ]
+    },
+    {
+      id: "cap7",
+      title: "Cap. VII. Controlul instalatiilor, depozitelor etc.",
+      fields: [
+        [65, "Controlul instalatiilor de debitat, depozitelor etc. - nr. actiuni total"],
+        [66, "Infractiuni constatate total"],
+        [67, "Contraventii constatate total"],
+        [68, "Valoarea amenzilor aplicate - lei"],
+        [69, "Valoarea amenzilor incasate - lei"],
+        [70, "Material lemnos confiscat total - din care (mc)"],
+        [71, "Lemn de lucru"],
+        [72, "Cherestea"],
+        [73, "Lemn de foc"],
+        [74, "Pomi de Craciun confiscati - buc."],
+        [75, "Material lemnos care nu se gaseste, confiscat valoric total - din care (mc)"],
+        [76, "Lemn de lucru"],
+        [77, "Cherestea"],
+        [78, "Lemn de foc"]
+      ]
+    },
+    {
+      id: "cap8",
+      title: "Cap. VIII. Inspectii si controale finalizate prin rapoarte si note",
+      fields: [
+        [79, "Controale de exploatare - nr. actiuni total"],
+        [80, "Contraventii constatate"],
+        [81, "Valoarea amenzilor aplicate - lei"],
+        [82, "Valoarea amenzilor incasate - lei"],
+        [83, "Inspectii si controale finalizate prin rapoarte si note - nr. total, din care"],
+        [84, "Inspectii si controale tematice programate"],
+        [85, "Inspectii si controale urmare a sesizarilor, petitiilor, memoriilor etc., din care"],
+        [86, "De la Presedintie"],
+        [87, "De la Parlament"],
+        [88, "De la Guvern / institutii si autoritati publice centrale"],
+        [89, "De la institutii si autoritati publice locale"],
+        [90, "De la persoane fizice si juridice"]
+      ]
+    },
+    {
+      id: "cap9",
+      title: "Cap. IX. Sanctionarea disciplinara si administrativa",
+      fields: [
+        [91, "Sanctiuni aprobate - nr. total, din care"],
+        [92, "Cu desfacerea contractului de munca / retragerea autorizatiei de practica"],
+        [93, "Cu suspendarea contractului de munca / suspendarea autorizatiei de practica"],
+        [94, "Penalizari aprobate - numar"],
+        [95, "Penalizari aprobate - valoare lei"],
+        [96, "Sanctiuni aplicate - nr. total, din care"],
+        [97, "Cu desfacerea contractului de munca / retragerea autorizatiei de practica"],
+        [98, "Cu suspendarea contractului de munca / suspendarea autorizatiei de practica"],
+        [99, "Penalizari aplicate - numar"],
+        [100, "Penalizari aplicate - valoare lei"],
+        [101, "Contraventii aplicate personalului silvic - nr."],
+        [102, "Valoarea amenzilor aplicate - lei"],
+        [103, "Valoarea amenzilor incasate - lei"]
+      ]
+    }
+  ];
+
+  function setMsg(id, text, ok = false) {
+    const el = document.getElementById(id);
+    if (!el) return;
+
+    el.textContent = text || "";
+    el.className = "msg " + (text ? (ok ? "ok" : "err") : "");
+  }
+
+  function showTab(tab) {
+    document.getElementById("loginTab").classList.toggle("hidden", tab !== "login");
+    document.getElementById("registerTab").classList.toggle("hidden", tab !== "register");
+    document.getElementById("tabLoginBtn").classList.toggle("active", tab === "login");
+    document.getElementById("tabRegisterBtn").classList.toggle("active", tab === "register");
+  }
+
+  function saveAuth(token, email) {
+    localStorage.setItem("gfn_token", token);
+    localStorage.setItem("gfn_email", email);
+  }
+
+  function clearAuth() {
+    localStorage.removeItem("gfn_token");
+    localStorage.removeItem("gfn_email");
+  }
+
+  function getToken() {
+    return localStorage.getItem("gfn_token");
+  }
+
+  function setAuthenticatedUI(isAuthenticated) {
+    const authCard = document.getElementById("authCard");
+    const appCard = document.getElementById("appCard");
+    const stickyActions = document.getElementById("stickyActions");
+    const quickNav = document.getElementById("quickNav");
+    const authStatus = document.getElementById("authStatus");
+
+    if (isAuthenticated) {
+      authCard.style.display = "none";
+      authCard.classList.add("hidden");
+
+      appCard.style.display = "block";
+      appCard.classList.remove("hidden");
+
+      stickyActions.style.display = "flex";
+      stickyActions.classList.add("visible");
+
+      quickNav.style.display = "flex";
+      quickNav.classList.add("visible");
+
+      authStatus.textContent = "Autentificat";
+      authStatus.className = "status-pill online";
+    } else {
+      authCard.style.display = "block";
+      authCard.classList.remove("hidden");
+
+      appCard.style.display = "none";
+      appCard.classList.add("hidden");
+
+      stickyActions.style.display = "none";
+      stickyActions.classList.remove("visible");
+
+      quickNav.style.display = "none";
+      quickNav.classList.remove("visible");
+
+      authStatus.textContent = "Neautentificat";
+      authStatus.className = "status-pill";
+    }
+  }
+
+  async function login() {
+    setMsg("loginMsg", "");
+
+    const email = document.getElementById("loginEmail").value.trim();
+    const password = document.getElementById("loginPassword").value;
+
+    if (!email || !password) {
+      setMsg("loginMsg", "Completeaza emailul si parola.");
+      return;
+    }
+
+    try {
+      const formData = new URLSearchParams();
+      formData.append("username", email);
+      formData.append("password", password);
+
+      const res = await fetch("/auth/login-form", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: formData
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.detail || "Autentificare esuata");
+      }
+
+      saveAuth(data.access_token, email);
+      await loadCurrentUser(true);
+    } catch (e) {
+      setAuthenticatedUI(false);
+      setMsg("loginMsg", e.message || "Eroare la login");
+    }
+  }
+
+  async function registerAccount() {
+    setMsg("registerMsg", "");
+
+    const email = document.getElementById("registerEmail").value.trim();
+    const password = document.getElementById("registerPassword").value;
+    const password2 = document.getElementById("registerPassword2").value;
+    const first_name = document.getElementById("registerFirstName").value.trim();
+    const last_name = document.getElementById("registerLastName").value.trim();
+
+    if (!first_name || !last_name) {
+      setMsg("registerMsg", "Completeaza nume si prenume.");
+      return;
+    }
+
+    if (password !== password2) {
+      setMsg("registerMsg", "Parolele nu coincid.");
+      return;
+    }
+
+    try {
+      const res = await fetch("/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          password,
+          first_name,
+          last_name
+        })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.detail || "Nu s-a putut crea contul");
+      }
+
+      setMsg("registerMsg", "Cont creat. Asteapta aprobare.", true);
+    } catch (e) {
+      setMsg("registerMsg", e.message || "Eroare la creare cont");
+    }
+  }
+
+  async function loadCurrentUser(scrollToForm = false) {
+    const token = getToken();
+
+    if (!token) {
+      setAuthenticatedUI(false);
+      return;
+    }
+
+    try {
+      const res = await fetch("/auth/me", {
+        headers: { "Authorization": "Bearer " + token }
+      });
+
+      if (!res.ok) {
+        clearAuth();
+        setAuthenticatedUI(false);
+        return;
+      }
+
+      const me = await res.json();
+
+      document.getElementById("currentUser").textContent = me.full_name || me.email;
+      document.getElementById("currentRole").textContent = me.role;
+
+      setAuthenticatedUI(true);
+      updateDraftStatus();
+      updateSummary();
+
+      if (scrollToForm) {
+        setTimeout(() => {
+          document.getElementById("appCard").scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 150);
+      }
+
+    } catch (e) {
+      clearAuth();
+      setAuthenticatedUI(false);
+    }
+  }
+
+  function logout() {
+    clearAuth();
+    setAuthenticatedUI(false);
+    setMsg("reportMsg", "");
+    setMsg("loginMsg", "Te-ai delogat.", true);
+  }
+
+  function renderChapters() {
+    const container = document.getElementById("chaptersContainer");
+    container.innerHTML = chapters.map(chapter => {
+      const fields = chapter.fields.map(([no, label]) => {
+        return `
+          <div class="field-card">
+            <label for="field_${no}">
+              <span class="field-no">${no}</span>
+              <span>${label}</span>
+            </label>
+            <input
+              id="field_${no}"
+              type="number"
+              step="any"
+              inputmode="decimal"
+              placeholder="0"
+              data-field-no="${no}"
+              data-field-label="${label.replace(/"/g, "&quot;")}"
+            />
+          </div>
+        `;
+      }).join("");
+
+      return `
+        <section id="${chapter.id}" class="section-box">
+          <div class="section-title">
+            <div>
+              <h3>${chapter.title}</h3>
+              <small>Completeaza doar valoarea numerica pentru fiecare indicator.</small>
+            </div>
+            <div class="chapter-pill">${chapter.fields.length} indicatori</div>
+          </div>
+          <div class="fields-grid">
+            ${fields}
+          </div>
+        </section>
+      `;
+    }).join("");
+  }
+
+  function getReportFieldIds() {
+    const ids = [
+      "ocolSilvic",
+      "lunaRaportare",
+      "anRaportare",
+      "judetRaportare",
+      "structuraRaportare",
+      "observatiiGenerale"
+    ];
+
+    chapters.forEach(ch => {
+      ch.fields.forEach(([no]) => ids.push("field_" + no));
+    });
+
+    return ids;
+  }
+
+  function valueOf(id) {
+    const el = document.getElementById(id);
+    return el ? el.value.trim() : "";
+  }
+
+  function numberOrNull(value) {
+    if (value === null || value === undefined || value === "") return null;
+    const n = Number(String(value).replace(",", "."));
+    return Number.isNaN(n) ? null : n;
+  }
+
+  function collectReportData() {
+    const values = {};
+
+    chapters.forEach(ch => {
+      ch.fields.forEach(([no, label]) => {
+        const raw = valueOf("field_" + no);
+        values[no] = {
+          nr_crt: no,
+          specificare: label,
+          valoare: numberOrNull(raw)
+        };
+      });
+    });
+
+    return {
+      ocol_silvic: valueOf("ocolSilvic"),
+      luna_raportare: valueOf("lunaRaportare"),
+      an_raportare: valueOf("anRaportare") ? Number(valueOf("anRaportare")) : null,
+      judet: valueOf("judetRaportare"),
+      structura: valueOf("structuraRaportare"),
+      observatii_generale: valueOf("observatiiGenerale") || null,
+      valori: values,
+      saved_at: new Date().toISOString()
+    };
+  }
+
+  function applyReportData(data) {
+    if (!data) return;
+
+    document.getElementById("ocolSilvic").value = data.ocol_silvic || "";
+    document.getElementById("lunaRaportare").value = data.luna_raportare || "";
+    document.getElementById("anRaportare").value = data.an_raportare || "";
+    document.getElementById("judetRaportare").value = data.judet || "";
+    document.getElementById("structuraRaportare").value = data.structura || "";
+    document.getElementById("observatiiGenerale").value = data.observatii_generale || "";
+
+    if (data.valori) {
+      Object.entries(data.valori).forEach(([no, obj]) => {
+        const el = document.getElementById("field_" + no);
+        if (el && obj && obj.valoare !== null && obj.valoare !== undefined) {
+          el.value = obj.valoare;
+        }
+      });
+    }
+
+    updateSummary();
+  }
+
+  function saveDraft(silent = false) {
+    try {
+      const data = collectReportData();
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(data));
+      updateDraftStatus();
+      updateSummary();
+
+      if (!silent) {
+        setMsg("reportMsg", "Draft salvat local pe dispozitiv.", true);
+      }
+    } catch (e) {
+      console.error(e);
+      if (!silent) {
+        setMsg("reportMsg", "Nu s-a putut salva draftul local.");
+      }
+    }
+  }
+
+  function loadDraft() {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+
+      if (!raw) {
+        setMsg("reportMsg", "Nu exista draft salvat local.");
+        return;
+      }
+
+      const data = JSON.parse(raw);
+      applyReportData(data);
+      updateDraftStatus();
+      setMsg("reportMsg", "Draftul local a fost incarcat.", true);
+    } catch (e) {
+      console.error(e);
+      setMsg("reportMsg", "Draftul local nu a putut fi incarcat.");
+    }
+  }
+
+  function clearDraft() {
+    localStorage.removeItem(DRAFT_KEY);
+    updateDraftStatus();
+    setMsg("reportMsg", "Draftul local a fost sters.", true);
+  }
+
+  function updateDraftStatus() {
+    const el = document.getElementById("draftStatus");
+    const last = document.getElementById("summaryLastSave");
+    if (!el) return;
+
+    const raw = localStorage.getItem(DRAFT_KEY);
+
+    if (!raw) {
+      el.textContent = "Draft local: nesalvat";
+      if (last) last.textContent = "-";
+      return;
+    }
+
+    try {
+      const data = JSON.parse(raw);
+      const date = data.saved_at ? new Date(data.saved_at) : null;
+      const label = date && !Number.isNaN(date.getTime())
+        ? date.toLocaleString("ro-RO", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })
+        : "existent";
+
+      el.textContent = "Draft local: " + label;
+      if (last) last.textContent = label;
+    } catch {
+      el.textContent = "Draft local: existent";
+      if (last) last.textContent = "existent";
+    }
+  }
+
+  function updateSummary() {
+    let completed = 0;
+
+    chapters.forEach(ch => {
+      ch.fields.forEach(([no]) => {
+        const value = valueOf("field_" + no);
+        if (value !== "") completed += 1;
+      });
+    });
+
+    document.getElementById("summaryFields").textContent = completed;
+    document.getElementById("summaryTotal").textContent = 103;
+    document.getElementById("summaryChapters").textContent = chapters.length;
+  }
+
+  function scheduleAutosave() {
+    clearTimeout(autosaveTimer);
+    autosaveTimer = setTimeout(() => {
+      const appCard = document.getElementById("appCard");
+      if (appCard && !appCard.classList.contains("hidden")) {
+        saveDraft(true);
+      }
+    }, 900);
+  }
+
+  function attachAutosaveListeners() {
+    getReportFieldIds().forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+
+      el.addEventListener("input", () => {
+        updateSummary();
+        scheduleAutosave();
+      });
+
+      el.addEventListener("change", () => {
+        updateSummary();
+        scheduleAutosave();
+      });
+    });
+  }
+
+  function updateConnectionStatus() {
+    const el = document.getElementById("connectionStatus");
+    if (!el) return;
+
+    if (navigator.onLine) {
+      el.textContent = "● Online";
+      el.className = "status-pill online";
+    } else {
+      el.textContent = "● Offline - se salveaza local";
+      el.className = "status-pill offline";
+    }
+  }
+
+  function validateReport() {
+    if (!valueOf("ocolSilvic")) {
+      setMsg("reportMsg", "Selecteaza sau completeaza ocolul silvic.");
+      return false;
+    }
+
+    if (!valueOf("lunaRaportare")) {
+      setMsg("reportMsg", "Selecteaza luna raportarii.");
+      return false;
+    }
+
+    if (!valueOf("anRaportare")) {
+      setMsg("reportMsg", "Completeaza anul raportarii.");
+      return false;
+    }
+
+    return true;
+  }
+
+  async function submitReport() {
+    setMsg("reportMsg", "");
+
+    const token = getToken();
+
+    if (!token) {
+      setAuthenticatedUI(false);
+      setMsg("loginMsg", "Trebuie sa fii autentificat pentru raportare.");
+      return;
+    }
+
+    if (!validateReport()) {
+      return;
+    }
+
+    const body = collectReportData();
+
+    try {
+      const res = await fetch(REPORT_ENDPOINT, {
+        method: "POST",
+        headers: {
+          "Authorization": "Bearer " + token,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(body)
+      });
+
+      let data = {};
+      try {
+        data = await res.json();
+      } catch {}
+
+      if (!res.ok) {
+        throw new Error(data.detail ? JSON.stringify(data.detail) : "Endpointul de raportare nu este disponibil inca.");
+      }
+
+      setMsg("reportMsg", "Raportarea a fost transmisa cu succes.", true);
+      clearDraft();
+    } catch (e) {
+      console.error(e);
+      saveDraft(true);
+      setMsg("reportMsg", (e.message || "Nu s-a putut transmite raportarea.") + " Datele au fost salvate local ca draft.");
+    }
+  }
+
+  function exportJson() {
+    if (!validateReport()) {
+      return;
+    }
+
+    const data = collectReportData();
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+
+    const safeOcol = (data.ocol_silvic || "ocol").replace(/[^a-zA-Z0-9aiastAIAST_-]+/g, "_");
+    const filename = `memoriu_paza_${safeOcol}_${data.an_raportare || "an"}_${data.luna_raportare || "luna"}.json`;
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+
+    URL.revokeObjectURL(url);
+
+    setMsg("reportMsg", "Fisierul JSON a fost exportat.", true);
+  }
+
+  function setDefaultReportingDate() {
+    const now = new Date();
+    document.getElementById("anRaportare").value = now.getFullYear();
+    document.getElementById("lunaRaportare").value = String(now.getMonth() + 1).padStart(2, "0");
+  }
+
+  function init() {
+    renderChapters();
+    setDefaultReportingDate();
+
+    const savedEmail = localStorage.getItem("gfn_email");
+    if (savedEmail) {
+      document.getElementById("loginEmail").value = savedEmail;
+    }
+
+    updateConnectionStatus();
+    updateDraftStatus();
+    updateSummary();
+    attachAutosaveListeners();
+
+    window.addEventListener("online", updateConnectionStatus);
+    window.addEventListener("offline", updateConnectionStatus);
+
+    setAuthenticatedUI(false);
+
+    if (getToken()) {
+      loadCurrentUser(false);
+    }
+  }
+
+  init();
+</script>
+
+</body>
+</html>
