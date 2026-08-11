@@ -42,7 +42,7 @@
         radial-gradient(circle at 12% 8%, rgba(155, 92, 255, 0.16), transparent 34%),
         radial-gradient(circle at 88% 18%, rgba(0, 245, 212, 0.10), transparent 30%),
         linear-gradient(135deg, rgba(7, 19, 17, 0.94), rgba(15, 31, 29, 0.94)),
-        url("https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=1800&q=80");
+        url("/ui/img/gfn-mountain-forest-bg.jpg");
       background-size: cover;
       background-position: center;
       background-attachment: fixed;
@@ -725,12 +725,183 @@
       }
     }
   </style>
+  <style id="gfn-form-system-theme">
+    :root {
+      --gfn-green: #21df81;
+      --gfn-blue: #38bdf8;
+      --gfn-yellow: #f2c94c;
+      --gfn-red: #ff5b61;
+    }
+
+    body {
+      background:
+        linear-gradient(120deg, rgba(2, 17, 18, .91), rgba(4, 31, 28, .84)),
+        url("/ui/img/gfn-mountain-forest-bg.jpg") center / cover fixed;
+    }
+    .container { max-width: 1180px; padding: 20px 18px 120px; }
+    .hero, .card {
+      border-radius: 18px;
+      border: 1px solid rgba(140, 255, 200, .18);
+      background: rgba(4, 25, 29, .60);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+    }
+    .hero { padding: 22px 24px; }
+    .hero::after { background: radial-gradient(circle, rgba(33, 223, 129, .20), transparent 62%); }
+    .logo-wrap { border-radius: 18px; border-color: rgba(61, 255, 146, .28); }
+    .eyebrow { color: #d8ffed; border-color: rgba(61, 255, 146, .30); background: rgba(33, 223, 129, .09); }
+    .dot { background: var(--gfn-green); box-shadow: 0 0 16px rgba(33, 223, 129, .72); }
+    h1 span { color: var(--gfn-green); text-shadow: 0 0 28px rgba(33, 223, 129, .20); }
+    .card { padding: 20px; }
+    .card-inner { padding: 0; }
+
+    .topbar {
+      padding: 12px 14px;
+      border: 1px solid rgba(140, 255, 200, .15);
+      border-radius: 14px;
+      background: rgba(4, 27, 31, .48);
+    }
+    .tabs button.active { color: #03150f; background: linear-gradient(135deg, var(--gfn-green), #0fa859); }
+    .badge { color: #dff7ff; border-color: rgba(56, 189, 248, .30); background: rgba(56, 189, 248, .10); }
+
+    .quick-nav {
+      counter-reset: gfn-step;
+      padding: 8px;
+      gap: 6px;
+      border-radius: 14px;
+      background: rgba(2, 19, 19, .88);
+      border-color: rgba(140, 255, 200, .18);
+    }
+    .quick-nav a, .quick-nav a:first-child {
+      counter-increment: gfn-step;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 40px;
+      padding: 9px 12px;
+      border-radius: 10px;
+      color: rgba(255, 255, 255, .78);
+      background: rgba(255, 255, 255, .035);
+      border: 1px solid transparent;
+    }
+    .quick-nav a::before {
+      content: counter(gfn-step);
+      width: 21px;
+      height: 21px;
+      display: grid;
+      place-items: center;
+      flex: 0 0 21px;
+      border-radius: 50%;
+      color: #041713;
+      background: var(--gfn-green);
+      font-size: 10px;
+      font-weight: 900;
+    }
+    .quick-nav a:hover, .quick-nav a:focus-visible {
+      color: #fff;
+      border-color: rgba(61, 255, 146, .34);
+      background: rgba(33, 223, 129, .09);
+    }
+
+    .section-box, .field-card {
+      background: rgba(4, 25, 29, .60);
+      border: 1px solid rgba(140, 255, 200, .18);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+    }
+    .section-box { padding: 20px; border-radius: 18px; margin-bottom: 16px; }
+    .field-card { border-radius: 14px; padding: 14px; }
+    .section-title { align-items: center; margin-bottom: 16px; }
+    .section-title h3 { font-size: 18px; letter-spacing: 0; }
+    .section-title small { color: rgba(214, 239, 229, .65); font-size: 13px; }
+    .chapter-pill {
+      color: #03150f;
+      background: linear-gradient(135deg, var(--gfn-green), #0fa859);
+      box-shadow: 0 8px 18px rgba(33, 223, 129, .14);
+    }
+
+    .grid, .fields-grid { gap: 16px 18px; }
+    label, .field-card label {
+      color: rgba(255, 255, 255, .82);
+      font-size: 13px;
+      font-weight: 600;
+    }
+    input, select, textarea {
+      min-height: 46px;
+      border-radius: 12px;
+      color: #fff;
+      background: rgba(4, 27, 31, .68);
+      border: 1px solid rgba(125, 255, 198, .20);
+    }
+    input::placeholder, textarea::placeholder { color: rgba(255, 255, 255, .52); }
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: rgba(61, 255, 146, .70);
+      box-shadow: 0 0 0 3px rgba(45, 220, 125, .10);
+      background: rgba(5, 34, 38, .78);
+    }
+    select option { color: #fff; background: #06201e; }
+    input[type="file"] { color: #c9f3ff; border-color: rgba(56, 189, 248, .32); }
+    input[type="file"]::file-selector-button {
+      margin-right: 10px;
+      padding: 8px 12px;
+      border: 0;
+      border-radius: 10px;
+      color: #04151a;
+      background: var(--gfn-blue);
+      font-weight: 900;
+    }
+
+    .btn, button.btn {
+      color: #03150f;
+      background: linear-gradient(135deg, var(--gfn-green), #0fa859);
+      box-shadow: 0 10px 22px rgba(33, 223, 129, .16);
+    }
+    .btn-secondary {
+      color: #dff7ff;
+      background: rgba(56, 189, 248, .12);
+      border: 1px solid rgba(56, 189, 248, .36);
+    }
+    .btn-neutral { color: #fff; background: rgba(255, 255, 255, .045); border-color: rgba(151, 214, 192, .22); }
+    .btn-danger { color: #ffd8da; background: rgba(255, 91, 97, .08); border-color: rgba(255, 91, 97, .28); }
+    .inline-buttons button, .inline-buttons a { min-height: 46px; border-radius: 12px; }
+
+    .update-info, .note, .auth-hint {
+      border-color: rgba(242, 201, 76, .28);
+      background: rgba(242, 201, 76, .07);
+      color: #f5e8ad;
+    }
+    .msg.err { color: #ffd8da; border-color: rgba(255, 91, 97, .42); background: rgba(255, 91, 97, .10); }
+    .msg.ok { color: #caffdf; border-color: rgba(33, 223, 129, .38); background: rgba(33, 223, 129, .09); }
+    .summary-item { border-radius: 14px; background: rgba(4, 27, 31, .56); }
+    .summary-value { color: var(--gfn-green); }
+    .sticky-actions { border-radius: 14px; background: rgba(2, 19, 19, .92); }
+
+    @media (max-width: 899px) {
+      .grid, .fields-grid { grid-template-columns: 1fr; }
+      .full, .field.full-field { grid-column: auto; }
+      input, select, textarea, button { min-height: 48px; font-size: 16px; }
+      label, .field-card label { font-size: 13px; }
+    }
+
+    @media (max-width: 760px) {
+      .container { padding: 10px 10px 138px; }
+      .hero { padding: 16px; }
+      .card, .section-box { padding: 15px; }
+      .quick-nav { top: 6px; }
+      .inline-buttons { display: grid; grid-template-columns: 1fr; }
+      .inline-buttons button, .inline-buttons a { width: 100%; min-width: 0; }
+      .field-hint, .note, .auth-hint, .section-title small { font-size: 13px; }
+      .sticky-actions.visible { display: grid; grid-template-columns: 1fr; }
+    }
+  </style>
+  <link rel="stylesheet" href="/ui/css/field-app.css?v=1" />
 </head>
 
-<body>
+<body class="field-app">
 <div class="container">
 
-  <section class="hero">
+  <section class="hero field-form-header">
     <div class="logo-wrap">
       <img src="/ui/sigla.png" alt="Sigla Garda Forestiera">
     </div>
@@ -755,7 +926,7 @@
     </div>
   </section>
 
-  <div id="authCard" class="card auth-card">
+  <div id="authCard" class="card auth-card field-form-panel">
     <div class="card-inner">
       <div class="tabs">
         <button id="tabLoginBtn" class="active" onclick="showTab('login')">Autentificare</button>
@@ -831,7 +1002,7 @@
     </div>
   </div>
 
-  <nav id="quickNav" class="quick-nav">
+  <nav id="quickNav" class="quick-nav field-stepper">
     <a href="#appCard">Start</a>
     <a href="#cap1">Administrare</a>
     <a href="#cap2">Sustrageri</a>
@@ -841,7 +1012,7 @@
     <a href="#finalizare">Finalizare</a>
   </nav>
 
-  <div id="appCard" class="card hidden" style="display:none;">
+  <div id="appCard" class="card hidden field-form-panel" style="display:none;">
     <div class="card-inner">
 
       <div class="topbar">
@@ -970,7 +1141,7 @@
   </div>
 </div>
 
-<div id="stickyActions" class="sticky-actions" style="display:none;">
+<div id="stickyActions" class="sticky-actions field-form-actions" style="display:none;">
   <button class="btn-neutral" type="button" onclick="saveDraft()">Salveaza draft</button>
   <button class="btn" type="button" onclick="submitReport()">Trimite raportarea</button>
 </div>

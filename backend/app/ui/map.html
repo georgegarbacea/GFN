@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ro">
 <head>
   <meta charset="UTF-8" />
@@ -8,9 +8,11 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-  <link rel="stylesheet" href="/ui/css/map.css?v=20260623-coord-normalize-v62" />
+  <link rel="preload" as="image" href="/ui/img/IMG_BGR.jpg?v=20260727-inspectors-superpro-v105" />
+  <link rel="stylesheet" href="/ui/css/map.css?v=20260811-global-colors-v129" />
+  <link rel="stylesheet" href="/ui/css/dashboard-polish.css?v=20260811-global-colors-v129" />
 </head>
-<body>
+<body class="gfn-forest-glass-theme">
   <div class="app">
     <aside class="sidebar">
       <div class="card access-card">
@@ -26,14 +28,14 @@
           <b>Status:</b> Autentificat<br>
           <b>Utilizator:</b> <span id="loggedUser">Inspector General</span><br>
           <b>Actualizare:</b> <span id="lastUpdate">-</span>
-          <button class="secondary" onclick="logout()" style="margin-top:10px;">Log out</button>
+          <button class="secondary sidebar-logout-btn" onclick="logout()">Log out</button>
           <button class="secondary" onclick="loadControls()">Reincarca datele interne</button>
         </div>
         <div id="msg" class="msg"></div>
       </div>
 
       <div class="card filter-card">
-        <div class="card-title"><span>Filtre globale</span><span style="cursor:pointer;color:var(--teal);font-size:12px;" onclick="resetFilters()">Reseteaza</span></div>
+        <div class="card-title"><span>Filtre</span><button class="filter-reset-link" type="button" onclick="resetFilters()">Reseteaza filtrele</button></div>
         <select id="baseLayerFilter" onchange="switchBaseLayer(this.value)">
           <option value="gray">Harta gri</option>
           <option value="relief">Relief</option>
@@ -48,10 +50,6 @@
           <option value="custom">Perioada personalizata</option>
         </select>
 
-        <div class="grid-2">
-          <input type="date" id="dateFrom" onchange="markCustomPeriod(); applyFilters()" />
-          <input type="date" id="dateTo" onchange="markCustomPeriod(); applyFilters()" />
-        </div>
         <select id="gardaFilter" onchange="applyFilters()"><option value="toate">Toate garzile</option></select>
         <select id="controlTypeFilter" onchange="applyFilters()">
           <option value="toate">Toate tipurile de control</option>
@@ -59,6 +57,9 @@
           <option value="tematic">Tematic</option>
           <option value="operativ">Operativ</option>
           <option value="sesizare">Sesizare</option>
+          <option value="rutina">Rutina</option>
+          <option value="solicitare">Solicitare</option>
+          <option value="necunoscut">Necunoscut</option>
         </select>
         <select id="categoryFilter" onchange="applyFilters()"><option value="toate">Toate categoriile de control</option></select>
         <select id="resultFilter" onchange="applyFilters()">
@@ -68,15 +69,23 @@
           <option value="avertisment">Avertisment</option>
           <option value="sanctiune">Sanctiune</option>
           <option value="sesizare_penala">Sesizare penala</option>
+          <option value="mixt">Mixt</option>
+          <option value="necunoscut">Necunoscut</option>
         </select>
+        <details id="globalAdvancedFilters" class="filter-advanced">
+          <summary>Filtre avansate</summary>
+          <div class="filter-advanced-body">
+            <label><span>De la</span><input type="date" id="dateFrom" onchange="markCustomPeriod(); applyFilters()" /></label>
+            <label><span>Pana la</span><input type="date" id="dateTo" onchange="markCustomPeriod(); applyFilters()" /></label>
+          </div>
+        </details>
+        <div id="activeFilterChips" class="active-filter-chips" aria-live="polite"></div>
         <button class="secondary export-excel-btn" type="button">Export Excel</button>
-        <div class="tiny">Filtrele se aplica in toate modulele: harta, garzi, inspectori, sesizari, entitati si raportare.</div>
       </div>
 
       <div class="card nav-card">
         <div class="card-title"><span>Navigare</span></div>
-        <div class="nav-note" id="navNote">Alege modul de lucru. Harta ramane doar la vizualizarea controalelor, iar graficele au spatiu separat.</div>
-        <div class="nav-section" id="navButtons"></div>
+        <div class="nav-section" id="navButtons" role="tablist" aria-label="Module dashboard"></div>
       </div>
     </aside>
 
@@ -89,32 +98,32 @@
         <div id="viewPill" class="view-pill">Harta operationala</div>
       </div>
 
-      <section class="kpi-row">
+      <section class="kpi-row gfn-kpi-strip">
         <div class="kpi"><div class="kpi-icon">OK</div><div><div class="kpi-label">Controale azi</div><div id="kpiToday" class="kpi-value">0</div><div class="kpi-note">ziua curenta</div></div></div>
         <div class="kpi"><div class="kpi-icon">7</div><div><div class="kpi-label">Ultimele 7 zile</div><div id="kpi7Days" class="kpi-value">0</div><div class="kpi-note">activitate recenta</div></div></div>
         <div class="kpi"><div class="kpi-icon">30</div><div><div class="kpi-label">Ultimele 30 zile</div><div id="kpi30Days" class="kpi-value">0</div><div class="kpi-note">perioada operationala</div></div></div>
         <div class="kpi"><div class="kpi-icon red">!</div><div><div class="kpi-label">Neconforme 30 zile</div><div id="kpi30Bad" class="kpi-value red">0</div><div class="kpi-note">controale cu probleme</div></div></div>
       </section>
 
-      <section id="view-dashboard" class="view">
-        <div class="dashboard-grid three">
+      <section id="view-dashboard" class="view gfn-view-layout gfn-dashboard-layout">
+        <div class="dashboard-grid three dashboard-kpi-grid">
           <div class="metric-card"><div class="metric-icon">OK</div><div><div class="metric-label">Controale efectuate</div><div id="dashTotalControls" class="metric-value">0</div><div class="metric-trend" id="dashTotalTrend">date filtrate</div></div></div>
           <div class="metric-card"><div class="metric-icon">!</div><div><div class="metric-label">Sanctiuni / sesizari</div><div id="dashSanctions" class="metric-value">0</div><div class="metric-trend">controale cu masuri</div></div></div>
-          <div class="metric-card"><div class="metric-icon">RON</div><div><div class="metric-label">Amenzi totale</div><div id="dashFines" class="metric-value">0 RON</div><div class="metric-trend">pe filtrele active</div></div></div>
+          <div class="metric-card"><div class="metric-icon">LEI</div><div><div class="metric-label">Amenzi totale</div><div id="dashFines" class="metric-value">0 lei</div><div class="metric-trend">pe filtrele active</div></div></div>
         </div>
 
-        <div class="dashboard-grid">
-          <div class="chart-card">
+        <div class="dashboard-grid dashboard-chart-grid dashboard-chart-primary">
+          <div class="chart-card dashboard-chart-main">
             <div class="chart-title">Evolutia controalelor <small>area plot dinamic</small></div>
             <canvas id="chartDashboardTrend"></canvas>
           </div>
-          <div class="chart-card">
+          <div class="chart-card dashboard-chart-side">
             <div class="chart-title">Tipuri de controale <small>distributie</small></div>
             <canvas id="chartDashboardTypes"></canvas>
           </div>
         </div>
 
-        <div class="dashboard-grid">
+        <div class="dashboard-grid dashboard-chart-grid dashboard-chart-secondary">
           <div class="chart-card">
             <div class="chart-title">Rezultate controale <small>conform / probleme</small></div>
             <canvas id="chartDashboardResults"></canvas>
@@ -125,65 +134,53 @@
           </div>
         </div>
 
-        <div class="module">
+        <div class="module dashboard-recent-module">
           <div class="module-title"><span>Activitate recenta</span><span class="tiny">cele mai recente controale sus</span></div>
           <div id="dashboardRecentTable" class="table-wrap"></div>
         </div>
       </section>
 
-      <section id="view-map" class="view active">
-        <div class="view-grid">
-          <div class="module map-module">
+      <section id="view-map" class="view active gfn-map-layout gfn-view-template">
+        <div class="view-grid gfn-main-grid gfn-controls-main-grid">
+          <div class="module map-module gfn-map-card">
             <div class="map-counter" id="visibleCount">0 controale afisate</div>
             <div id="mapControlPopup" class="map-control-popup hidden"></div>
             <div id="map"></div>
           </div>
-          <div class="side-stack">
+          <div class="side-stack gfn-side-column">
             <div class="module recent-controls-module">
               <div class="module-title"><span>Ultimele controale</span></div>
               <div id="recentControls" class="mini-list">Se incarca datele.</div>
-            </div>
-            <div class="module control-detail-module">
-              <div class="module-title">
-                <span>Fisa controlului</span>
-                <button class="control-detail-close" type="button" title="Inchide fisa">x</button>
-              </div>
-              <div id="controlDetailPanel" class="control-detail-panel">
-                Selecteaza un control de pe harta sau din lista pentru detalii.
-              </div>
             </div>
             <div class="module">
               <div class="module-title"><span>Sume sanctiuni</span></div>
               <div class="money-grid">
                 <div class="money-row"><div class="money-label">Controale astazi</div><div class="money-value" id="moneyTodayCount">0</div></div>
-                <div class="money-row"><div class="money-label">Amenzi / sume astazi</div><div class="money-value big" id="moneyTodayTotal">0 RON</div></div>
+                <div class="money-row"><div class="money-label">Amenzi / sume astazi</div><div class="money-value big" id="moneyTodayTotal">0 lei</div></div>
                 <div class="money-row"><div class="money-label">Controale ultimele 30 zile</div><div class="money-value" id="money30Count">0</div></div>
-                <div class="money-row"><div class="money-label">Amenzi / sume ultimele 30 zile</div><div class="money-value big" id="money30Total">0 RON</div></div>
-                <div class="money-row"><div class="money-label">Prejudiciu estimat 30 zile</div><div class="money-value" id="damage30Total">0 RON</div></div>
+                <div class="money-row"><div class="money-label">Amenzi / sume ultimele 30 zile</div><div class="money-value big" id="money30Total">0 lei</div></div>
+                <div class="money-row"><div class="money-label">Prejudiciu estimat 30 zile</div><div class="money-value" id="damage30Total">0 lei</div></div>
               </div>
-              <div class="tiny" style="margin-top:10px;">Calcul pe filtrele active.</div>
+              <div class="tiny module-calculation-note">Calcul pe filtrele active.</div>
             </div>
             <div class="module">
               <div class="module-title"><span>Legenda harta</span></div>
-              <div class="legend-item"><span class="legend-color" style="background:#16d977;color:#16d977;"></span>Conform</div>
-              <div class="legend-item"><span class="legend-color" style="background:#ff4141;color:#ff4141;"></span>Neconform</div>
-              <div class="legend-item"><span class="legend-color" style="background:#ffb020;color:#ffb020;"></span>Avertisment</div>
-              <div class="legend-item"><span class="legend-color" style="background:#18b7ff;color:#18b7ff;"></span>Sanctiune</div>
-              <div class="legend-item"><span class="legend-color" style="background:#a073ff;color:#a073ff;"></span>Sesizare penala</div>
+                <div class="legend-item"><span class="legend-color legend-conform"></span>Conform</div>
+                <div class="legend-item"><span class="legend-color legend-neconform"></span>Neconform</div>
+                <div class="legend-item"><span class="legend-color legend-avertisment"></span>Avertisment</div>
+                <div class="legend-item"><span class="legend-color legend-sanctiune"></span>Sanctiune</div>
+                <div class="legend-item"><span class="legend-color legend-penal"></span>Sesizare penala</div>
             </div>
           </div>
         </div>
       </section>
 
-      <section id="view-garzi" class="view">
-        <div class="guard-filter-strip">
-          <div class="guard-filter-label">
-            <span>Filtre separate pentru activitatea garzilor</span>
-            <span class="guard-filter-reset" onclick="resetGuardFilters()">Reseteaza</span>
-          </div>
+      <section id="view-garzi" class="view gfn-view-layout gfn-guard-layout">
+        <div class="guard-filter-strip guard-filter-grid-12 guard-filter-bar gfn-filter-bar">
           <select id="guardPeriodPreset" onchange="applyGuardPeriodPreset(this.value)">
             <option value="last30">Ultima luna</option>
-            <option value="last90" selected>Ultimele 3 luni</option>
+            <option value="last90">Ultimele 3 luni</option>
+            <option value="last6" selected>Ultimele 6 luni</option>
             <option value="year">Anul curent</option>
             <option value="all">Toata perioada</option>
             <option value="custom">Perioada personalizata</option>
@@ -194,6 +191,9 @@
             <option value="tematic">Tematic</option>
             <option value="operativ">Operativ</option>
             <option value="sesizare">Sesizare</option>
+            <option value="rutina">Rutina</option>
+            <option value="solicitare">Solicitare</option>
+            <option value="necunoscut">Necunoscut</option>
           </select>
           <select id="guardCategoryFilter" onchange="renderGarziView()">
             <option value="toate">Toate categoriile de control</option>
@@ -205,21 +205,50 @@
             <option value="avertisment">Avertisment</option>
             <option value="sanctiune">Sanctiune</option>
             <option value="sesizare_penala">Sesizare penala</option>
+            <option value="mixt">Mixt</option>
+            <option value="necunoscut">Necunoscut</option>
           </select>
-          <div class="guard-date-pair">
-            <input type="date" id="guardDateFrom" onchange="markGuardCustomPeriod(); renderGarziView()" />
-            <input type="date" id="guardDateTo" onchange="markGuardCustomPeriod(); renderGarziView()" />
-          </div>
+          <details class="guard-filter-advanced">
+            <summary>Filtre avansate</summary>
+            <div class="guard-filter-advanced-body">
+              <div class="guard-date-pair">
+                <input type="date" id="guardDateFrom" onchange="markGuardCustomPeriod(); renderGarziView()" />
+                <input type="date" id="guardDateTo" onchange="markGuardCustomPeriod(); renderGarziView()" />
+              </div>
+            </div>
+          </details>
+          <button class="guard-filter-reset" type="button" onclick="resetGuardFilters()">Reseteaza</button>
         </div>
 
-        <div class="insight-row">
-          <div class="insight"><span>Total controale filtrate</span><strong id="garziTotal">0</strong></div>
-          <div class="insight"><span>Media / garda / luna</span><strong id="garziAverage">0</strong></div>
-          <div class="insight"><span>Garda cu ritm maxim</span><strong id="garziTop">-</strong></div>
-        </div>
+        <div class="analytics-grid guard-primary-grid guard-main-grid dashboard-content-grid dashboard-content-grid-split">
+          <aside class="guard-stats-rail gfn-stat-rail" aria-label="Indicatori harta statistica">
+            <div class="guard-map-stat">
+              <span class="guard-map-stat-icon" aria-hidden="true">UP</span>
+              <span class="guard-stat-label">Indicator maxim</span>
+              <strong id="guardMapMax" class="guard-stat-value">0</strong>
+            </div>
+            <div class="guard-map-stat">
+              <span class="guard-map-stat-icon" aria-hidden="true">AVG</span>
+              <span class="guard-stat-label">Media nationala</span>
+              <strong id="guardMapAvg" class="guard-stat-value">0</strong>
+            </div>
+            <div class="guard-map-stat">
+              <span class="guard-map-stat-icon" aria-hidden="true">CAL</span>
+              <span class="guard-stat-label">Perioada</span>
+              <strong id="guardMapMonths" class="guard-stat-value">0 luni</strong>
+            </div>
+            <div class="guard-map-stat">
+              <span class="guard-map-stat-icon" aria-hidden="true">CTRL</span>
+              <span class="guard-stat-label">Total controale</span>
+              <strong id="garziTotal" class="guard-stat-value">0</strong>
+            </div>
+            <div class="guard-legacy-metrics" aria-hidden="true">
+              <span id="garziAverage">0</span>
+              <span id="garziTop">-</span>
+            </div>
+          </aside>
 
-        <div class="analytics-grid">
-          <div class="chart-card guard-stat-map-card">
+          <div class="chart-card guard-stat-map-card gfn-map-card">
             <div class="chart-title">
               <span>Harta statistica pe garzi</span>
               <div class="guard-stat-toolbar">
@@ -231,7 +260,9 @@
                   <option value="sanctionRate">Rata sanctiuni %</option>
                   <option value="petitionShare">Pondere sesizari %</option>
                   <option value="finePerControl">Amenzi / control</option>
-                  <option value="damagePerControl">Prejudiciu / control</option>
+                  <option value="reportAvgDays">Timp mediu finalizare raport</option>
+                  <option value="petitionAvgDays">Timp mediu raspuns sesizari</option>
+                  <option value="overdueReports">Controale intarziate &gt;10 zile</option>
                   <option value="problems">Controale cu probleme</option>
                   <option value="sanctions">Sanctiuni + sesizari penale</option>
                   <option value="fines">Cuantum amenzi</option>
@@ -239,147 +270,253 @@
                 </select>
               </div>
             </div>
-            <div class="guard-map-kpis">
-              <div class="guard-map-kpi"><span>Indicator maxim</span><strong id="guardMapMax">0</strong></div>
-              <div class="guard-map-kpi"><span>Media nationala</span><strong id="guardMapAvg">0</strong></div>
-              <div class="guard-map-kpi"><span>Perioada analizata</span><strong id="guardMapMonths">0 luni</strong></div>
-            </div>
             <div class="guard-stat-map-shell">
               <div id="guardStatsMap"></div>
             </div>
             <div id="guardMapLegend" class="guard-stat-legend guard-stat-legend-horizontal"></div>
           </div>
 
-          <div class="guard-map-side">
-            <div class="chart-card small">
+          <div class="guard-map-side guard-side-column gfn-side-column">
+            <div class="chart-card small guard-top-card">
               <div class="chart-title">Top garzi <small id="guardMetricLabel">controale/luna</small></div>
               <canvas id="chartGarziBars"></canvas>
             </div>
-            <div class="module">
-              <div class="module-title"><span>Clasament indicator</span><span class="tiny">top 8 pe filtre</span></div>
+            <div class="module guard-ranking-card gfn-ranking">
+              <div class="module-title"><span>Clasament</span></div>
               <div id="guardRankingList" class="mini-list"></div>
             </div>
           </div>
         </div>
 
-        <div class="analytics-grid">
-          <div class="chart-card"><div class="chart-title">Evolutie lunara <small>toate garzile</small></div><canvas id="chartGarziMonthly"></canvas></div>
-          <div class="chart-card"><div class="chart-title">Rezultate pe garzi <small>neconform / sanctiuni</small></div><canvas id="chartGarziProblems"></canvas></div>
-          <div class="chart-card"><div class="chart-title">Media pe tip control <small>referinta nationala</small></div><canvas id="chartTypeAverage"></canvas></div>
-          <div class="chart-card"><div class="chart-title">Amenzi / prejudicii <small>pe garzi</small></div><canvas id="chartGarziMoney"></canvas></div>
+        <div class="analytics-grid guard-chart-grid dashboard-content-grid dashboard-content-grid-equal">
+          <div class="chart-card"><div class="chart-title">Evolutie lunara <small>controale</small></div><canvas id="chartGarziMonthly"></canvas></div>
+          <div class="chart-card"><div class="chart-title">Probleme pe garzi <small>controale</small></div><canvas id="chartGarziProblems"></canvas></div>
+          <div class="chart-card"><div class="chart-title">Medie nationala pe tip <small>controale</small></div><canvas id="chartTypeAverage"></canvas></div>
+          <div class="chart-card"><div class="chart-title">Amenzi si prejudicii <small>lei</small></div><canvas id="chartGarziMoney"></canvas></div>
         </div>
 
         <div class="module guard-scorecard-module">
           <div class="module-title">
             <span>Matrice KPI pe garzi</span>
-            <span class="tiny">indicatori normalizati dupa suprafata de padure si perioada analizata</span>
+            <span class="tiny">indicatori normalizati dupa suprafata de padure si filtrele active</span>
           </div>
           <div id="guardKpiScorecard" class="guard-scorecard"></div>
         </div>
       </section>
 
-      <section id="view-inspectori" class="view internal-only" style="display:none;">
-        <div class="module-period-strip">
-          <div class="module-period-title">
-            <span>Perioada analiza inspectori</span>
-            <span class="module-period-reset" onclick="resetModulePeriod('inspector')">Reseteaza</span>
-          </div>
-          <select id="inspectorPeriodPreset" onchange="applyModulePeriodPreset('inspector', this.value)">
-            <option value="last30">Ultima luna</option>
-            <option value="last90" selected>Ultimele 3 luni</option>
-            <option value="year">Anul curent</option>
-            <option value="all">Toata perioada</option>
-            <option value="custom">Perioada personalizata</option>
-          </select>
-          <div class="module-period-dates">
-            <input type="date" id="inspectorDateFrom" onchange="markModuleCustomPeriod('inspector'); renderInspectorsView()" />
-            <input type="date" id="inspectorDateTo" onchange="markModuleCustomPeriod('inspector'); renderInspectorsView()" />
-          </div>
-          <div class="tiny">Se aplica doar analizelor din tabul Activitate inspectori.</div>
+      <section id="view-inspectori" class="view internal-only inspector-dashboard gfn-view-layout" style="display:none;">
+        <div class="inspector-section-nav inspector-glass-panel" role="tablist" aria-label="Module inspectori">
+          <button type="button" class="inspector-section-tab active" data-inspector-section="activity" role="tab" aria-selected="true" aria-controls="inspectorActivitySection" onclick="setInspectorSection('activity')">
+            <span>Activitate inspectori</span>
+            <small>Indicatori, comparatii si controale</small>
+          </button>
+          <button type="button" class="inspector-section-tab" data-inspector-section="reports" role="tab" aria-selected="false" aria-controls="inspectorReportsSection" onclick="setInspectorSection('reports')">
+            <span>Rapoarte de control</span>
+            <small>Finalizare, termene si documente PDF</small>
+          </button>
         </div>
 
-        <div class="module" style="margin-bottom:14px;">
-          <div class="module-title"><span>Activitate inspectori</span><span class="tiny">comparatie cu media</span></div>
-          <div class="inspector-filter-grid">
-            <div class="inspector-picker-panel">
-              <div class="inspector-picker-label">
-                <span>Inspector pentru analiza</span>
-                <small>Alege numele, apoi adauga-l in comparatie.</small>
+        <div id="inspectorActivitySection" class="inspector-subsection">
+        <div id="collapseInspectorAdvanced" class="inspector-filter-bar inspector-glass-panel gfn-filter-bar" aria-label="Filtre activitate inspectori">
+          <div class="inspector-filter-heading">
+            <div><b>Filtre activitate inspectori</b><small id="inspectorActiveFilterCount">Ultimele 6 luni</small></div>
+          </div>
+          <div class="inspector-filter-grid-main">
+            <label class="inspector-filter-field"><span>Perioada</span><select id="inspectorPeriodPreset" onchange="applyInspectorFiltersFromBar('period')"><option value="last30">Ultima luna</option><option value="last90">Ultimele 3 luni</option><option value="last180" selected>Ultimele 6 luni</option><option value="year">Anul curent</option><option value="all">Toata perioada</option><option value="custom">Perioada personalizata</option></select></label>
+            <label class="inspector-filter-field"><span>Garda forestiera</span><select id="inspectorGardaScope" onchange="applyInspectorFiltersFromBar()"><option value="toate">Toate garzile</option></select></label>
+            <label class="inspector-filter-field"><span>Tip control</span><select id="inspectorTypeScope" onchange="applyInspectorFiltersFromBar()"><option value="toate">Toate tipurile</option><option value="fond">Fond</option><option value="tematic">Tematic</option><option value="operativ">Operativ</option><option value="sesizare">Sesizare</option><option value="rutina">Rutina</option><option value="solicitare">Solicitare</option><option value="necunoscut">Necunoscut</option></select></label>
+            <label class="inspector-filter-field"><span>Categorie control</span><select id="inspectorCategoryScope" onchange="applyInspectorFiltersFromBar()"><option value="toate" selected>Toate categoriile de control</option></select></label>
+            <label class="inspector-filter-field"><span>Rezultat</span><select id="inspectorResultScope" onchange="applyInspectorFiltersFromBar()"><option value="toate">Toate rezultatele</option><option value="conform">Conform</option><option value="neconform">Neconform</option><option value="avertisment">Avertisment</option><option value="sanctiune">Sanctiune</option><option value="sesizare_penala">Sesizare penala</option><option value="mixt">Mixt</option><option value="necunoscut">Necunoscut</option></select></label>
+            <button type="button" class="secondary inspector-filter-reset" onclick="resetInspectorAdvancedFilters()">Reseteaza</button>
+          </div>
+          <div id="inspectorCustomPeriod" class="inspector-custom-period" hidden>
+            <label class="inspector-filter-field"><span>De la</span><input type="date" id="inspectorDateFrom" onchange="applyInspectorFiltersFromBar('custom')" /></label>
+            <label class="inspector-filter-field"><span>Pana la</span><input type="date" id="inspectorDateTo" onchange="applyInspectorFiltersFromBar('custom')" /></label>
+          </div>
+          <select id="inspectorCompareScope" hidden><option value="national" selected>Media nationala</option></select>
+          <div id="inspectorActiveFilterChips" hidden></div>
+        </div>
+
+        <div class="inspector-primary-layout gfn-main-grid">
+          <div id="inspectorGeneralKpis" class="inspector-kpi-grid inspector-kpi-grid-clean gfn-stat-rail"></div>
+
+          <section class="inspector-ranking-panel inspector-glass-panel gfn-ranking" aria-label="Top inspectori">
+            <div class="inspector-panel-heading inspector-ranking-heading">
+              <div>
+                <h3 id="inspectorRankingTitle">Top 5 inspectori · Clasament national</h3>
+                <small id="inspectorRankingSubtitle">Ultimele 6 luni</small>
               </div>
-              <div class="inspector-search-box">
-                <input id="inspectorSearch" placeholder="Cauta inspector dupa nume..." autocomplete="off" onfocus="renderInspectorSuggestions(true)" oninput="renderInspectorSuggestions(); renderInspectorsView()" />
-                <div id="inspectorSuggestList" class="inspector-suggest-list"></div>
-              </div>
-              <button class="secondary inspector-add-btn" onclick="addInspectorComparison()">Adauga inspector pentru comparatie</button>
+              <span id="inspectorDirectoryCount">0 inspectori</span>
             </div>
-            <select id="inspectorCompareScope" onchange="renderInspectorsView()">
-              <option value="national" selected>Compara cu media nationala</option>
-              <option value="same_guard">Compara cu media garzii inspectorului</option>
-              <option value="selected_guard">Compara cu o garda selectata</option>
-            </select>
-            <select id="inspectorGardaScope" onchange="renderInspectorsView()"><option value="toate">Toate garzile</option></select>
-            <select id="inspectorTypeScope" onchange="renderInspectorsView()">
-              <option value="toate">Toate tipurile de control</option>
-              <option value="fond">Fond</option>
-              <option value="tematic">Tematic</option>
-              <option value="operativ">Operativ</option>
-              <option value="sesizare">Sesizare</option>
-            </select>
-            <select id="inspectorCategoryScope" onchange="renderInspectorsView()">
-              <option value="toate">Toate categoriile de control</option>
-            </select>
-            <select id="inspectorResultScope" onchange="renderInspectorsView()">
-              <option value="toate">Toate rezultatele</option>
-              <option value="conform">Conform</option>
-              <option value="neconform">Neconform</option>
-              <option value="avertisment">Avertisment</option>
-              <option value="sanctiune">Sanctiune</option>
-              <option value="sesizare_penala">Sesizare penala</option>
-            </select>
-            <button class="secondary inspector-analyze-btn" onclick="renderInspectorsView()">Analizeaza</button>
+
+            <div class="inspector-ranking-switch" role="tablist" aria-label="Ordonare clasament">
+              <button type="button" class="inspector-ranking-btn active" data-ranking="controls" role="tab" aria-selected="true">Dupa controale</button>
+              <button type="button" class="inspector-ranking-btn" data-ranking="fines" role="tab" aria-selected="false">Dupa amenzi</button>
+            </div>
+            <div id="inspectorIndex" class="inspector-index inspector-index-clean"></div>
+            <div id="inspectorDirectoryFooter" class="inspector-directory-footer"></div>
+          </section>
+
+          <section class="inspector-evolution-panel inspector-glass-panel gfn-chart-card" aria-label="Evolutie controale">
+            <div class="inspector-panel-heading inspector-performance-heading">
+              <div>
+                <h3 id="inspectorEvolutionTitle">Evolutie saptamanala · Toate garzile</h3>
+                <span id="inspectorEvolutionSubtitle">Ultimele 6 luni</span>
+              </div>
+              <div class="inspector-sort-row inspector-chart-tabs" role="tablist" aria-label="Indicator grafic">
+                <button type="button" class="inspector-sort-btn active" data-sort="activity" role="tab" aria-selected="true">Activitate</button>
+                <button type="button" class="inspector-sort-btn" data-sort="report" role="tab" aria-selected="false">Raport</button>
+                <button type="button" class="inspector-sort-btn" data-sort="problems" role="tab" aria-selected="false">Probleme</button>
+                <button type="button" class="inspector-sort-btn" data-sort="delays" role="tab" aria-selected="false">Intarzieri</button>
+              </div>
+            </div>
+            <div id="collapseInspectorCharts" class="gfn-collapse open inspector-chart-shell">
+              <div class="gfn-collapse-body">
+                <div class="analytics-grid inspector-chart-grid inspector-chart-grid-clean dashboard-content-grid dashboard-content-grid-equal">
+                  <div class="chart-card inspector-chart-primary" data-inspector-topic="activity"><div class="chart-title"><span id="chartInspectorsActivityTitle">Controale pe saptamani</span> <small id="chartInspectorsActivitySub">activitate filtrata</small></div><canvas id="chartInspectorsMonthly"></canvas></div>
+                  <div class="chart-card" data-inspector-topic="report"><div class="chart-title"><span id="chartInspectorsReportTitle">Timp mediu raport</span> <small id="chartInspectorsReportSub">zile</small></div><canvas id="chartInspectorsReportTime"></canvas></div>
+                  <div class="chart-card" data-inspector-topic="report"><div class="chart-title">Timp raspuns sesizari <small>zile</small></div><canvas id="chartInspectorsPetitionResponse"></canvas></div>
+                  <div class="chart-card" data-inspector-topic="problems"><div class="chart-title">Controale cu probleme <small>%</small></div><canvas id="chartInspectorsProblems"></canvas></div>
+                  <div class="chart-card" data-inspector-topic="problems"><div class="chart-title">Amenzi per control <small>lei/control</small></div><canvas id="chartInspectorsFinePerControl"></canvas></div>
+                  <div class="chart-card inspector-chart-primary" data-inspector-topic="delays"><div class="chart-title">Controale fara raport <small>peste 10 zile</small></div><canvas id="chartInspectorsOverdue"></canvas></div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div class="inspector-operations-grid inspector-row-three dashboard-content-grid dashboard-content-grid-equal">
+          <section id="collapseInspectorCompare" class="gfn-collapse open inspector-comparison-panel inspector-glass-panel" aria-label="Panou comparativ">
+            <div class="inspector-panel-heading">
+              <div>
+                <h3>Panou comparativ</h3>
+                <span>Compara maximum 5 inspectori</span>
+              </div>
+              <button class="secondary inspector-add-btn" type="button" onclick="focusInspectorCompareSearch()">+ Adauga inspector</button>
+            </div>
+
+            <div class="gfn-collapse-body">
+              <div id="inspectorSelectorShell" class="inspector-selector-shell collapsed">
+                <div class="inspector-compare-search-row">
+                <div class="inspector-search-box inspector-search-clean">
+                  <span class="inspector-search-icon" aria-hidden="true"></span>
+                    <input id="inspectorSearch" role="combobox" aria-autocomplete="list" aria-controls="inspectorSuggestList" aria-expanded="false" placeholder="Cauta dupa nume sau garda..." autocomplete="off" onfocus="renderInspectorSuggestions()" oninput="scheduleInspectorSuggestions()" onkeydown="handleInspectorSearchKeydown(event)" />
+                    <div id="inspectorSuggestList" class="inspector-suggest-list" role="listbox"></div>
+                  </div>
+                  <button class="secondary inspector-selector-close" type="button" onclick="closeInspectorSelector()">Inchide</button>
+                </div>
+              </div>
+              <div id="inspectorCompareList" class="inspector-compare-list inspector-toolbar-chips"></div>
+              <div id="inspectorKpiScorecard" class="inspector-compare-row"></div>
+              <div class="inspector-comparison-chart">
+                <div class="chart-title">Evolutie comparativa <small>inspectori selectati si media nationala</small></div>
+                <canvas id="chartInspectorsComparison"></canvas>
+              </div>
+            </div>
+          </section>
+
+          <section class="inspector-results-panel inspector-glass-panel" aria-label="Rezultate inspectori">
+            <div id="inspectorProfilePanel" class="inspector-selected-panel inspector-profile-clean">
+              <div class="inspector-panel-heading">
+                <h3 id="inspectorResultsTitle">Rezultate</h3>
+                <span id="inspectorProfileNote">Rezultate generale</span>
+              </div>
+              <div id="inspectorProfileKpis" class="inspector-selected-kpis"></div>
+            </div>
+          </section>
+        </div>
+
+        <section class="inspector-controls-module inspector-controls-clean inspector-glass-panel">
+          <div class="inspector-panel-heading inspector-controls-heading">
+            <div class="inspector-controls-heading-copy">
+              <div class="inspector-controls-title-row">
+                <span class="inspector-controls-title-icon" aria-hidden="true"></span>
+                <h3>Ultimele controale efectuate</h3>
+                <span id="inspectorControlsCount" class="inspector-controls-count">0 din 0 controale</span>
+              </div>
+              <span id="inspectorControlsNote">Activitate nationala</span>
+            </div>
           </div>
+          <div id="inspectorControlsList" class="inspector-controls-list"></div>
+        </section>
+
           <datalist id="inspectorList"></datalist>
-          <div id="inspectorCompareList" class="inspector-compare-list"></div>
-          <div id="inspectorSummary" class="tiny">Selecteaza un inspector sau vezi analiza generala.</div>
         </div>
 
-        <div class="insight-row inspector-compare-row">
-          <div class="insight"><span>Inspector selectat</span><strong id="inspectorSelectedKpi">-</strong></div>
-          <div class="insight"><span>Total inspector</span><strong id="inspectorTotalKpi">0</strong></div>
-          <div class="insight"><span>Media grup comparatie</span><strong id="inspectorAverageKpi">0</strong></div>
-        </div>
+        <div id="inspectorReportsSection" class="inspector-subsection inspector-reports-section" hidden>
+          <header class="inspector-reports-heading inspector-glass-panel">
+            <div>
+              <span class="inspector-reports-eyebrow">Flux administrativ intern</span>
+              <h2 id="reportWorkflowTitle">Rapoarte de control</h2>
+              <p id="reportWorkflowSubtitle">Controalele efectuate in teren si stadiul rapoartelor PDF.</p>
+            </div>
+            <button class="secondary report-refresh-btn" type="button" onclick="loadReportWorkflowItems(true)">Actualizeaza</button>
+          </header>
 
-        <div id="inspectorProfilePanel" class="module inspector-profile-panel">
-          <div class="module-title">
-            <span>Profil activitate inspector</span>
-            <span id="inspectorProfileNote" class="tiny">selecteaza un inspector pentru analiza dedicata</span>
+          <div class="module report-workflow-filters gfn-filter-bar">
+            <div class="module-title report-filter-title">
+              <span>Filtre rapoarte</span>
+              <button class="secondary report-reset-btn" type="button" onclick="resetReportWorkflowFilters()">Reseteaza</button>
+            </div>
+            <div class="report-filter-grid inspector-report-filter-grid">
+              <label class="report-search-field">
+                <span>Cautare</span>
+                <input id="reportWorkflowSearch" placeholder="Cauta dupa nume inspector sau ID control" oninput="renderReportsWorkflowView()" />
+              </label>
+              <label><span>Status</span><select id="reportWorkflowStatus" onchange="loadReportWorkflowItems(true)">
+                <option value="toate">Toate statusurile</option>
+                <option value="fara_raport">Fara raport</option>
+                <option value="intarziate">Intarziate</option>
+                <option value="finalizate">Finalizate</option>
+              </select></label>
+              <label><span>Perioada</span><select id="reportWorkflowPeriod" onchange="applyReportWorkflowPeriod(this.value)">
+                <option value="30">Ultimele 30 zile</option>
+                <option value="90" selected>Ultimele 90 zile</option>
+                <option value="180">Ultimele 180 zile</option>
+                <option value="toate">Toata perioada</option>
+                <option value="custom">Perioada personalizata</option>
+              </select></label>
+              <label><span>De la</span><input id="reportWorkflowDateFrom" type="date" onchange="markReportWorkflowCustomPeriod()" /></label>
+              <label><span>Pana la</span><input id="reportWorkflowDateTo" type="date" onchange="markReportWorkflowCustomPeriod()" /></label>
+              <label class="report-admin-filter"><span>Garda</span><select id="reportWorkflowGarda" onchange="loadReportWorkflowItems(true)">
+                <option value="">Toate garzile</option>
+              </select></label>
+            </div>
           </div>
-          <div id="inspectorProfileKpis" class="inspector-profile-grid"></div>
-        </div>
 
-        <div class="module guard-scorecard-module">
-          <div class="module-title">
-            <span>Matrice KPI inspectori</span>
-            <span class="tiny">indicatori uniformi cu analiza pe garzi, calculati pe perioada selectata</span>
+          <div class="insight-row report-workflow-kpis gfn-kpi-strip">
+            <div class="insight"><span>Controale fara raport</span><strong id="reportKpiMissing">0</strong><small>in selectia curenta</small></div>
+            <div class="insight warn"><span>Intarziate peste 10 zile</span><strong id="reportKpiOverdue">0</strong><small>nefinalizate la termen</small></div>
+            <div class="insight"><span>Timp mediu elaborare raport</span><strong id="reportKpiAverage">-</strong><small>de la transmiterea din teren</small></div>
+            <div class="insight"><span>Rata rapoartelor finalizate</span><strong id="reportKpiCompletionRate">0%</strong><small>rapoarte incarcate</small></div>
           </div>
-          <div id="inspectorKpiScorecard" class="guard-scorecard inspector-scorecard"></div>
-        </div>
 
-        <div class="analytics-grid">
-          <div class="chart-card inspector-guard-card"><div class="chart-title"><span id="chartInspectorsTopTitle">Top inspectori</span> <small id="chartInspectorsTopSub">in filtrul intern</small></div><canvas id="chartInspectorsTop"></canvas><div id="inspectorGuardSummary" class="inspector-guard-summary"></div></div>
-          <div class="chart-card"><div class="chart-title">Controale pe luni <small>inspector vs media grupului</small></div><canvas id="chartInspectorsMonthly"></canvas></div>
-          <div class="chart-card"><div class="chart-title">Inspector vs medie pe tip <small>referinta comparativa</small></div><canvas id="chartInspectorsTypes"></canvas></div>
-          <div class="chart-card"><div class="chart-title"><span id="chartInspectorsResultsTitle">Rezultate controale</span> <small id="chartInspectorsResultsSub">inspector / grup</small></div><canvas id="chartInspectorsResults"></canvas></div>
+          <div class="report-analytics-grid gfn-main-grid">
+            <section class="chart-card report-stat-map-card gfn-map-card">
+              <div class="chart-title"><span>Timp mediu de elaborare pe garzi</span><small>zile · rapoarte finalizate</small></div>
+              <div id="reportStatsMap" class="report-stats-map"></div>
+              <div id="reportStatsLegend" class="report-stats-legend"></div>
+            </section>
+            <section class="module report-inspector-metrics-card gfn-side-column">
+              <div class="module-title"><span>Indicatori pe inspector</span><small>aceeasi selectie de filtre</small></div>
+              <div id="reportInspectorMetrics" class="report-inspector-metrics"></div>
+            </section>
+          </div>
+
+          <div class="module report-workflow-list">
+            <div class="module-title"><span>Rapoarte de control</span><small id="reportWorkflowCount">0 controale</small></div>
+            <div id="reportWorkflowTable" class="table-wrap gfn-table">Se incarca lista rapoartelor.</div>
+          </div>
         </div>
       </section>
+      <section id="view-petitions" class="view gfn-view-layout gfn-petition-layout">
+        <div class="petition-top-grid gfn-filter-bar">
+          <div id="petitionVisibleCount" class="petition-counter">0 petitii / sesizari afisate</div>
 
-      <section id="view-petitions" class="view">
-        <div id="petitionVisibleCount" class="petition-counter">0 sesizari afisate</div>
-
-        <div class="module-period-strip">
+          <div class="module-period-strip petition-period-strip">
           <div class="module-period-title">
-            <span>Perioada analiza sesizari</span>
-            <span class="module-period-reset" onclick="resetModulePeriod('petition')">Reseteaza</span>
+            <span>Perioada</span>
+            <button class="module-period-reset" type="button" onclick="resetModulePeriod('petition')">Reseteaza filtrele</button>
           </div>
           <select id="petitionPeriodPreset" onchange="applyModulePeriodPreset('petition', this.value)">
             <option value="last30">Ultima luna</option>
@@ -392,90 +529,243 @@
             <input type="date" id="petitionDateFrom" onchange="markModuleCustomPeriod('petition'); renderPetitionsView()" />
             <input type="date" id="petitionDateTo" onchange="markModuleCustomPeriod('petition'); renderPetitionsView()" />
           </div>
-          <div class="tiny">Se aplica graficelor si istoricului de sesizari.</div>
-        </div>
-        <div class="module" style="margin-bottom:14px;">
-          <div class="module-title"><span>Sesizari</span></div>
+          </div>
+        <div class="module petition-search-module module-gap-bottom">
+          <div class="module-title"><span>Cauta sesizare</span></div>
           <div class="search-panel">
             <input id="petitionNumberSearch" placeholder="Introdu numarul sesizarii..." onkeydown="if(event.key==='Enter') renderPetitionSearch();" />
             <button onclick="renderPetitionSearch()">Verifica</button>
           </div>
           <div id="petitionPublicResult" class="empty">Public: verificarea se face doar dupa numarul sesizarii.</div>
         </div>
-        <div id="petitionerInternalBlock" class="module internal-only" style="display:none;margin-bottom:14px;">
-          <div class="module-title"><span>Analiza petitionar</span></div>
-          <div class="search-panel">
-            <input id="petitionerSearch" list="petitionerList" placeholder="Cauta petitionar..." oninput="renderPetitionersView()" />
-            <button class="secondary" onclick="renderPetitionersView()">Analizeaza</button>
-          </div>
-          <datalist id="petitionerList"></datalist>
-          <div id="petitionerSummary" class="tiny">Selecteaza un petitionar pentru istoricul intern.</div>
-          <div id="petitionResponseStats" class="petition-response-strip"></div>
         </div>
-        <div class="analytics-grid">
-          <div class="chart-card"><div class="chart-title">Sesizari pe ani <small>istoric</small></div><canvas id="chartPetitionsYears"></canvas></div>
-          <div class="chart-card"><div class="chart-title">Sesizari pe garzi <small>distributie</small></div><canvas id="chartPetitionsGarzi"></canvas></div>
-          <div class="chart-card"><div class="chart-title">Rezultate sesizari <small>status</small></div><canvas id="chartPetitionsResults"></canvas></div>
-          <div class="chart-card internal-only"><div class="chart-title">Timp raspuns <small>de la inregistrare la control</small></div><canvas id="chartPetitionsResponse"></canvas></div>
-          <div class="table-card module"><div class="module-title"><span>Ultimele sesizari</span></div><div id="petitionHistory" class="table-wrap"></div></div>
+        <div id="collapsePetitioners" class="gfn-collapse internal-only" style="display:none;">
+          <button type="button" class="gfn-collapse-header" onclick="toggleCollapse('collapsePetitioners')">
+            <span><b>Analiza petitionari</b></span>
+            <em class="gfn-collapse-toggle">Deschide</em>
+          </button>
+          <div class="gfn-collapse-body">
+          <div id="petitionerInternalBlock" class="module internal-only module-gap-bottom" style="display:none;">
+              <div class="module-title"><span>Analiza petitionar</span></div>
+              <div class="search-panel">
+                <input id="petitionerSearch" list="petitionerList" placeholder="Cauta petitionar..." oninput="renderPetitionersView()" />
+                <button class="secondary" onclick="renderPetitionersView()">Analizeaza</button>
+              </div>
+              <datalist id="petitionerList"></datalist>
+              <div id="petitionerSummary" class="tiny">Selecteaza un petitionar pentru istoricul intern.</div>
+              <div id="petitionResponseStats" class="petition-response-strip"></div>
+            </div>
+          </div>
+        </div>
+        <div id="collapsePetitionStats" class="gfn-collapse">
+          <button type="button" class="gfn-collapse-header" onclick="toggleCollapse('collapsePetitionStats')">
+            <span><b>Mai multe statistici</b></span>
+            <em class="gfn-collapse-toggle">Deschide</em>
+          </button>
+          <div class="gfn-collapse-body">
+            <div class="analytics-grid petition-chart-grid dashboard-content-grid dashboard-content-grid-equal">
+              <div class="chart-card"><div class="chart-title">Sesizari pe ani <small>sesizari</small></div><canvas id="chartPetitionsYears"></canvas></div>
+              <div class="chart-card"><div class="chart-title">Sesizari pe garzi <small>sesizari</small></div><canvas id="chartPetitionsGarzi"></canvas></div>
+              <div class="chart-card"><div class="chart-title">Rezultate <small>sesizari</small></div><canvas id="chartPetitionsResults"></canvas></div>
+              <div class="chart-card internal-only"><div class="chart-title">Timp raspuns <small>zile</small></div><canvas id="chartPetitionsResponse"></canvas></div>
+            </div>
+          </div>
+        </div>
+        <div class="table-card module petition-history-card gfn-table-card">
+          <div class="module-title"><span>Ultimele petitii / sesizari</span></div>
+          <div id="petitionHistory" class="table-wrap petition-history-wrap gfn-table"></div>
         </div>
       </section>
 
-      <section id="view-entities" class="view internal-only" style="display:none;">
-
-        <div class="module-period-strip">
-          <div class="module-period-title">
-            <span>Perioada analiza entitati controlate</span>
-            <span class="module-period-reset" onclick="resetModulePeriod('entity')">Reseteaza</span>
-          </div>
+      <section id="view-entities" class="view internal-only gfn-view-layout gfn-entity-layout" style="display:none;">
+        <div class="entity-filter-bar gfn-filter-bar" aria-label="Filtre entitati">
           <select id="entityPeriodPreset" onchange="applyModulePeriodPreset('entity', this.value)">
-            <option value="last30" selected>Ultima luna</option>
+            <option value="last30">Ultima luna</option>
             <option value="last90">Ultimele 3 luni</option>
+            <option value="last180" selected>Ultimele 6 luni</option>
             <option value="year">Anul curent</option>
             <option value="all">Toata perioada</option>
             <option value="custom">Perioada personalizata</option>
           </select>
-          <div class="module-period-dates">
-            <input type="date" id="entityDateFrom" onchange="markModuleCustomPeriod('entity'); renderEntitiesView()" />
-            <input type="date" id="entityDateTo" onchange="markModuleCustomPeriod('entity'); renderEntitiesView()" />
-          </div>
-          <div class="tiny">Se aplica topului, istoricului si rezultatelor pe entitate.</div>
-        </div>
-        <div class="module" style="margin-bottom:14px;">
-          <div class="module-title"><span>Entitati controlate</span></div>
-          <div class="search-panel entity-search-panel">
-            <div class="entity-search-box">
-              <input id="entitySearch" placeholder="Cauta entitate controlata..." autocomplete="off" onfocus="renderEntitySuggestions(true)" oninput="renderEntitySuggestions(); renderEntitiesView()" />
-              <div id="entitySuggestList" class="entity-suggest-list"></div>
+          <select id="entityGuardFilter" onchange="renderEntitiesView()">
+            <option value="toate">Toate garzile</option>
+          </select>
+          <select id="entityTypeFilter" onchange="renderEntitiesView()">
+            <option value="toate">Toate tipurile de entitate</option>
+            <option value="ocol_stat">Ocol silvic de stat</option>
+            <option value="ocol_privat">Ocol silvic privat</option>
+            <option value="ocol_silvic">Ocol silvic</option>
+            <option value="operator_economic">Operator economic</option>
+            <option value="primarie">Primarie</option>
+            <option value="persoana_fizica">Persoana fizica</option>
+            <option value="gestionar_cinegetic">Gestionar fond cinegetic</option>
+            <option value="alta_entitate">Alte entitati</option>
+          </select>
+          <select id="entityControlTypeFilter" onchange="renderEntitiesView()">
+            <option value="toate">Toate tipurile de control</option>
+            <option value="fond">Fond</option>
+            <option value="tematic">Tematic</option>
+            <option value="operativ">Operativ</option>
+            <option value="sesizare">Sesizare</option>
+            <option value="rutina">Rutina</option>
+            <option value="solicitare">Solicitare</option>
+            <option value="necunoscut">Necunoscut</option>
+          </select>
+          <select id="entityCategoryFilter" onchange="renderEntitiesView()">
+            <option value="toate">Toate categoriile de control</option>
+          </select>
+          <select id="entityResultFilter" onchange="renderEntitiesView()">
+            <option value="toate">Toate rezultatele</option>
+            <option value="conform">Conform</option>
+            <option value="neconform">Neconform</option>
+            <option value="avertisment">Avertisment</option>
+            <option value="sanctiune">Sanctiune</option>
+            <option value="sesizare_penala">Sesizare penala</option>
+            <option value="mixt">Mixt</option>
+            <option value="necunoscut">Necunoscut</option>
+          </select>
+          <details class="entity-filter-advanced">
+            <summary>Filtre avansate</summary>
+            <div class="entity-filter-advanced-body">
+              <div class="entity-date-pair">
+                <label><span>De la</span><input type="date" id="entityDateFrom" onchange="markModuleCustomPeriod('entity'); renderEntitiesView()" /></label>
+                <label><span>Pana la</span><input type="date" id="entityDateTo" onchange="markModuleCustomPeriod('entity'); renderEntitiesView()" /></label>
+              </div>
             </div>
-            <button class="secondary" onclick="renderEntitiesView()">Analizeaza</button>
+          </details>
+          <button class="entity-filter-reset" type="button" onclick="resetEntityFilters()">Reseteaza</button>
+        </div>
+
+        <div class="entity-search-strip">
+          <div class="entity-search-copy">
+            <strong>Entitate</strong>
           </div>
+          <div class="entity-search-box">
+            <input id="entitySearch" placeholder="Cauta entitate controlata..." autocomplete="off" onfocus="renderEntitySuggestions(true)" oninput="renderEntitySuggestions()" />
+            <div id="entitySuggestList" class="entity-suggest-list"></div>
+          </div>
+          <button type="button" class="entity-search-action" onclick="renderEntitiesView()">Analizeaza</button>
+          <button class="secondary entity-reset-btn" type="button">Sterge selectia</button>
           <datalist id="entityList"></datalist>
-          <div id="entitySummary" class="tiny">Selecteaza o entitate sau vezi topul pe filtrele active.</div>
         </div>
-        <div class="insight-row entity-insight-row">
-          <div class="insight"><span>Entitati controlate</span><strong id="entityTotalKpi">0</strong></div>
-          <div class="insight"><span>Controale totale</span><strong id="entityControlsKpi">0</strong></div>
-          <div class="insight"><span>Ultimul control</span><strong id="entityLatestKpi">-</strong></div>
+
+        <div id="entitySummary" class="entity-context-line" hidden></div>
+
+        <div id="entityGeneralMapSection" class="analytics-grid entity-primary-grid entity-main-grid dashboard-content-grid">
+          <aside class="entity-stats-rail gfn-stat-rail" aria-label="Indicatori entitati">
+            <div class="entity-map-stat">
+              <span class="entity-map-stat-icon" aria-hidden="true">ENT</span>
+              <span class="entity-stat-label">Entitati verificate</span>
+              <strong id="entityMapEntities" class="entity-stat-value">0</strong>
+            </div>
+            <div class="entity-map-stat">
+              <span class="entity-map-stat-icon" aria-hidden="true">AVG</span>
+              <span class="entity-stat-label">Controale / entitate</span>
+              <strong id="entityMapControlsAvg" class="entity-stat-value">0</strong>
+            </div>
+            <div class="entity-map-stat">
+              <span class="entity-map-stat-icon" aria-hidden="true">!</span>
+              <span class="entity-stat-label">Entitati cu probleme</span>
+              <strong id="entityMapProblemRate" class="entity-stat-value">0%</strong>
+            </div>
+            <div class="entity-map-stat">
+              <span class="entity-map-stat-icon" aria-hidden="true">LEI</span>
+              <span class="entity-stat-label">Amenda medie / entitate</span>
+              <strong id="entityMapFineAvg" class="entity-stat-value">0 lei</strong>
+            </div>
+          </aside>
+
+          <div class="chart-card entity-stat-map-card gfn-map-card">
+            <div class="chart-title">
+              <span>Harta statistica pe entitati</span>
+              <div class="entity-stat-toolbar">
+                <select id="entityMapMetric" onchange="renderEntitiesView()">
+                  <option value="entities">Entitati verificate</option>
+                  <option value="controlsPerEntity">Controale / entitate</option>
+                  <option value="problemEntityRate">Entitati cu probleme %</option>
+                  <option value="avgFinePerEntity">Amenda medie / entitate</option>
+                </select>
+              </div>
+            </div>
+            <div class="entity-stat-map-shell">
+              <div id="entityStatsMap"></div>
+            </div>
+            <div id="entityMapLegend" class="entity-stat-legend entity-stat-legend-horizontal"></div>
+          </div>
+
+          <div class="entity-map-side gfn-side-column">
+            <div class="chart-card small entity-top-card">
+              <div class="chart-title">Top entitati <small id="entityMetricLabel">controale</small></div>
+              <canvas id="chartEntitiesTop"></canvas>
+            </div>
+            <div class="module entity-ranking-card gfn-ranking">
+              <div class="module-title"><span>Clasament</span></div>
+              <div id="entityRankingList" class="entity-ranking-list"></div>
+            </div>
+          </div>
         </div>
-        <div class="analytics-grid">
-          <div class="chart-card"><div class="chart-title"><span id="entityChartMainTitle">Top entitati</span> <small id="entityChartMainSub">controale</small></div><canvas id="chartEntitiesTop"></canvas></div>
-          <div class="chart-card"><div class="chart-title">Evolutie lunara <small id="entityChartMonthlySub">controale</small></div><canvas id="chartEntitiesMonthly"></canvas></div>
-          <div class="chart-card"><div class="chart-title">Controale pe garzi <small id="entityChartGuardSub">entitate</small></div><canvas id="chartEntitiesGuards"></canvas></div>
-          <div class="chart-card"><div class="chart-title">Rezultate <small id="entityChartResultSub">entitate</small></div><canvas id="chartEntitiesResults"></canvas></div>
+
+        <div id="entityGeneralChartsSection" class="analytics-grid entity-chart-grid dashboard-content-grid dashboard-content-grid-equal">
+          <div class="chart-card">
+            <div class="chart-title">Evolutie entitati verificate <small>lunar</small></div>
+            <canvas id="chartEntitiesMonthly"></canvas>
+          </div>
+          <div class="chart-card">
+            <div class="chart-title">Entitati cu probleme pe tip <small>rata %</small></div>
+            <canvas id="chartEntityTypes"></canvas>
+          </div>
         </div>
-        <div class="module entity-history-module">
-          <div class="module-title"><span>Ultimele controale efectuate</span><span class="tiny">sumar pe fiecare control</span></div>
-          <div id="entityHistory" class="entity-control-list"></div>
-        </div>
+
+        <section id="entityDossier" class="entity-dossier" aria-label="Dosar entitate selectata">
+          <div class="entity-dossier-card">
+            <div class="entity-dossier-head">
+              <div class="entity-dossier-identity">
+                <span class="entity-dossier-eyebrow">Dosar entitate</span>
+                <h2 id="entityDossierName">Selecteaza o entitate</h2>
+                <div id="entityDossierMeta" class="entity-dossier-profile"></div>
+              </div>
+              <div id="entityQuickActions" class="quick-actions entity-dossier-actions"></div>
+            </div>
+            <div id="entityDossierStats" class="entity-dossier-stats"></div>
+          </div>
+
+          <div class="module entity-history-module">
+            <div class="module-title"><span>Istoric controale</span><span class="tiny">selecteaza anul, apoi controlul pentru fisa completa</span></div>
+            <div id="entityYearTabs" class="entity-year-tabs"></div>
+            <div class="entity-history-columns" aria-hidden="true">
+              <span>Data / ID</span><span>Rezultat</span><span>Tip control</span><span>Garda / Localitate</span>
+              <span>Amenda</span><span>Raport</span><span>Fisa</span>
+            </div>
+            <div id="entityTimeline" class="entity-year-controls"></div>
+          </div>
+
+          <div id="collapseEntityStats" class="gfn-collapse entity-advanced-stats">
+            <button type="button" class="gfn-collapse-header" onclick="toggleCollapse('collapseEntityStats')">
+              <span><b>Analiza detaliata entitate</b></span>
+              <em class="gfn-collapse-toggle">Deschide</em>
+            </button>
+            <div class="gfn-collapse-body">
+              <div class="module entity-stat-module">
+                <div id="entitySecondaryKpis" class="entity-kpi-grid entity-secondary-kpis"></div>
+                <div class="entity-stat-grid entity-stat-grid-compact dashboard-content-grid dashboard-content-grid-equal">
+                  <div class="chart-card"><div class="chart-title">Rezultate <small>controale</small></div><canvas id="chartEntitiesResults"></canvas></div>
+                  <div class="chart-card"><div class="chart-title">Amenzi <small>lei</small></div><canvas id="chartEntityFines"></canvas></div>
+                  <div class="chart-card"><div class="chart-title">Prejudicii <small>lei</small></div><canvas id="chartEntityDamage"></canvas></div>
+                  <div class="chart-card"><div class="chart-title">Rapoarte <small>status documentar</small></div><canvas id="chartEntityReports"></canvas></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
       </section>
 
-      <section id="view-report" class="view">
+      <section id="view-report" class="view gfn-view-layout gfn-institutional-layout">
 
-        <div class="module-period-strip">
+        <div class="institution-filter-composite gfn-filter-bar">
+        <div class="module-period-strip institutional-period-strip">
           <div class="module-period-title">
-            <span>Perioada raport institutional</span>
-            <span class="module-period-reset" onclick="resetModulePeriod('report')">Reseteaza</span>
+            <span>Perioada</span>
+            <button class="module-period-reset" type="button" onclick="resetModulePeriod('report')">Reseteaza filtrele</button>
           </div>
           <select id="reportPeriodPreset" onchange="applyModulePeriodPreset('report', this.value)">
             <option value="last30">Ultima luna</option>
@@ -488,17 +778,18 @@
             <input type="date" id="reportDateFrom" onchange="markModuleCustomPeriod('report'); renderReportView()" />
             <input type="date" id="reportDateTo" onchange="markModuleCustomPeriod('report'); renderReportView()" />
           </div>
-          <div class="tiny">Se aplica sintezei, graficelor si exportului raportului.</div>
         </div>
-        <div class="module" style="margin-bottom:14px;">
-          <div class="module-title"><span>Raport institutional</span></div>
-          <div class="search-panel">
+          <div class="search-panel institution-filter-actions">
             <select id="institutionReportTarget" onchange="renderReportView()"><option value="national">Garda Forestiera Nationala</option></select>
+            <button class="secondary report-map-explore-btn" type="button">Exploreaza pe harta</button>
             <button onclick="exportInstitutionPdf()">Export PDF</button>
           </div>
+        </div>
+        <div class="module institution-report-module module-gap-bottom">
+          <div class="module-title"><span>Raport institutional</span></div>
           <div id="institutionReport" class="empty">Se incarca raportul.</div>
         </div>
-        <div class="analytics-grid three">
+        <div class="analytics-grid three institution-chart-grid dashboard-content-grid dashboard-content-grid-equal gfn-main-grid">
           <div class="chart-card small"><div class="chart-title">Rezultate</div><canvas id="chartReportResults"></canvas></div>
           <div class="chart-card small"><div class="chart-title">Tipuri control</div><canvas id="chartReportTypes"></canvas></div>
           <div class="chart-card small"><div class="chart-title">Categorii control</div><canvas id="chartReportCategories"></canvas></div>
@@ -507,7 +798,10 @@
     </main>
   </div>
 
+  <div id="controlFullModal" class="control-full-modal hidden"></div>
+  <div id="reportUploadModal" class="report-upload-modal hidden"></div>
+
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-  <script src="/ui/js/map-app.js?v=20260623-coord-normalize-v62"></script>
+  <script src="/ui/js/map-app.js?v=20260811-global-colors-v129"></script>
 </body>
 </html>

@@ -23,7 +23,7 @@ def get_nested_value(payload: dict, parent_key: str, child_key: str, default=Non
 
 def normalize_number(value):
     if value in (None, ""):
-        return 0
+        return None
 
     try:
         if isinstance(value, str):
@@ -38,7 +38,7 @@ def normalize_number(value):
 
         return float(value)
     except Exception:
-        return 0
+        return None
 
 
 def normalize_text(value):

@@ -1,7 +1,7 @@
-from datetime import datetime
+from datetime import date, datetime
 from typing import Any, Optional
 
-from sqlalchemy import Integer, String, DateTime, ForeignKey, Index
+from sqlalchemy import Date, Integer, String, DateTime, ForeignKey, Index, Text
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.dialects.postgresql import JSONB
 
@@ -73,6 +73,46 @@ class Control(Base):
     )
 
     # ------------------------
+    # RAPORT CONTROL PDF
+    # ------------------------
+    report_file_path: Mapped[Optional[str]] = mapped_column(
+        String(500),
+        nullable=True
+    )
+
+    report_original_filename: Mapped[Optional[str]] = mapped_column(
+        String(255),
+        nullable=True
+    )
+
+    report_uploaded_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime,
+        nullable=True,
+        index=True
+    )
+
+    report_uploaded_by_user_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("users.id"),
+        nullable=True,
+        index=True
+    )
+
+    report_number: Mapped[Optional[str]] = mapped_column(
+        String(100),
+        nullable=True
+    )
+
+    report_date: Mapped[Optional[date]] = mapped_column(
+        Date,
+        nullable=True
+    )
+
+    report_notes: Mapped[Optional[str]] = mapped_column(
+        Text,
+        nullable=True
+    )
+
+    # ------------------------
     # INDEXURI UTILE
     # ------------------------
     __table_args__ = (
@@ -82,4 +122,6 @@ class Control(Base):
         Index("idx_controls_type", "control_type"),
         Index("idx_controls_deleted_at", "deleted_at"),
         Index("idx_controls_deleted_by", "deleted_by_user_id"),
+        Index("idx_controls_report_uploaded_at", "report_uploaded_at"),
+        Index("idx_controls_report_uploaded_by", "report_uploaded_by_user_id"),
     )

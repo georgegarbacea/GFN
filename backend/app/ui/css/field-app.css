@@ -1,0 +1,528 @@
+:root {
+  --field-page: rgba(3, 18, 20, 0.50);
+  --field-panel: rgba(15, 52, 48, 0.68);
+  --field-panel-soft: rgba(22, 66, 60, 0.56);
+  --field-panel-light: rgba(32, 78, 70, 0.46);
+  --field-input: rgba(11, 42, 40, 0.74);
+  --field-input-focus: rgba(15, 55, 50, 0.88);
+  --field-border: rgba(175, 255, 220, 0.18);
+  --field-border-focus: rgba(61, 255, 146, 0.65);
+  --field-text: #f4fbf8;
+  --field-text-soft: rgba(235, 248, 243, 0.72);
+  --field-text-muted: rgba(225, 240, 234, 0.52);
+  --field-green: #26d982;
+  --field-green-soft: #7ee3aa;
+  --field-blue: #38bdf8;
+  --field-yellow: #f4c95d;
+  --field-red: #f26b6b;
+}
+
+body.field-app {
+  color: var(--field-text);
+  background:
+    linear-gradient(rgba(3, 18, 20, 0.46), rgba(3, 18, 20, 0.56)),
+    url("/ui/img/IMG_BGR.jpg") center / cover fixed;
+}
+
+.field-app::before {
+  opacity: 0.14;
+}
+
+.field-app .container {
+  width: min(1180px, 100%);
+  padding: 20px 18px 128px;
+}
+
+.field-app .hero,
+.field-app .card,
+.field-app .field-form-panel {
+  color: var(--field-text);
+  background: var(--field-panel);
+  border: 1px solid var(--field-border);
+  border-radius: 20px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .05), 0 12px 28px rgba(0, 0, 0, .18);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.field-app .hero {
+  padding: 22px;
+}
+
+.field-app .hero::after,
+.field-app .card::after {
+  display: none;
+}
+
+.field-app .logo-wrap {
+  border-radius: 16px;
+  border-color: rgba(175, 255, 220, .22);
+  background: var(--field-panel-light);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .06), 0 10px 24px rgba(0, 0, 0, .16);
+}
+
+.field-app .eyebrow {
+  color: #eafff3;
+  background: rgba(38, 217, 130, .10);
+  border-color: rgba(126, 227, 170, .28);
+}
+
+.field-app .dot {
+  background: var(--field-green);
+  box-shadow: 0 0 14px rgba(38, 217, 130, .55);
+}
+
+.field-app h1,
+.field-app h2,
+.field-app h3 {
+  color: #fff;
+  letter-spacing: 0;
+}
+
+.field-app h1 span {
+  color: var(--field-green);
+  text-shadow: 0 0 22px rgba(38, 217, 130, .18);
+}
+
+.field-app .subtitle,
+.field-app .section-title small,
+.field-app .field-hint,
+.field-app .auth-hint,
+.field-app .summary-label,
+.field-app .note {
+  color: var(--field-text-soft);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.field-app .card {
+  padding: 22px;
+}
+
+.field-app .card-inner {
+  padding: 0;
+}
+
+.field-app .tabs {
+  padding: 5px;
+  gap: 6px;
+  border-radius: 15px;
+  background: rgba(10, 43, 40, .58);
+  border: 1px solid rgba(175, 255, 220, .12);
+}
+
+.field-app .tabs button {
+  min-height: 46px;
+  border-radius: 11px;
+  color: var(--field-text-soft);
+}
+
+.field-app .tabs button.active {
+  color: #062016;
+  background: linear-gradient(135deg, #29db85, #18b86c);
+  box-shadow: 0 8px 18px rgba(38, 217, 130, .16);
+}
+
+.field-app .topbar {
+  padding: 12px 14px;
+  border: 1px solid rgba(175, 255, 220, .14);
+  border-radius: 14px;
+  background: var(--field-panel-soft);
+}
+
+.field-app .user-meta span,
+.field-app .status-pill {
+  color: var(--field-text-soft);
+  background: rgba(10, 43, 40, .58);
+  border-color: rgba(175, 255, 220, .14);
+}
+
+.field-app .quick-nav,
+.field-app .field-stepper {
+  counter-reset: field-step;
+  min-height: 0;
+  padding: 8px;
+  gap: 6px;
+  border-radius: 15px;
+  background: rgba(8, 36, 34, .84);
+  border: 1px solid rgba(175, 255, 220, .16);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, .16);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.field-app .quick-nav a,
+.field-app .quick-nav a:first-child {
+  counter-increment: field-step;
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 11px;
+  border-radius: 10px;
+  color: var(--field-text-soft);
+  background: rgba(235, 248, 243, .035);
+  border: 1px solid transparent;
+}
+
+.field-app .quick-nav a::before {
+  content: counter(field-step);
+  width: 21px;
+  height: 21px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 21px;
+  border-radius: 50%;
+  color: #062016;
+  background: rgba(126, 227, 170, .68);
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.field-app .quick-nav a.active,
+.field-app .quick-nav a:hover,
+.field-app .quick-nav a:focus-visible {
+  color: #fff;
+  background: rgba(38, 217, 130, .11);
+  border-color: rgba(126, 227, 170, .34);
+}
+
+.field-app .quick-nav a.active::before {
+  background: var(--field-green);
+  box-shadow: 0 0 12px rgba(38, 217, 130, .32);
+}
+
+.field-app .section-box,
+.field-app .field-form-section {
+  position: relative;
+  margin: 14px 0;
+  padding: 22px;
+  border-radius: 20px;
+  color: var(--field-text);
+  background: var(--field-panel);
+  border: 1px solid var(--field-border);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .05), 0 12px 28px rgba(0, 0, 0, .18);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.field-app .section-box::before {
+  top: 18px;
+  bottom: 18px;
+  width: 3px;
+  background: var(--flow-accent, var(--field-green));
+  box-shadow: none;
+}
+
+.field-app .section-title,
+.field-app .field-form-header {
+  gap: 14px;
+  align-items: center;
+  margin-bottom: 17px;
+}
+
+.field-app .section-title h3 {
+  margin: 0;
+  color: #fff;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.field-app .chapter-pill,
+.field-app .section-title .nr {
+  color: #062016;
+  background: var(--flow-accent, var(--field-green));
+  box-shadow: none;
+}
+
+.field-app .grid,
+.field-app .fields-grid,
+.field-app .field-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px 20px;
+}
+
+.field-app .full,
+.field-app .field.full-field,
+.field-app .field-form-field.full {
+  grid-column: 1 / -1;
+}
+
+.field-app label,
+.field-app .field-form-label {
+  display: block;
+  margin-bottom: 7px;
+  color: rgba(245, 252, 249, .88);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.field-app input,
+.field-app select,
+.field-app textarea,
+.field-app .field-form-input,
+.field-app .field-form-select,
+.field-app .field-form-textarea {
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 14px;
+  border: 1px solid rgba(175, 255, 220, .16);
+  border-radius: 13px;
+  color: var(--field-text);
+  background: var(--field-input);
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .025);
+}
+
+.field-app input::placeholder,
+.field-app textarea::placeholder {
+  color: rgba(235, 248, 243, .48);
+}
+
+.field-app input:hover,
+.field-app select:hover,
+.field-app textarea:hover {
+  border-color: rgba(175, 255, 220, .28);
+}
+
+.field-app input:focus,
+.field-app select:focus,
+.field-app textarea:focus {
+  color: var(--field-text);
+  background: var(--field-input-focus);
+  border-color: var(--field-border-focus);
+  box-shadow: 0 0 0 3px rgba(45, 220, 125, .09);
+  outline: none;
+}
+
+.field-app select,
+.field-app input[type="date"],
+.field-app input[type="time"] {
+  color-scheme: dark;
+}
+
+.field-app select option {
+  color: var(--field-text);
+  background: #103a36;
+}
+
+.field-app textarea {
+  min-height: 112px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.field-app input[type="checkbox"],
+.field-app input[type="radio"] {
+  width: 20px;
+  min-height: 20px;
+  accent-color: var(--field-green);
+}
+
+.field-app .check-grid label,
+.field-app .radio-list label {
+  min-height: 48px;
+  padding: 11px 13px;
+  border: 1px solid rgba(175, 255, 220, .13);
+  border-radius: 13px;
+  background: rgba(11, 42, 40, .52);
+}
+
+.field-app .field-card,
+.field-app .report-row,
+.field-app .field-form-row {
+  padding: 18px;
+  border-radius: 16px;
+  background: rgba(8, 38, 37, .54);
+  border: 1px solid rgba(175, 255, 220, .12);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .025);
+}
+
+.field-app .row-actions button,
+.field-app .inline-buttons button,
+.field-app .inline-buttons a,
+.field-app button {
+  min-height: 46px;
+  border-radius: 12px;
+}
+
+.field-app .btn,
+.field-app .field-primary-btn {
+  color: #062016;
+  background: linear-gradient(135deg, #29db85, #18b86c);
+  border: 1px solid rgba(126, 227, 170, .34);
+  box-shadow: 0 8px 18px rgba(38, 217, 130, .15);
+}
+
+.field-app .btn-secondary,
+.field-app .field-secondary-btn {
+  color: #e6f8ff;
+  background: rgba(56, 189, 248, .13);
+  border: 1px solid rgba(56, 189, 248, .34);
+  box-shadow: none;
+}
+
+.field-app .btn-neutral {
+  color: var(--field-text);
+  background: rgba(235, 248, 243, .055);
+  border: 1px solid rgba(175, 255, 220, .16);
+  box-shadow: none;
+}
+
+.field-app .btn-danger,
+.field-app .field-danger-btn {
+  color: #ffdede;
+  background: rgba(242, 107, 107, .09);
+  border: 1px solid rgba(242, 107, 107, .30);
+  box-shadow: none;
+}
+
+.field-app .note,
+.field-app .update-info {
+  padding: 11px 13px;
+  color: #f7e9b7;
+  background: rgba(244, 201, 93, .09);
+  border-color: rgba(244, 201, 93, .28);
+}
+
+.field-app .msg.err {
+  color: #ffe0e0;
+  background: rgba(242, 107, 107, .11);
+  border-color: rgba(242, 107, 107, .38);
+}
+
+.field-app .msg.ok {
+  color: #d7ffe8;
+  background: rgba(38, 217, 130, .10);
+  border-color: rgba(38, 217, 130, .32);
+}
+
+.field-app input[type="file"],
+.field-app .field-upload {
+  min-height: 68px;
+  padding: 10px;
+  color: #dff7ff;
+  background: rgba(17, 54, 53, .62);
+  border: 1px dashed rgba(56, 189, 248, .48);
+}
+
+.field-app input[type="file"]::file-selector-button {
+  min-height: 44px;
+  margin-right: 12px;
+  padding: 9px 14px;
+  border: 0;
+  border-radius: 10px;
+  color: #05202a;
+  background: var(--field-blue);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.field-app .summary-item {
+  border-radius: 15px;
+  color: var(--field-text);
+  background: var(--field-panel-soft);
+  border-color: rgba(175, 255, 220, .14);
+}
+
+.field-app .summary-value {
+  color: var(--field-green-soft);
+}
+
+.field-app .sticky-actions,
+.field-app .field-form-actions {
+  left: 50%;
+  right: auto;
+  bottom: 12px;
+  transform: translateX(-50%);
+  width: min(760px, calc(100% - 24px));
+  grid-template-columns: minmax(180px, 1fr) minmax(260px, 1.4fr);
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid rgba(175, 255, 220, .16);
+  border-radius: 18px;
+  background: rgba(8, 36, 34, .82);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, .24);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.field-app .sticky-actions:not(.visible) {
+  display: none !important;
+}
+
+.field-app .sticky-actions.visible {
+  display: grid !important;
+}
+
+@media (max-width: 899px) {
+  .field-app .grid,
+  .field-app .fields-grid,
+  .field-app .field-form-grid,
+  .field-app .summary-box {
+    grid-template-columns: 1fr;
+  }
+
+  .field-app .full,
+  .field-app .field.full-field,
+  .field-app .field-form-field.full {
+    grid-column: auto;
+  }
+
+  .field-app input,
+  .field-app select,
+  .field-app textarea,
+  .field-app button {
+    min-height: 48px;
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 599px) {
+  body.field-app {
+    background-attachment: scroll;
+  }
+
+  .field-app .container {
+    padding: 10px 10px 156px;
+  }
+
+  .field-app .hero,
+  .field-app .card,
+  .field-app .section-box,
+  .field-app .field-form-section {
+    padding: 16px;
+    border-radius: 17px;
+  }
+
+  .field-app .hero {
+    gap: 13px;
+  }
+
+  .field-app .quick-nav {
+    top: 6px;
+  }
+
+  .field-app .section-title {
+    align-items: flex-start;
+  }
+
+  .field-app .inline-buttons,
+  .field-app .row-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .field-app .inline-buttons button,
+  .field-app .inline-buttons a,
+  .field-app .row-actions button {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .field-app .sticky-actions.visible {
+    grid-template-columns: 1fr;
+  }
+}

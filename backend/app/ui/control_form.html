@@ -41,7 +41,7 @@
         radial-gradient(circle at 12% 8%, rgba(22, 217, 119, 0.16), transparent 34%),
         radial-gradient(circle at 88% 18%, rgba(0, 245, 212, 0.10), transparent 30%),
         linear-gradient(135deg, rgba(7, 19, 17, 0.94), rgba(15, 31, 29, 0.94)),
-        url("https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=1800&q=80");
+        url("/ui/img/gfn-mountain-forest-bg.jpg");
       background-size: cover;
       background-position: center;
       background-attachment: fixed;
@@ -708,12 +708,212 @@
       }
     }
   </style>
+  <style id="gfn-field-delivery-theme">
+    :root {
+      --field-green: #21df81;
+      --field-blue: #38bdf8;
+      --field-yellow: #f2c94c;
+      --field-red: #ff5b61;
+      --field-panel: rgba(4, 26, 25, .78);
+      --field-panel-strong: rgba(4, 22, 22, .92);
+    }
+
+    html { scroll-behavior: smooth; scroll-padding-top: 116px; }
+    body {
+      background:
+        linear-gradient(120deg, rgba(2, 17, 18, .91), rgba(4, 31, 28, .84)),
+        url("/ui/img/gfn-mountain-forest-bg.jpg") center / cover fixed;
+    }
+
+    .container { max-width: 1180px; padding: 20px 18px 110px; }
+    .hero {
+      min-height: 0; padding: 22px 24px; border-radius: 18px;
+      background: linear-gradient(110deg, rgba(4, 30, 29, .88), rgba(8, 48, 41, .72));
+      border: 1px solid rgba(129, 231, 190, .24);
+      box-shadow: 0 20px 54px rgba(0, 0, 0, .38), inset 0 1px 0 rgba(255, 255, 255, .05);
+      backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+    }
+
+    .hero h1 { font-size: clamp(28px, 4vw, 42px); letter-spacing: 0; }
+    .hero .subtitle { max-width: 850px; font-size: 15px; line-height: 1.55; }
+    .logo-wrap { width: 96px; height: 96px; border-radius: 18px; }
+    .logo-wrap img { width: 82px; }
+
+    .card {
+      border-radius: 18px; border-color: rgba(140, 255, 200, .18);
+      background: rgba(4, 25, 29, .60);
+      padding: 20px;
+      box-shadow: 0 20px 58px rgba(0, 0, 0, .38), inset 0 1px 0 rgba(255, 255, 255, .04);
+      backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+    }
+
+    .card-inner { padding: 0; }
+    .form-intro {
+      display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px; align-items: center;
+      margin: 16px 0 18px; padding: 16px 18px; border: 1px solid rgba(56, 189, 248, .22);
+      border-radius: 18px; background: linear-gradient(115deg, rgba(56, 189, 248, .09), rgba(5, 30, 29, .55));
+    }
+    .form-intro h2 { margin: 0; font-size: 21px; }
+    .form-intro p { margin: 5px 0 0; color: #a9c9bf; font-size: 13px; line-height: 1.45; }
+    .autosave-chip {
+      display: inline-flex; align-items: center; gap: 7px; padding: 8px 11px; border-radius: 999px;
+      color: #bff7ff; background: rgba(56, 189, 248, .1); border: 1px solid rgba(56, 189, 248, .22);
+      font-size: 12px; font-weight: 800; white-space: nowrap;
+    }
+
+    .quick-nav {
+      position: sticky; top: 10px; z-index: 30; width: 100%; margin: 14px 0;
+      padding: 8px; gap: 6px; overflow-x: auto; flex-wrap: nowrap;
+      border: 1px solid rgba(120, 222, 183, .2); border-radius: 14px;
+      background: rgba(2, 19, 19, .86); box-shadow: 0 12px 32px rgba(0, 0, 0, .32);
+      backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+      scrollbar-width: thin;
+    }
+    .quick-nav a, .quick-nav a:first-child {
+      min-height: 40px; display: inline-flex; align-items: center; gap: 7px; flex: 0 0 auto;
+      padding: 9px 12px; border: 1px solid transparent; border-radius: 10px;
+      color: #b7d6cc; background: rgba(255, 255, 255, .025); font-size: 12px; font-weight: 800;
+      text-decoration: none;
+    }
+    .quick-nav a::before {
+      content: attr(data-step); width: 20px; height: 20px; display: grid; place-items: center;
+      border-radius: 50%; color: #041713; background: #78988e; font-size: 10px; font-weight: 900;
+    }
+    .quick-nav a:hover, .quick-nav a.active {
+      color: #effff6; border-color: rgba(33, 223, 129, .36); background: rgba(33, 223, 129, .1);
+    }
+    .quick-nav a.active::before { background: var(--field-green); box-shadow: 0 0 14px rgba(33, 223, 129, .38); }
+
+    .topbar {
+      padding: 12px 14px; border: 1px solid rgba(125, 220, 183, .17); border-radius: 14px;
+      background: rgba(2, 21, 21, .52);
+    }
+
+    .section-box {
+      position: relative; margin: 12px 0; padding: 20px; border-radius: 18px;
+      border: 1px solid rgba(140, 255, 200, .18);
+      background: rgba(4, 25, 29, .60);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, .035);
+      scroll-margin-top: 112px;
+    }
+    .section-box::before {
+      content: ""; position: absolute; left: -1px; top: 14px; bottom: 14px; width: 3px;
+      border-radius: 0 4px 4px 0; background: var(--flow-accent, var(--field-green));
+      box-shadow: 0 0 14px color-mix(in srgb, var(--flow-accent, var(--field-green)) 40%, transparent);
+    }
+    .section-box[data-flow="date"] { --flow-accent: var(--field-green); }
+    .section-box[data-flow="location"] { --flow-accent: var(--field-blue); }
+    .section-box[data-flow="entity"] { --flow-accent: #78d5b2; }
+    .section-box[data-flow="findings"] { --flow-accent: var(--field-yellow); }
+    .section-box[data-flow="measures"] { --flow-accent: #a6cf4a; }
+    .section-box[data-flow="documents"] { --flow-accent: var(--field-blue); }
+    .section-box[data-flow="submit"] { --flow-accent: var(--field-green); }
+
+    .section-title { margin-bottom: 14px; align-items: center; }
+    .section-title h3 { font-size: 18px; letter-spacing: 0; }
+    .section-title .nr {
+      width: 30px; height: 30px; border-radius: 7px; color: #041713;
+      background: var(--flow-accent, var(--field-green)); box-shadow: 0 0 16px rgba(33, 223, 129, .16);
+    }
+    .section-title small { color: #94b8ad; line-height: 1.45; }
+    .flow-kicker {
+      display: inline-block; margin-bottom: 7px; color: var(--flow-accent, var(--field-green));
+      font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: .8px;
+    }
+
+    .grid { gap: 16px 18px; }
+    label { color: rgba(255, 255, 255, .82); font-size: 13px; font-weight: 600; }
+    input, select, textarea, button { min-height: 46px; border-radius: 12px; }
+    input, select, textarea {
+      color: #fff; border: 1px solid rgba(125, 255, 198, .20);
+      background: rgba(4, 27, 31, .68); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .025);
+    }
+    input:hover, select:hover, textarea:hover { border-color: rgba(150, 221, 197, .34); }
+    input:focus, select:focus, textarea:focus {
+      border-color: rgba(61, 255, 146, .70); box-shadow: 0 0 0 3px rgba(45, 220, 125, .10);
+      background: rgba(5, 34, 38, .78); outline: none;
+    }
+    input::placeholder, textarea::placeholder { color: rgba(255, 255, 255, .52); }
+    select option { color: #f2fff8; background: #06201e; }
+    textarea { min-height: 112px; resize: vertical; }
+    input[type="file"] { padding: 9px; color: #bfefff; border-color: rgba(56, 189, 248, .28); }
+    input[type="file"]::file-selector-button {
+      margin-right: 10px; padding: 8px 11px; border: 0; border-radius: 6px;
+      color: #04151a; background: var(--field-blue); font-weight: 900;
+    }
+
+    .check-grid { gap: 9px; }
+    .check-grid label, .radio-list label {
+      min-height: 44px; padding: 10px 12px; border: 1px solid rgba(136, 214, 188, .16);
+      border-radius: 12px; background: rgba(1, 18, 18, .48); transition: border-color .16s ease, background .16s ease;
+    }
+    .check-grid label:hover, .radio-list label:hover { border-color: rgba(33, 223, 129, .34); background: rgba(33, 223, 129, .055); }
+    input[type="checkbox"], input[type="radio"] { accent-color: var(--field-green); }
+
+    .note, .field-hint, .auth-hint { color: #9dbcb2; }
+    .note { border-left: 3px solid var(--field-yellow); background: rgba(242, 201, 76, .055); padding: 9px 11px; border-radius: 0 6px 6px 0; }
+    .msg.err { color: #ffd8da; border-color: rgba(255, 91, 97, .42); background: rgba(255, 91, 97, .1); }
+    .msg.ok { color: #caffdf; border-color: rgba(33, 223, 129, .38); background: rgba(33, 223, 129, .09); }
+
+    .btn, button.btn {
+      color: #03150f; background: linear-gradient(135deg, var(--field-green), #0fa859);
+      border-color: rgba(100, 255, 173, .48); box-shadow: 0 10px 22px rgba(33, 223, 129, .16);
+    }
+    .btn-secondary { color: #dff7ff; background: rgba(56, 189, 248, .12); border-color: rgba(56, 189, 248, .36); }
+    .btn-neutral { color: #e7fff4; background: rgba(255, 255, 255, .045); border-color: rgba(151, 214, 192, .22); }
+    .btn-danger { color: #ffd8da; background: rgba(255, 91, 97, .08); border-color: rgba(255, 91, 97, .28); }
+    button:hover { filter: brightness(1.08); transform: translateY(-1px); }
+
+    .sticky-actions {
+      left: 50%; right: auto; bottom: 12px; transform: translateX(-50%); width: min(680px, calc(100% - 24px));
+      padding: 9px; gap: 8px; border-radius: 14px; border: 1px solid rgba(126, 224, 182, .25);
+      background: rgba(2, 19, 19, .91); box-shadow: 0 18px 42px rgba(0, 0, 0, .42);
+      backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+    }
+    .sticky-actions button { min-width: 0; flex: 1; }
+
+    @media (min-width: 900px) {
+      #appCard .section-box[data-compact="true"] { display: inline-block; width: calc(50% - 8px); vertical-align: top; }
+      #appCard .section-box[data-compact="true"] + .section-box[data-compact="true"] { margin-left: 12px; }
+    }
+
+    @media (max-width: 899px) {
+      .grid { grid-template-columns: 1fr; }
+      .grid > .full { grid-column: auto; }
+      input, select, textarea, button { min-height: 48px; }
+    }
+
+    @media (max-width: 760px) {
+      .container { padding: 10px 10px 104px; }
+      .hero { grid-template-columns: 68px minmax(0, 1fr); gap: 14px; padding: 15px; }
+      .logo-wrap { width: 68px; height: 68px; }
+      .logo-wrap img { width: 58px; }
+      .hero .eyebrow { margin-bottom: 7px; }
+      .hero .subtitle { font-size: 13px; }
+      .status-row { gap: 6px; }
+      .status-pill { font-size: 10px; padding: 6px 8px; }
+      .card-inner { padding: 12px; }
+      .form-intro { grid-template-columns: 1fr; padding: 13px; }
+      .quick-nav { top: 6px; margin: 10px 0; }
+      .quick-nav a, .quick-nav a:first-child { min-height: 38px; padding: 8px 10px; }
+      .section-box { padding: 15px 13px; margin: 10px 0; }
+      .grid { grid-template-columns: 1fr; gap: 11px; }
+      .grid > .full { grid-column: auto; }
+      .inline-buttons { display: grid; grid-template-columns: 1fr; }
+      input, select, textarea, button { width: 100%; font-size: 16px; }
+      .check-grid { grid-template-columns: 1fr; }
+      .field-hint, .note, .auth-hint, .section-title small { font-size: 13px; }
+      .sticky-actions:not(.visible) { display: none !important; }
+      .sticky-actions.visible { display: grid !important; grid-template-columns: .8fr 1.2fr; }
+    }
+  </style>
+  <link rel="stylesheet" href="/ui/css/field-app.css?v=1" />
 </head>
 
-<body>
+<body class="field-app">
 <div class="container">
 
-  <section class="hero">
+  <section class="hero field-form-header">
     <div class="logo-wrap">
       <img src="/ui/sigla.png" alt="Sigla Garda Forestiera">
     </div>
@@ -738,7 +938,7 @@
     </div>
   </section>
 
-  <div id="authCard" class="card auth-card">
+  <div id="authCard" class="card auth-card field-form-panel">
     <div class="card-inner">
       <div class="tabs">
         <button id="tabLoginBtn" class="active" onclick="showTab('login')">Autentificare</button>
@@ -816,18 +1016,17 @@
     </div>
   </div>
 
-  <nav id="quickNav" class="quick-nav">
-    <a href="#appCard">Start</a>
-    <a href="#sectiune1">GPS</a>
-    <a href="#sectiune4">Echipa</a>
-    <a href="#sectiune7">Entitate</a>
-    <a href="#sesizareBox">Sesizare</a>
-    <a href="#sectiune9">Domeniu</a>
-    <a href="#sectiune10">Rezultat</a>
-    <a href="#sectiune12">Finalizare</a>
+  <nav id="quickNav" class="quick-nav field-stepper" aria-label="Etapele formularului de control">
+    <a href="#sectiune1" data-step="1">Date control</a>
+    <a href="#sectiune7" data-step="2">Locatie</a>
+    <a href="#sectiune6" data-step="3">Entitate</a>
+    <a href="#sectiuneConstatari" data-step="4">Constatari</a>
+    <a href="#sectiune10" data-step="5">Masuri / rezultat</a>
+    <a href="#sectiune12" data-step="6">Fotografii / date</a>
+    <a href="#sectiune12" data-step="7">Trimite controlul</a>
   </nav>
 
-  <div id="appCard" class="card hidden" style="display:none;">
+  <div id="appCard" class="card hidden field-form-panel" style="display:none;">
     <div class="card-inner">
       <div class="topbar">
         <div class="user-meta">
@@ -842,9 +1041,12 @@
         </div>
       </div>
 
-      <h2 style="margin-bottom: 6px;">Formular control</h2>
-      <div class="note" style="margin-bottom: 18px;">
-        Formularul se salveaza automat local in browser, ca protectie in cazul pierderii semnalului sau al inchiderii accidentale a paginii.
+      <div class="form-intro">
+        <div>
+          <h2>Control in teren</h2>
+          <p>Completeaza etapele in ordine. Campurile si draftul existent sunt pastrate automat pe acest dispozitiv.</p>
+        </div>
+        <div class="autosave-chip"><span aria-hidden="true">DOC</span> Salvare locala activa</div>
       </div>
 
       <div id="sectiune1" class="section-box">
@@ -1181,10 +1383,25 @@
         </div>
       </div>
 
+      <div id="sectiuneConstatari" class="section-box">
+        <div class="section-title">
+          <div>
+            <h3><span class="nr">10</span>Constatari</h3>
+            <small>Consemneaza clar situatia identificata in teren inainte de stabilirea rezultatului.</small>
+          </div>
+        </div>
+        <div class="grid">
+          <div class="full">
+            <label>Constatari</label>
+            <textarea id="constatari" placeholder="Constatari sumarizate"></textarea>
+          </div>
+        </div>
+      </div>
+
       <div id="sectiune10" class="section-box">
         <div class="section-title">
           <div>
-            <h3><span class="nr">10</span>Rezultatul controlului</h3>
+            <h3><span class="nr">11</span>Rezultatul controlului</h3>
             <small>
               Se separa controlul conform, neconformitatea fara sanctiune, contraventia si fapta de natura penala.
             </small>
@@ -1210,7 +1427,7 @@
       <div id="masuriSection" class="hidden section-box">
         <div class="section-title">
           <div>
-            <h3><span class="nr">11</span>Incalcarea legislatiei silvice</h3>
+            <h3><span class="nr">12</span>Masuri si incadrarea faptei</h3>
             <small>
               Se completeaza separat actul normativ incalcat si actul normativ care sanctioneaza fapta.
             </small>
@@ -1433,17 +1650,12 @@
       <div id="sectiune12" class="section-box">
         <div class="section-title">
           <div>
-            <h3><span class="nr">12</span>Finalizare control</h3>
-            <small>Constatari, documente si trimitere in platforma.</small>
+            <h3><span class="nr">13</span>Fotografii, documente si trimitere</h3>
+            <small>Completeaza datele finale, ataseaza fisierele disponibile si trimite controlul.</small>
           </div>
         </div>
 
         <div class="grid">
-          <div class="full">
-            <label>Constatari</label>
-            <textarea id="constatari" placeholder="Constatari sumarizate"></textarea>
-          </div>
-
           <div class="full">
             <label>Documente incheiate / observatii finale</label>
             <textarea id="masuriDispuse" placeholder="Proces verbal / nota de constatare / alte documente"></textarea>
@@ -1469,7 +1681,7 @@
   </div>
 </div>
 
-<div id="stickyActions" class="sticky-actions" style="display:none;">
+<div id="stickyActions" class="sticky-actions field-form-actions" style="display:none;">
   <button class="btn-neutral" type="button" onclick="saveDraft()">Salveaza draft</button>
   <button class="btn" type="button" onclick="submitControl()">Trimite control</button>
 </div>
@@ -2300,16 +2512,27 @@
     const box = document.getElementById("selectedMembersBox");
 
     if (selectedMembers.length === 0) {
-      box.innerHTML = "Niciun membru selectat.";
+      box.textContent = "Niciun membru selectat.";
       return;
     }
 
-    box.innerHTML = selectedMembers.map(item => `
-      <div class="member-item">
-        <span>${item.label}</span>
-        <button type="button" onclick="removeSelectedMember('${item.email}')">Sterge</button>
-      </div>
-    `).join("");
+    box.replaceChildren();
+
+    selectedMembers.forEach(item => {
+      const row = document.createElement("div");
+      row.className = "member-item";
+
+      const label = document.createElement("span");
+      label.textContent = item.label;
+
+      const removeButton = document.createElement("button");
+      removeButton.type = "button";
+      removeButton.textContent = "Sterge";
+      removeButton.addEventListener("click", () => removeSelectedMember(item.email));
+
+      row.append(label, removeButton);
+      box.appendChild(row);
+    });
   }
 
   async function submitControl() {
@@ -2452,8 +2675,6 @@
       result,
       payload
     };
-
-    console.log("BODY TRIMIS:", body);
 
     try {
       const res = await fetch("/controls", {
@@ -2785,6 +3006,70 @@
     }
   }
 
+  function initializeFieldFlow() {
+    const section6 = document.getElementById("sectiune6");
+    const section7 = document.getElementById("sectiune7");
+    if (section6 && section7 && section6.parentElement === section7.parentElement) {
+      section6.parentElement.insertBefore(section7, section6);
+    }
+
+    const flowGroups = {
+      date: ["sectiune1", "sectiune2", "sectiune3", "sectiune4", "sectiune5", "sesizareBox"],
+      location: ["sectiune7"],
+      entity: ["sectiune6", "sectiune8", "domeniuSilvicBox", "domeniuCinegeticBox"],
+      findings: ["sectiuneConstatari"],
+      measures: ["sectiune10", "masuriSection"],
+      documents: ["sectiune12"]
+    };
+    const flowLabels = {
+      date: "Date control",
+      location: "Locatie",
+      entity: "Entitate",
+      findings: "Constatari",
+      measures: "Masuri si rezultat",
+      documents: "Fotografii si date necesare"
+    };
+
+    Object.entries(flowGroups).forEach(([flow, ids]) => {
+      ids.forEach(id => {
+        const section = document.getElementById(id);
+        if (!section) return;
+        section.dataset.flow = flow;
+        const titleContent = section.querySelector(".section-title > div");
+        if (titleContent && !titleContent.querySelector(".flow-kicker")) {
+          const kicker = document.createElement("span");
+          kicker.className = "flow-kicker";
+          kicker.textContent = flowLabels[flow];
+          titleContent.insertBefore(kicker, titleContent.firstChild);
+        }
+      });
+    });
+
+    ["sectiune2", "sectiune3"].forEach(id => {
+      const section = document.getElementById(id);
+      if (section) section.dataset.compact = "true";
+    });
+
+    const links = Array.from(document.querySelectorAll("#quickNav a[href^='#']"));
+    links.forEach(link => link.addEventListener("click", () => {
+      links.forEach(item => item.classList.remove("active"));
+      link.classList.add("active");
+    }));
+    if (links[0]) links[0].classList.add("active");
+
+    if ("IntersectionObserver" in window) {
+      const targets = links.map(link => document.querySelector(link.getAttribute("href"))).filter(Boolean);
+      const observer = new IntersectionObserver(entries => {
+        const visible = entries.filter(entry => entry.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+        if (!visible) return;
+        const active = links.find(link => link.getAttribute("href") === `#${visible.target.id}`);
+        if (!active) return;
+        links.forEach(link => link.classList.toggle("active", link === active));
+      }, { rootMargin: "-20% 0px -68% 0px", threshold: [0.05, 0.25] });
+      targets.forEach(target => observer.observe(target));
+    }
+  }
+
   function init() {
     populateSelect("judet", JUDETE);
     populateSelect("garda", GARZI);
@@ -2798,6 +3083,7 @@
     updateConnectionStatus();
     updateDraftStatus();
     attachAutosaveListeners();
+    initializeFieldFlow();
 
     window.addEventListener("online", updateConnectionStatus);
     window.addEventListener("offline", updateConnectionStatus);

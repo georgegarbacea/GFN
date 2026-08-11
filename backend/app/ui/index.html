@@ -41,7 +41,7 @@
         radial-gradient(circle at 12% 8%, rgba(22, 217, 119, 0.18), transparent 34%),
         radial-gradient(circle at 88% 18%, rgba(0, 245, 212, 0.10), transparent 30%),
         linear-gradient(135deg, rgba(7, 19, 17, 0.92), rgba(15, 31, 29, 0.92)),
-        url("https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=1800&q=80");
+        url("/ui/img/gfn-mountain-forest-bg.jpg");
       background-size: cover;
       background-position: center;
       background-attachment: fixed;
@@ -909,6 +909,54 @@
       }
     }
   </style>
+  <style id="gfn-index-delivery-theme">
+    .timeline-panel {
+      background: linear-gradient(115deg, rgba(4, 24, 23, .86), rgba(6, 35, 33, .72) 54%, rgba(4, 24, 23, .82));
+      border-color: rgba(126, 224, 182, .22);
+      box-shadow: 0 20px 55px rgba(0, 0, 0, .36), inset 0 1px 0 rgba(255, 255, 255, .045);
+    }
+
+    .timeline-header { align-items: center; }
+    .timeline-title-row { display: flex; align-items: center; gap: 12px; }
+    .timeline-title-icon {
+      width: 42px; height: 42px; display: grid; place-items: center; flex: 0 0 42px;
+      border-radius: 12px; color: #071712;
+      background: linear-gradient(145deg, #e34b4b, #e8a836 38%, #91b44d 68%, #126943);
+      box-shadow: 0 0 24px rgba(82, 194, 112, .18); font-weight: 900; font-size: 12px;
+    }
+
+    .timeline-meta { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 12px; }
+    .timeline-legend { display: flex; align-items: center; gap: 14px; color: var(--muted); font-size: 12px; font-weight: 800; }
+    .timeline-legend span { display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; }
+    .legend-bars, .legend-line { width: 22px; height: 7px; border-radius: 999px; display: inline-block; }
+    .legend-bars { background: linear-gradient(90deg, #e34b4b, #e97832, #e8a836, #91b44d, #248a50, #126943); }
+    .legend-line { height: 3px; background: #38bdf8; box-shadow: 0 0 9px rgba(56, 189, 248, .42); }
+
+    .timeline-chart {
+      height: 340px; padding: 0;
+      background: linear-gradient(to top, rgba(255, 255, 255, .055) 1px, transparent 1px),
+        linear-gradient(180deg, rgba(2, 20, 20, .24), rgba(2, 14, 16, .44));
+      background-size: 100% 25%, 100% 100%;
+    }
+
+    .weekly-bar { stroke: rgba(231, 255, 241, .2); stroke-width: 1; transition: filter .16s ease, opacity .16s ease; }
+    .weekly-bar:hover { filter: brightness(1.14) drop-shadow(0 0 8px rgba(90, 220, 125, .26)); }
+    .weekly-average-glow { fill: none; stroke: rgba(56, 189, 248, .22); stroke-width: 10; filter: blur(2px); }
+    .weekly-average-line {
+      fill: none; stroke: #38bdf8; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round;
+      filter: drop-shadow(0 0 8px rgba(56, 189, 248, .48));
+    }
+    .weekly-current { fill: rgba(56, 189, 248, .055); stroke: rgba(56, 189, 248, .16); stroke-width: 1; stroke-dasharray: 5 5; }
+    .weekly-month-label { fill: rgba(220, 255, 239, .72); font-size: 12px; font-weight: 800; text-anchor: middle; }
+    .weekly-month-separator { stroke: rgba(205, 255, 232, .11); stroke-width: 1; }
+    .area-tooltip { min-width: 180px; padding: 11px 13px; border-radius: 10px; border-color: rgba(92, 211, 255, .26); background: rgba(2, 17, 18, .96); }
+
+    @media (max-width: 760px) {
+      .timeline-header, .timeline-meta { align-items: flex-start; flex-direction: column; }
+      .timeline-legend { flex-wrap: wrap; }
+      .timeline-chart { height: 300px; }
+    }
+  </style>
 </head>
 
 <body>
@@ -1064,15 +1112,22 @@
     </div>
   </section>
 
-  <section class="timeline-panel" aria-label="Evolutia controalelor in timp">
+  <section class="timeline-panel" aria-label="Evolutia saptamanala a controalelor">
     <div class="timeline-header">
-      <div>
-        <h2>Evolutia controalelor in ultimele 3 luni</h2>
-        <p>
-          Graficul arata dinamica zilnica a controalelor inregistrate in platforma. Varful de activitate este evidentiat automat.
-        </p>
+      <div class="timeline-title-row">
+        <div class="timeline-title-icon" aria-hidden="true">EV</div>
+        <div>
+          <h2>Evolutie saptamanala</h2>
+          <p>Activitatea nationala din ultimele 6 luni pana astazi, agregata de luni pana duminica.</p>
+        </div>
       </div>
-      <div class="pill">3 LUNI</div>
+      <div class="timeline-meta">
+        <div class="timeline-legend" aria-label="Legenda grafic">
+          <span><i class="legend-bars"></i>Controale pe saptamana</span>
+          <span><i class="legend-line"></i>Medie mobila 4 saptamani</span>
+        </div>
+        <div class="pill">ULTIMELE 6 LUNI</div>
+      </div>
     </div>
 
     <div id="timelineChart" class="timeline-chart">
@@ -1080,8 +1135,8 @@
     </div>
 
     <div class="timeline-footer">
-      <span id="timelineStartLabel">acum 3 luni</span>
-      <span id="timelineEndLabel">ieri</span>
+      <span id="timelineStartLabel">inceput perioada</span>
+      <span id="timelineEndLabel">saptamana curenta</span>
     </div>
   </section>
 
@@ -1505,13 +1560,169 @@
     });
   }
 
+  function startOfWeekMonday(value) {
+    const date = new Date(value);
+    date.setHours(0, 0, 0, 0);
+    const day = date.getDay();
+    date.setDate(date.getDate() - (day === 0 ? 6 : day - 1));
+    return date;
+  }
+
+  function interpolateColor(start, end, amount) {
+    const from = start.match(/\w\w/g).map(value => parseInt(value, 16));
+    const to = end.match(/\w\w/g).map(value => parseInt(value, 16));
+    const channels = from.map((value, index) => Math.round(value + (to[index] - value) * amount));
+    return `#${channels.map(value => value.toString(16).padStart(2, "0")).join("")}`;
+  }
+
+  function weeklyActivityColor(value, minimum, maximum) {
+    const palette = [
+      "#e34b4b",
+      "#e97832",
+      "#e8a836",
+      "#c8b841",
+      "#91b44d",
+      "#55a653",
+      "#248a50",
+      "#126943"
+    ];
+    const range = maximum - minimum;
+    const ratio = range > 0 ? Math.max(0, Math.min(1, (value - minimum) / range)) : 1;
+    const scaled = ratio * (palette.length - 1);
+    const lowerIndex = Math.floor(scaled);
+    const upperIndex = Math.min(palette.length - 1, lowerIndex + 1);
+    const amount = scaled - lowerIndex;
+    return interpolateColor(palette[lowerIndex].slice(1), palette[upperIndex].slice(1), amount);
+  }
+
+  function renderWeeklyTimeline(controls) {
+    const container = document.getElementById("timelineChart");
+    if (!container) return;
+
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+    const periodStart = new Date(today);
+    periodStart.setMonth(periodStart.getMonth() - 6);
+    periodStart.setHours(0, 0, 0, 0);
+    const firstWeek = startOfWeekMonday(periodStart);
+    const currentWeek = startOfWeekMonday(today);
+    const weeks = [];
+
+    for (let start = new Date(firstWeek); start <= currentWeek; start.setDate(start.getDate() + 7)) {
+      const weekStart = new Date(start);
+      const end = new Date(start);
+      end.setDate(start.getDate() + 6);
+      end.setHours(23, 59, 59, 999);
+      weeks.push({ start: weekStart, end, key: getLocalDateKey(weekStart), count: 0 });
+    }
+
+    const weekMap = new Map(weeks.map(week => [week.key, week]));
+    (Array.isArray(controls) ? controls : []).forEach(control => {
+      const date = parseControlDate(control);
+      if (!date) return;
+      if (date < periodStart || date > today) return;
+      const key = getLocalDateKey(startOfWeekMonday(date));
+      const bucket = weekMap.get(key);
+      if (bucket) bucket.count += 1;
+    });
+
+    setText("timelineStartLabel", formatAxisDate(periodStart));
+    setText("timelineEndLabel", formatAxisDate(today));
+
+    if (!weeks.some(week => week.count > 0)) {
+      container.innerHTML = `<div class="area-empty">Nu exista controale inregistrate in ultimele 6 luni.</div>`;
+      return;
+    }
+
+    const movingAverage = weeks.map((week, index) => {
+      const slice = weeks.slice(Math.max(0, index - 3), index + 1);
+      return slice.reduce((sum, item) => sum + item.count, 0) / slice.length;
+    });
+
+    const weeklyValues = weeks.map(week => week.count);
+    const minimum = Math.min(...weeklyValues);
+    const maximum = Math.max(...weeklyValues, ...movingAverage, 1);
+    const width = 1000;
+    const height = 280;
+    const paddingLeft = 34;
+    const paddingRight = 22;
+    const paddingTop = 24;
+    const paddingBottom = 48;
+    const chartWidth = width - paddingLeft - paddingRight;
+    const chartHeight = height - paddingTop - paddingBottom;
+    const slotWidth = chartWidth / weeks.length;
+    const barWidth = Math.max(8, Math.min(30, slotWidth * 0.66));
+    const baseline = paddingTop + chartHeight;
+
+    const barMarkup = weeks.map((week, index) => {
+      const barHeight = week.count > 0 ? Math.max(3, week.count / maximum * chartHeight) : 2;
+      const x = paddingLeft + index * slotWidth + (slotWidth - barWidth) / 2;
+      const y = baseline - barHeight;
+      return `<rect class="weekly-bar" x="${x.toFixed(2)}" y="${y.toFixed(2)}" width="${barWidth.toFixed(2)}" height="${barHeight.toFixed(2)}" rx="4" fill="${weeklyActivityColor(week.count, minimum, Math.max(...weeklyValues))}"></rect>`;
+    }).join("");
+
+    const averagePoints = movingAverage.map((value, index) => ({
+      x: paddingLeft + index * slotWidth + slotWidth / 2,
+      y: baseline - value / maximum * chartHeight
+    }));
+    const averagePath = averagePoints.map((point, index) => `${index ? "L" : "M"} ${point.x.toFixed(2)} ${point.y.toFixed(2)}`).join(" ");
+
+    const monthGroups = [];
+    weeks.forEach((week, index) => {
+      const key = `${week.start.getFullYear()}-${week.start.getMonth()}`;
+      const last = monthGroups[monthGroups.length - 1];
+      if (last && last.key === key) last.end = index;
+      else monthGroups.push({ key, start: index, end: index, label: formatMonthLabel(week.start) });
+    });
+
+    const monthMarkup = monthGroups.map((group, index) => {
+      const center = paddingLeft + ((group.start + group.end + 1) / 2) * slotWidth;
+      const separator = index ? `<line class="weekly-month-separator" x1="${(paddingLeft + group.start * slotWidth).toFixed(2)}" y1="${paddingTop}" x2="${(paddingLeft + group.start * slotWidth).toFixed(2)}" y2="${baseline + 19}"></line>` : "";
+      return `${separator}<text class="weekly-month-label" x="${center.toFixed(2)}" y="${height - 15}">${group.label}</text>`;
+    }).join("");
+
+    const hoverZones = weeks.map((week, index) => {
+      const x = paddingLeft + index * slotWidth;
+      const pointY = Math.min(baseline - 8, averagePoints[index].y);
+      const visibleStart = week.start < periodStart ? periodStart : week.start;
+      const visibleEnd = week.end > today ? today : week.end;
+      return `<rect class="area-hover-zone" x="${x.toFixed(2)}" y="0" width="${slotWidth.toFixed(2)}" height="${height}" data-start="${formatAxisDate(visibleStart)}" data-end="${formatAxisDate(visibleEnd)}" data-count="${week.count}" data-average="${movingAverage[index].toFixed(1)}" data-x="${averagePoints[index].x.toFixed(2)}" data-y="${pointY.toFixed(2)}"></rect>`;
+    }).join("");
+
+    const currentX = paddingLeft + (weeks.length - 1) * slotWidth + 2;
+    container.innerHTML = `
+      <svg class="area-svg" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" aria-label="Grafic saptamanal al controalelor">
+        <rect class="weekly-current" x="${currentX.toFixed(2)}" y="${paddingTop}" width="${(slotWidth - 4).toFixed(2)}" height="${chartHeight}" rx="7"></rect>
+        ${monthMarkup}
+        ${barMarkup}
+        <path class="weekly-average-glow" d="${averagePath}"></path>
+        <path class="weekly-average-line" d="${averagePath}"></path>
+        ${hoverZones}
+      </svg>
+      <div id="weeklyTooltip" class="area-tooltip"></div>
+    `;
+
+    const tooltip = document.getElementById("weeklyTooltip");
+    if (!tooltip) return;
+    container.querySelectorAll(".area-hover-zone").forEach(zone => {
+      zone.addEventListener("mouseenter", () => {
+        const count = zone.getAttribute("data-count");
+        tooltip.innerHTML = `${count} controale<small>${zone.getAttribute("data-start")} - ${zone.getAttribute("data-end")}<br>Medie 4 saptamani: ${zone.getAttribute("data-average")}</small>`;
+        tooltip.style.left = `${Number(zone.getAttribute("data-x")) / width * 100}%`;
+        tooltip.style.top = `${Number(zone.getAttribute("data-y")) / height * 100}%`;
+        tooltip.classList.add("visible");
+      });
+      zone.addEventListener("mouseleave", () => tooltip.classList.remove("visible"));
+    });
+  }
+
   function resetStatsWithError() {
     setText("kpiToday", 0);
     setText("kpi7", 0);
     setText("kpi30", 0);
     setText("kpiBad30", 0);
 
-    renderTimeline([]);
+    renderWeeklyTimeline([]);
 
     renderBars("resultBars", {}, "Nu exista date disponibile pentru rezultate.");
     renderBars("typeBars", {}, "Nu exista date disponibile pentru tipuri.");
@@ -1595,7 +1806,7 @@
       setText("kpiBad30", badThirtyDaysCount);
 
       try {
-        renderTimeline(controls);
+        renderWeeklyTimeline(controls);
       } catch (chartError) {
         console.error("Eroare la randarea graficului de evolutie:", chartError);
 

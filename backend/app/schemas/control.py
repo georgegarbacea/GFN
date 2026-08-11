@@ -8,7 +8,15 @@ from pydantic import BaseModel, Field, ConfigDict, field_validator
 # CONSTANTE
 # ------------------------
 
-ALLOWED_CONTROL_TYPES = ["fond", "tematic", "operativ", "sesizare", "rutina"]
+ALLOWED_CONTROL_TYPES = [
+    "fond",
+    "tematic",
+    "operativ",
+    "sesizare",
+    "rutina",
+    "solicitare",
+    "necunoscut",
+]
 
 ALLOWED_RESULTS = [
     "conform",
@@ -16,6 +24,8 @@ ALLOWED_RESULTS = [
     "avertisment",
     "sanctiune",
     "sesizare_penala",
+    "mixt",
+    "necunoscut",
 ]
 
 ALLOWED_ENTITY_TYPES = [
@@ -129,12 +139,23 @@ class ControlPayload(BaseModel):
     parteneri: List[str] = Field(default_factory=list)
     initiator: Optional[str] = Field(None, max_length=150)
 
+    # 5.1 SESIZARE / PETITIE
+    este_sesizare: bool = False
+    numar_sesizare: Optional[str] = Field(None, max_length=150)
+    data_sesizare: Optional[date] = None
+    nume_petitionar: Optional[str] = Field(None, max_length=200)
+    obiect_sesizare: Optional[str] = Field(None, max_length=5000)
+
     # 6. DOMENIU
     domeniu: Optional[Literal["silvic", "cinegetic"]] = None
     domeniu_detalii: Optional[DomeniuDetalii] = None
+    domeniu_control: Optional[str] = Field(None, max_length=100)
+    categorie_control: Optional[str] = Field(None, max_length=300)
 
     # 7. CONSTATARI
     constatari: Optional[str] = Field(None, min_length=2, max_length=5000)
+    constatari_publice: Optional[str] = Field(None, max_length=3000)
+    descriere_abatere: Optional[str] = Field(None, max_length=5000)
 
     # 8. SANCTIUNI / MASURI
     act_normativ: Optional[str] = Field(None, max_length=200)
@@ -142,10 +163,19 @@ class ControlPayload(BaseModel):
 
     amenda: Optional[float] = None
     prejudiciu: Optional[float] = None
+    cuantum_amenda_ron: Optional[float] = None
+    valoare_prejudiciu_ron: Optional[float] = None
 
     confiscari: Optional[str] = Field(None, max_length=2000)
     masuri_complementare: List[str] = Field(default_factory=list)
     masuri_dispuse: Optional[str] = Field(None, max_length=2000)
+    masuri_publice: Optional[str] = Field(None, max_length=3000)
+
+    # Structuri detaliate ale formularului juridic si silvic.
+    legal: Optional[dict[str, Any]] = None
+    prejudiciu_silvic: Optional[dict[str, Any]] = None
+    confiscari_silvic: Optional[dict[str, Any]] = None
+    masuri_complementare_extinse: Optional[dict[str, Any]] = None
 
     # 9. DOCUMENTE
     documente: List[str] = Field(default_factory=list)
@@ -170,7 +200,12 @@ class ControlPayload(BaseModel):
             )
         return v
 
-    @field_validator("amenda", "prejudiciu")
+    @field_validator(
+        "amenda",
+        "prejudiciu",
+        "cuantum_amenda_ron",
+        "valoare_prejudiciu_ron",
+    )
     @classmethod
     def validate_non_negative_amounts(cls, v: Optional[float]) -> Optional[float]:
         if v is not None and v < 0:
@@ -219,7 +254,9 @@ class ControlOut(BaseModel):
     created_by_user_id: int
     result: str
     control_type: str
-    payload: ControlPayload
+    # Datele istorice/importate pot avea campuri lipsa, pastrand in acelasi
+    # timp validarea stricta ControlPayload pentru creare si actualizare.
+    payload: dict[str, Any]
 class ControlUpdate(BaseModel):
     result: Optional[str] = None
     control_type: Optional[str] = None

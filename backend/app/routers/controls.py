@@ -2,10 +2,11 @@ import csv
 import unicodedata
 from io import StringIO
 from datetime import date, datetime
+from pathlib import Path
 from typing import Any, Optional
 
-from fastapi import APIRouter, Depends, Query, HTTPException
-from fastapi.responses import StreamingResponse
+from fastapi import APIRouter, Depends, Query, HTTPException, UploadFile, File, Form
+from fastapi.responses import FileResponse, StreamingResponse
 from sqlalchemy import select, func, Integer, Float, or_
 from sqlalchemy.orm import Session
 
@@ -27,6 +28,9 @@ ADMIN_ROLES = (
     "director_national",
 )
 
+CONTROL_REPORT_UPLOAD_DIR = Path(__file__).resolve().parents[1] / "uploads" / "control_reports"
+MAX_REPORT_PDF_BYTES = 20 * 1024 * 1024
+
 
 def strip_text_diacritics(value: str) -> str:
     normalized = unicodedata.normalize("NFKD", value)
@@ -35,21 +39,37 @@ def strip_text_diacritics(value: str) -> str:
 
 def normalize_payload_text(value: Any) -> Any:
     if isinstance(value, str):
-        return strip_text_diacritics(value)
+        return value
 
     if isinstance(value, list):
         return [normalize_payload_text(item) for item in value]
 
     if isinstance(value, dict):
-        normalized_value = {}
-        for key, item in value.items():
-            normalized_key = (
-                normalize_payload_text(key) if isinstance(key, str) else key
-            )
-            normalized_value[normalized_key] = normalize_payload_text(item)
-        return normalized_value
+        return {key: normalize_payload_text(item) for key, item in value.items()}
 
     return value
+
+
+def normalize_identity(value: Any) -> str:
+    if value in (None, ""):
+        return ""
+    value = strip_text_diacritics(str(value)).lower().strip()
+    return " ".join(value.replace("_", " ").replace("-", " ").split())
+
+
+def user_full_name(user: User) -> str:
+    return f"{user.last_name or ''} {user.first_name or ''}".strip()
+
+
+def user_identity_tokens(user: User) -> set[str]:
+    tokens = {
+        normalize_identity(user.email),
+        normalize_identity(user_full_name(user)),
+        normalize_identity(f"{user.first_name or ''} {user.last_name or ''}".strip()),
+        normalize_identity(user.first_name),
+        normalize_identity(user.last_name),
+    }
+    return {token for token in tokens if token}
 
 
 def payload_value(payload: dict, *keys, default=None):
@@ -66,6 +86,188 @@ def payload_value(payload: dict, *keys, default=None):
             return value
 
     return default
+
+
+def parse_payload_date(value: Any) -> Optional[date]:
+    if isinstance(value, date) and not isinstance(value, datetime):
+        return value
+    if isinstance(value, datetime):
+        return value.date()
+    if value in (None, ""):
+        return None
+    raw = str(value).strip()
+    for fmt in ("%Y-%m-%d", "%d.%m.%Y", "%d/%m/%Y", "%d-%m-%Y"):
+        try:
+            return datetime.strptime(raw[:10], fmt).date()
+        except ValueError:
+            pass
+    try:
+        return datetime.fromisoformat(raw.replace("Z", "+00:00")).date()
+    except Exception:
+        return None
+
+
+def get_control_field_date(control: Control) -> Optional[date]:
+    payload = control.payload or {}
+    return parse_payload_date(payload_value(payload, "data_control")) or (
+        control.created_at.date() if control.created_at else None
+    )
+
+
+def get_control_start_date(control: Control) -> Optional[date]:
+    payload = control.payload or {}
+    return (
+        parse_payload_date(
+            payload_value(
+                payload,
+                "field_submitted_at",
+                "data_transmitere_teren",
+                "data_trimitere_teren",
+                "submitted_at",
+            )
+        )
+        or parse_payload_date(payload_value(payload, "data_control"))
+        or (control.created_at.date() if control.created_at else None)
+    )
+
+
+def get_report_status(control: Control) -> str:
+    return "finalizat" if control.report_uploaded_at else "fara_raport"
+
+
+def get_days_to_report(control: Control) -> Optional[int]:
+    start_date = get_control_start_date(control)
+    if not start_date:
+        return None
+    final_date = control.report_uploaded_at.date() if control.report_uploaded_at else date.today()
+    return max(0, (final_date - start_date).days)
+
+
+def get_days_since_field(control: Control) -> Optional[int]:
+    return get_days_to_report(control)
+
+
+def get_response_time_level(control: Control) -> str:
+    if control.report_uploaded_at:
+        return "finalizat"
+    days = get_days_to_report(control)
+    if days is None or days <= 5:
+        return "green"
+    if days <= 10:
+        return "yellow"
+    return "red"
+
+
+def get_deadline_status(control: Control) -> str:
+    if control.report_uploaded_at:
+        return "finalizat"
+    days = get_days_to_report(control)
+    if days is None or days <= 5:
+        return "in_termen"
+    if days <= 10:
+        return "atentie"
+    return "intarziat"
+
+
+def get_control_team(payload: dict) -> list[dict[str, str]]:
+    raw_team = payload_value(payload, "echipa", default=[]) or []
+    if not isinstance(raw_team, list):
+        raw_team = [raw_team]
+    team = []
+    for item in raw_team:
+        if isinstance(item, dict):
+            team.append({
+                "nume": str(item.get("nume") or item.get("name") or "").strip(),
+                "email": str(item.get("email") or "").strip(),
+            })
+        elif item not in (None, ""):
+            team.append({"nume": str(item).strip(), "email": ""})
+    return team
+
+
+def control_matches_user(control: Control, user: User) -> bool:
+    if user.role in ADMIN_ROLES:
+        return True
+    if control.created_by_user_id == user.id:
+        return True
+
+    tokens = user_identity_tokens(user)
+    for member in get_control_team(control.payload or {}):
+        member_tokens = {
+            normalize_identity(member.get("email")),
+            normalize_identity(member.get("nume")),
+        }
+        if tokens.intersection({token for token in member_tokens if token}):
+            return True
+
+    return False
+
+
+def require_control_report_access(control: Control, user: User):
+    if not control or control.deleted_at is not None:
+        raise HTTPException(status_code=404, detail="Control not found")
+    if not control_matches_user(control, user):
+        raise HTTPException(status_code=403, detail="Nu ai acces la raportul acestui control.")
+
+
+def safe_report_storage_name(control_id: int) -> str:
+    stamp = datetime.utcnow().strftime("%Y%m%d%H%M%S%f")
+    return f"control_{control_id}_{stamp}.pdf"
+
+
+def report_file_on_disk(control: Control) -> Path:
+    if not control.report_file_path:
+        raise HTTPException(status_code=404, detail="Raportul PDF nu exista.")
+    filename = Path(control.report_file_path).name
+    path = (CONTROL_REPORT_UPLOAD_DIR / filename).resolve()
+    upload_root = CONTROL_REPORT_UPLOAD_DIR.resolve()
+    if upload_root not in path.parents and path != upload_root:
+        raise HTTPException(status_code=400, detail="Cale fisier raport invalida.")
+    if not path.exists() or not path.is_file():
+        raise HTTPException(status_code=404, detail="Fisierul raportului nu exista pe server.")
+    return path
+
+
+def report_url(control: Control) -> Optional[str]:
+    return f"/controls/{control.id}/report" if control.report_uploaded_at and control.report_file_path else None
+
+
+def serialize_control_report(control: Control, user: User) -> dict:
+    payload = control.payload or {}
+    field_date = get_control_field_date(control)
+    start_date = get_control_start_date(control)
+    days = get_days_to_report(control)
+    status = get_report_status(control)
+    deadline = get_deadline_status(control)
+    has_report = bool(control.report_uploaded_at)
+    return {
+        "id": control.id,
+        "created_at": control.created_at.isoformat() if control.created_at else None,
+        "field_submitted_at": start_date.isoformat() if start_date else None,
+        "data_control": field_date.isoformat() if field_date else payload.get("data_control"),
+        "garda": payload.get("garda"),
+        "localitate": payload.get("localitate"),
+        "entitate_controlata": payload.get("entitate_controlata"),
+        "control_type": control.control_type,
+        "categorie_control": get_categorie_control(payload),
+        "domeniu_control": get_domeniu_control(payload),
+        "result": control.result,
+        "echipa": get_control_team(payload),
+        "days_since_field": days,
+        "days_to_report": days,
+        "has_report": has_report,
+        "deadline_status": deadline,
+        "report_status": status,
+        "response_time_level": get_response_time_level(control),
+        "report_uploaded_at": control.report_uploaded_at.isoformat() if control.report_uploaded_at else None,
+        "report_original_filename": control.report_original_filename,
+        "report_number": control.report_number,
+        "report_date": control.report_date.isoformat() if control.report_date else None,
+        "report_notes": control.report_notes,
+        "report_url": report_url(control),
+        "is_overdue": not has_report and (days or 0) > 10,
+        "can_upload_report": control_matches_user(control, user),
+    }
 
 
 def gps_value(payload: dict, axis: str):
@@ -100,7 +302,7 @@ def normalize_number(value):
     Transforma valori de tip 5000, 5000.50, 5000,50, 5.000, 5.000 RON in float.
     """
     if value in (None, ""):
-        return 0
+        return None
 
     try:
         if isinstance(value, str):
@@ -124,7 +326,7 @@ def normalize_number(value):
 
         return float(value)
     except Exception:
-        return 0
+        return None
 
 
 def get_domeniu_control(payload: dict):
@@ -236,6 +438,13 @@ def control_to_dict(control: Control) -> dict:
         "payload": control.payload,
         "deleted_at": control.deleted_at.isoformat() if control.deleted_at else None,
         "deleted_by_user_id": control.deleted_by_user_id,
+        "report_file_path": control.report_file_path,
+        "report_original_filename": control.report_original_filename,
+        "report_uploaded_at": control.report_uploaded_at.isoformat() if control.report_uploaded_at else None,
+        "report_uploaded_by_user_id": control.report_uploaded_by_user_id,
+        "report_number": control.report_number,
+        "report_date": control.report_date.isoformat() if control.report_date else None,
+        "report_notes": control.report_notes,
     }
 
 
@@ -892,9 +1101,6 @@ def map_controls(
         lat = gps_value(payload, "lat")
         lon = gps_value(payload, "lon")
 
-        if lat is None or lon is None:
-            continue
-
         items.append(
             {
                 "id": row.id,
@@ -903,6 +1109,9 @@ def map_controls(
                 "result": row.result,
                 "control_type": row.control_type,
                 "data_control": payload.get("data_control"),
+                "date_start": payload.get("date_start"),
+                "date_end": payload.get("date_end"),
+                "data_control_original": payload.get("data_control_original"),
                 "judet": payload.get("judet"),
                 "garda": payload.get("garda"),
                 "localitate": payload.get("localitate"),
@@ -915,6 +1124,7 @@ def map_controls(
                 "reprezentant_calitate": payload.get("reprezentant_calitate"),
                 "echipa": payload.get("echipa", []),
                 "constatari": payload.get("constatari"),
+                "constatare_originala": payload.get("constatare_originala"),
                 "lat": lat,
                 "lon": lon,
                 "ora_control": payload.get("ora_control"),
@@ -936,6 +1146,11 @@ def map_controls(
                 "valoare_prejudiciu_ron": get_valoare_prejudiciu(payload),
                 "descriere_abatere": get_descriere_abatere(payload),
                 "masuri_dispuse": get_masuri_dispuse(payload),
+                "masuri_dispuse_original": payload.get("masuri_dispuse_original"),
+                "numar_act_control": payload.get("numar_act_control"),
+                "tip_control_original": payload.get("tip_control_original"),
+                "result_original": payload.get("result_original"),
+                "financial_data_available": payload.get("financial_data_available"),
                 "act_normativ": payload.get("act_normativ"),
                 "articol": payload.get("articol"),
                 "confiscari": payload.get("confiscari"),
@@ -945,10 +1160,169 @@ def map_controls(
                 "este_sesizare": get_este_sesizare(payload, row.control_type),
                 "numar_sesizare": get_numar_sesizare(payload),
                 "nume_petitionar": get_nume_petitionar(payload),
+
+                # raport administrativ intern
+                "report_status": get_report_status(row),
+                "deadline_status": get_deadline_status(row),
+                "days_since_field": get_days_since_field(row),
+                "days_to_report": get_days_to_report(row),
+                "has_report": bool(row.report_uploaded_at),
+                "response_time_level": get_response_time_level(row),
+                "field_submitted_at": get_control_start_date(row).isoformat() if get_control_start_date(row) else None,
+                "report_uploaded_at": row.report_uploaded_at.isoformat() if row.report_uploaded_at else None,
+                "report_original_filename": row.report_original_filename,
+                "report_number": row.report_number,
+                "report_date": row.report_date.isoformat() if row.report_date else None,
+                "report_notes": row.report_notes,
+                "report_url": report_url(row),
             }
         )
 
     return items
+
+
+@router.get("/my-reports")
+def my_control_reports(
+    db: Session = Depends(get_db),
+    u: User = Depends(get_current_user),
+    status: str = Query("toate"),
+    garda: Optional[str] = Query(None),
+    inspector: Optional[str] = Query(None),
+    date_from: Optional[date] = Query(None),
+    date_to: Optional[date] = Query(None),
+):
+    allowed_statuses = {"toate", "fara_raport", "finalizate", "intarziate"}
+    if status not in allowed_statuses:
+        raise HTTPException(status_code=400, detail="Status raport invalid.")
+
+    stmt = select(Control).where(Control.deleted_at.is_(None)).order_by(Control.id.desc())
+    rows = db.scalars(stmt).all()
+
+    items = []
+    inspector_filter = normalize_identity(inspector)
+    garda_filter = normalize_identity(garda)
+
+    for control in rows:
+        if not control_matches_user(control, u):
+            continue
+
+        payload = control.payload or {}
+        field_date = get_control_field_date(control)
+
+        if date_from and field_date and field_date < date_from:
+            continue
+        if date_to and field_date and field_date > date_to:
+            continue
+        if garda_filter and normalize_identity(payload.get("garda")) != garda_filter:
+            continue
+        if inspector_filter:
+            team_text = " ".join(
+                f"{member.get('nume', '')} {member.get('email', '')}"
+                for member in get_control_team(payload)
+            )
+            if inspector_filter not in normalize_identity(team_text):
+                continue
+
+        item = serialize_control_report(control, u)
+
+        if status == "fara_raport" and item["report_status"] != "fara_raport":
+            continue
+        if status == "finalizate" and item["report_status"] != "finalizat":
+            continue
+        if status == "intarziate" and not item["is_overdue"]:
+            continue
+
+        items.append(item)
+
+    items.sort(
+        key=lambda item: (
+            item["report_status"] == "finalizat",
+            0 if item["deadline_status"] == "intarziat" else 1 if item["deadline_status"] == "atentie" else 2,
+            -(item["days_to_report"] or 0),
+        )
+    )
+
+    return items
+
+
+@router.post("/{control_id}/report")
+async def upload_control_report(
+    control_id: int,
+    file: UploadFile = File(...),
+    report_number: str = Form(...),
+    report_date: date = Form(...),
+    report_notes: Optional[str] = Form(None),
+    db: Session = Depends(get_db),
+    u: User = Depends(get_current_user),
+):
+    control = db.get(Control, control_id)
+    require_control_report_access(control, u)
+
+    original_name = Path(file.filename or "").name
+    if not original_name.lower().endswith(".pdf"):
+        raise HTTPException(status_code=400, detail="Se accepta doar fisiere PDF.")
+
+    content_type = (file.content_type or "").lower()
+    if content_type and content_type not in {"application/pdf", "application/x-pdf", "application/octet-stream"}:
+        raise HTTPException(status_code=400, detail="Tip fisier invalid. Incarca un PDF.")
+
+    content = await file.read()
+    if not content:
+        raise HTTPException(status_code=400, detail="Fisierul PDF este gol.")
+    if len(content) > MAX_REPORT_PDF_BYTES:
+        raise HTTPException(status_code=413, detail="Fisierul PDF depaseste limita de 20 MB.")
+    if not content.startswith(b"%PDF"):
+        raise HTTPException(status_code=400, detail="Fisierul incarcat nu pare a fi PDF valid.")
+
+    CONTROL_REPORT_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+    safe_name = safe_report_storage_name(control.id)
+    disk_path = (CONTROL_REPORT_UPLOAD_DIR / safe_name).resolve()
+    upload_root = CONTROL_REPORT_UPLOAD_DIR.resolve()
+    if upload_root not in disk_path.parents:
+        raise HTTPException(status_code=400, detail="Cale fisier invalida.")
+
+    disk_path.write_bytes(content)
+
+    old_data = control_to_dict(control)
+    control.report_file_path = f"control_reports/{safe_name}"
+    control.report_original_filename = original_name
+    control.report_uploaded_at = datetime.utcnow()
+    control.report_uploaded_by_user_id = u.id
+    control.report_number = report_number.strip()
+    control.report_date = report_date
+    control.report_notes = (report_notes or "").strip() or None
+
+    db.flush()
+    add_audit_log(
+        db=db,
+        control_id=control.id,
+        action="report_uploaded",
+        user_id=u.id,
+        old_data=old_data,
+        new_data=control_to_dict(control),
+    )
+    db.commit()
+    db.refresh(control)
+
+    return serialize_control_report(control, u)
+
+
+@router.get("/{control_id}/report")
+def download_control_report(
+    control_id: int,
+    db: Session = Depends(get_db),
+    u: User = Depends(get_current_user),
+):
+    control = db.get(Control, control_id)
+    require_control_report_access(control, u)
+
+    path = report_file_on_disk(control)
+    filename = control.report_original_filename or path.name
+    return FileResponse(
+        path=path,
+        media_type="application/pdf",
+        filename=filename,
+    )
 
 
 @router.get("/{control_id}", response_model=ControlOut)

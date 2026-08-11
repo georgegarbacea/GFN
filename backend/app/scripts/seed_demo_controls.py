@@ -1,12 +1,17 @@
 import json
 import os
 import random
+import sys
 from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta
 from pathlib import Path
 from typing import Any
 
-from sqlalchemy import select, update
+from sqlalchemy import or_, select, update
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 from app.core.config import settings
 from app.core.db import SessionLocal
@@ -14,11 +19,11 @@ from app.models.control import Control
 from app.models.user import User
 
 
-DEMO_COUNT = int(os.getenv("GFN_DEMO_COUNT", "3000"))
+DEMO_COUNT = int(os.getenv("GFN_DEMO_COUNT", "500"))
 DEMO_START_DATE = os.getenv("GFN_DEMO_START_DATE", "2026-02-01")
 DEMO_END_DATE = os.getenv("GFN_DEMO_END_DATE")
 DEMO_RESET = os.getenv("GFN_DEMO_RESET", "").lower() == "true"
-DEMO_BATCH = os.getenv("GFN_DEMO_BATCH", f"seed_demo_{datetime.utcnow():%Y%m%d%H%M%S}")
+DEMO_BATCH = os.getenv("GFN_DEMO_BATCH", f"seed_demo_{datetime.now():%Y%m%d%H%M%S}")
 
 ROMANIA_BOUNDS = {
     "min_lat": 43.0,
@@ -87,21 +92,21 @@ RESULT_WEIGHTS = [0.58, 0.13, 0.11, 0.15, 0.03]
 DOMAIN_CATEGORIES = {
     "Domeniul silvic": [
         "Control de fond",
-        "Control parțial",
-        "Instalații / depozite materiale lemnoase",
+        "Control partial",
+        "Instalatii / depozite materiale lemnoase",
         "Exploatarea masei lemnoase",
-        "Control anual regenerări",
-        "Lucrări regenerare / împădurire",
-        "Verificarea actelor de punere în valoare",
-        "Controlul circulației materialelor lemnoase",
+        "Control anual regenerari",
+        "Lucrari regenerare / impadurire",
+        "Verificarea actelor de punere in valoare",
+        "Controlul circulatiei materialelor lemnoase",
     ],
     "Domeniul cinegetic": [
         "Control de fond",
-        "Criterii de licențiere",
-        "Respectarea prevederilor legale la vânătoare",
+        "Criterii de licentiere",
+        "Respectarea prevederilor legale la vanatoare",
         "Populare / repopulare",
         "Prevenire / combatere braconaj",
-        "Studii de evaluare în teren",
+        "Studii de evaluare in teren",
         "Procese-verbale de pagube",
     ],
 }
@@ -303,31 +308,32 @@ def random_point_in_guard(guard: GuardGeometry, rng: random.Random) -> tuple[flo
 
 
 def distribute_controls(guards: list[GuardGeometry], total: int) -> dict[str, int]:
+    if total < len(guards):
+        raise ValueError(f"DEMO_COUNT trebuie sa fie cel putin {len(guards)} pentru a acoperi toate garzile.")
+
     weights = {
         guard.display_name: max(FOREST_AREA_HA.get(guard.display_name, 400_000.0), 100_000.0)
         for guard in guards
     }
     weight_total = sum(weights.values())
     raw = {name: total * weight / weight_total for name, weight in weights.items()}
-    counts = {name: int(value) for name, value in raw.items()}
-    for name in counts:
-        counts[name] = max(counts[name], 80)
-
-    diff = total - sum(counts.values())
+    min_per_guard = min(10, max(1, total // (len(guards) * 8)))
+    counts = {name: max(min_per_guard, int(value)) for name, value in raw.items()}
     names_by_fraction = sorted(raw, key=lambda name: raw[name] - int(raw[name]), reverse=True)
-    while diff > 0:
+
+    while sum(counts.values()) < total:
         for name in names_by_fraction:
             counts[name] += 1
-            diff -= 1
-            if diff == 0:
+            if sum(counts.values()) == total:
                 break
-    while diff < 0:
+
+    while sum(counts.values()) > total:
         for name in reversed(names_by_fraction):
-            if counts[name] > 80:
+            if counts[name] > min_per_guard:
                 counts[name] -= 1
-                diff += 1
-            if diff == 0:
+            if sum(counts.values()) == total:
                 break
+
     return counts
 
 
@@ -358,13 +364,13 @@ def inspector_email(name: str) -> str:
     safe = (
         name.lower()
         .replace(" ", ".")
-        .replace("ă", "a")
-        .replace("â", "a")
-        .replace("î", "i")
-        .replace("ș", "s")
-        .replace("ş", "s")
-        .replace("ț", "t")
-        .replace("ţ", "t")
+        .replace("a", "a")
+        .replace("a", "a")
+        .replace("i", "i")
+        .replace("s", "s")
+        .replace("s", "s")
+        .replace("t", "t")
+        .replace("t", "t")
     )
     return f"{safe}@gfn.gov.ro"
 
@@ -509,7 +515,7 @@ def reset_controls_if_requested(db, user: User) -> None:
 
     print("")
     print("ATENTIE: GFN_DEMO_RESET=true este activ.")
-    print("Scriptul va marca soft-delete toate controalele active inainte de seed.")
+    print("Scriptul va marca soft-delete doar controalele demo active inainte de seed.")
 
     if not looks_like_local_environment():
         raise RuntimeError(
@@ -517,13 +523,38 @@ def reset_controls_if_requested(db, user: User) -> None:
             "Seteaza GFN_ENV=local doar daca rulezi intentionat pe mediul local."
         )
 
-    now = datetime.utcnow()
+    now = datetime.now()
     result = db.execute(
         update(Control)
         .where(Control.deleted_at.is_(None))
+        .where(
+            or_(
+                Control.payload.op("->>")("demo_seed") == "true",
+                Control.payload.op("->>")("fake") == "true",
+                Control.payload.op("->>")("fake_batch").isnot(None),
+            )
+        )
         .values(deleted_at=now, deleted_by_user_id=user.id)
     )
-    print(f"Controale marcate deleted_at: {result.rowcount or 0}")
+    print(f"Controale demo marcate deleted_at: {result.rowcount or 0}")
+
+
+def validate_generated_payload(payload: dict[str, Any], guard: GuardGeometry) -> tuple[bool, bool]:
+    gps = payload.get("gps") or {}
+    lat = gps.get("lat")
+    lon = gps.get("lon")
+    if not isinstance(lat, (int, float)) or not isinstance(lon, (int, float)):
+        return False, False
+    in_romania = is_inside_romania(float(lat), float(lon))
+    in_guard = point_in_multipolygon(float(lon), float(lat), guard.polygons)
+    required = [
+        payload.get("garda"),
+        payload.get("judet"),
+        payload.get("localitate"),
+        payload.get("domeniu_control"),
+        payload.get("categorie_control"),
+    ]
+    return bool(in_romania and in_guard and all(required)), not in_romania
 
 
 def main() -> None:
@@ -549,12 +580,19 @@ def main() -> None:
         reset_controls_if_requested(db, user)
 
         created = 0
+        valid_coordinates = 0
+        outside_romania = 0
         controls: list[Control] = []
         for guard_name, count in sorted(counts.items()):
             guard = guard_by_name[guard_name]
             for _ in range(count):
                 created += 1
                 payload, created_at, control_type, result = build_payload(created, guard, rng)
+                is_valid, is_outside = validate_generated_payload(payload, guard)
+                if is_valid:
+                    valid_coordinates += 1
+                if is_outside:
+                    outside_romania += 1
                 controls.append(
                     Control(
                         created_at=created_at,
@@ -578,7 +616,9 @@ def main() -> None:
         db.commit()
 
     print("")
-    print(f"Gata. Au fost create {created} controale demo.")
+    print(f"Total controale generate: {created}")
+    print(f"Coordonate valide: {valid_coordinates}")
+    print(f"In afara Romaniei: {outside_romania}")
     print("Distributie pe garzi:")
     for guard_name, count in sorted(counts.items()):
         print(f"- {guard_name}: {count}")

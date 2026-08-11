@@ -102,6 +102,8 @@ def get_current_user(token: str = Depends(oauth2), db: Session = Depends(get_db)
     u = db.get(User, user_id)
     if not u:
         raise HTTPException(status_code=401, detail="User inexistent.")
+    if not u.is_approved:
+        raise HTTPException(status_code=403, detail="Contul nu mai este aprobat.")
 
     return u
 
@@ -144,59 +146,6 @@ def approve_user(
     db.commit()
 
     return {"message": "User actualizat."}
-
-
-# ================= DEV APPROVE =================
-@router.post("/dev-approve-user")
-def dev_approve_user(
-    email: str,
-    db: Session = Depends(get_db),
-):
-    email = email.lower().strip()
-    u = db.scalar(select(User).where(User.email == email))
-
-    if not u:
-        raise HTTPException(status_code=404, detail="Utilizatorul nu exista.")
-
-    u.is_approved = True
-
-    if not u.role:
-        u.role = "inspector"
-
-    db.commit()
-    db.refresh(u)
-
-    return {
-        "message": "Utilizator aprobat cu succes.",
-        "id": u.id,
-        "email": u.email,
-        "role": u.role,
-        "is_approved": u.is_approved,
-    }
-
-
-# ================= DEV SET PASSWORD =================
-@router.post("/dev-set-password")
-def dev_set_password(
-    email: str,
-    new_password: str,
-    db: Session = Depends(get_db),
-):
-    email = email.lower().strip()
-    u = db.scalar(select(User).where(User.email == email))
-
-    if not u:
-        raise HTTPException(status_code=404, detail="Utilizatorul nu exista.")
-
-    u.hashed_password = hash_password(new_password)
-
-    db.commit()
-    db.refresh(u)
-
-    return {
-        "message": "Parola a fost resetata cu succes.",
-        "email": u.email,
-    }
 
 
 # ================= LIST =================
@@ -253,20 +202,4 @@ def search_users(
             "role": r.role,
         }
         for r in rows
-    ]
-@router.get("/users")
-def get_users(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    users = db.query(User).filter(User.is_approved == True).all()
-
-    return [
-        {
-            "id": u.id,
-            "email": u.email,
-            "name": u.name,
-            "role": u.role
-        }
-        for u in users
     ]
