@@ -1448,10 +1448,10 @@
 
     @media (max-width: 1320px) {
       body { overflow: auto; }
-      .app { grid-template-columns: 1fr; height: auto; min-height: 100vh; }
-      .sidebar { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; overflow: visible; }
+      body:not(.gfn-shell-v1) .app { grid-template-columns: 1fr; height: auto; min-height: 100vh; }
+      body:not(.gfn-shell-v1) .sidebar { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; overflow: visible; }
       .card { margin-bottom: 0; }
-      .main { overflow: visible; }
+      body:not(.gfn-shell-v1) .main { overflow: visible; }
       .view-grid { grid-template-columns: 1fr; }
       .kpi-row, .analytics-grid.three { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
@@ -1465,14 +1465,14 @@
     }
 
     /* === Varianta fixed sidebar + harta aerisita === */
-    .app {
+    body:not(.gfn-shell-v1) .app {
       grid-template-columns: 318px minmax(0, 1fr) !important;
       gap: 16px;
       padding: 14px;
     }
 
-    .sidebar,
-    .sidebar:hover {
+    body:not(.gfn-shell-v1) .sidebar,
+    body:not(.gfn-shell-v1) .sidebar:hover {
       width: auto !important;
       min-width: 0;
       overflow-y: auto;
@@ -1801,8 +1801,8 @@
 
 
     @media (max-width: 1320px) {
-      .app { grid-template-columns: 1fr !important; }
-      .sidebar { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; overflow: visible; }
+      body:not(.gfn-shell-v1) .app { grid-template-columns: 1fr !important; }
+      body:not(.gfn-shell-v1) .sidebar { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; overflow: visible; }
       #view-map .view-grid { grid-template-columns: 1fr; }
       #view-map .map-module, #view-map #map { height: 620px !important; min-height: 620px; }
       #view-map .side-stack { max-height: none; overflow: visible; }
@@ -1816,14 +1816,14 @@
       --cyan: #22d3ee;
     }
 
-    .app {
+    body:not(.gfn-shell-v1) .app {
       grid-template-columns: 286px minmax(0, 1fr) !important;
       gap: 14px !important;
       padding: 12px !important;
     }
 
-    .sidebar,
-    .sidebar:hover {
+    body:not(.gfn-shell-v1) .sidebar,
+    body:not(.gfn-shell-v1) .sidebar:hover {
       width: auto !important;
       overflow-y: auto !important;
       overflow-x: hidden !important;
@@ -2137,8 +2137,8 @@
 
 
     @media (max-width: 1320px) {
-      .app { grid-template-columns: 1fr !important; height: auto !important; min-height: 100vh !important; }
-      .sidebar { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 12px !important; overflow: visible !important; }
+      body:not(.gfn-shell-v1) .app { grid-template-columns: 1fr !important; height: auto !important; min-height: 100vh !important; }
+      body:not(.gfn-shell-v1) .sidebar { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 12px !important; overflow: visible !important; }
       #view-map .view-grid { grid-template-columns: 1fr !important; }
       #view-map .map-module, #view-map #map { height: 620px !important; min-height: 620px !important; }
       #view-map .side-stack { max-height: none !important; overflow: visible !important; }
@@ -2147,14 +2147,14 @@
   
 
     /* === PATCH: sidebar fix, slimmer right panel, cleaner account, robust popup/category === */
-    .app {
+    body:not(.gfn-shell-v1) .app {
       grid-template-columns: 300px minmax(0, 1fr) !important;
       gap: 12px !important;
       padding: 12px !important;
     }
 
-    .sidebar,
-    .sidebar:hover {
+    body:not(.gfn-shell-v1) .sidebar,
+    body:not(.gfn-shell-v1) .sidebar:hover {
       width: auto !important;
       max-width: 300px !important;
     }
@@ -8501,8 +8501,8 @@ body.gfn-public #view-petitions .petition-chart-grid > .chart-card {
 }
 
 /* GFN v88 - stabilizare sidebar laptop: meniul din stanga ramane pe o singura coloana */
-.sidebar,
-.sidebar:hover {
+body:not(.gfn-shell-v1) .sidebar,
+body:not(.gfn-shell-v1) .sidebar:hover {
   display: block !important;
   grid-template-columns: none !important;
 }
@@ -8513,35 +8513,35 @@ body.gfn-public #view-petitions .petition-chart-grid > .chart-card {
 }
 
 @media (max-width: 1320px) and (min-width: 861px) {
-  .app {
+  body:not(.gfn-shell-v1) .app {
     grid-template-columns: 300px minmax(0, 1fr) !important;
     height: 100vh !important;
     min-height: 100vh !important;
     overflow: hidden !important;
   }
 
-  .sidebar,
-  .sidebar:hover {
+  body:not(.gfn-shell-v1) .sidebar,
+  body:not(.gfn-shell-v1) .sidebar:hover {
     max-width: 300px !important;
     overflow-y: auto !important;
     overflow-x: hidden !important;
   }
 
-  .main {
+  body:not(.gfn-shell-v1) .main {
     overflow-y: auto !important;
   }
 }
 
 @media (max-width: 860px) {
-  .app {
+  body:not(.gfn-shell-v1) .app {
     grid-template-columns: 1fr !important;
     height: auto !important;
     min-height: 100vh !important;
     overflow: visible !important;
   }
 
-  .sidebar,
-  .sidebar:hover {
+  body:not(.gfn-shell-v1) .sidebar,
+  body:not(.gfn-shell-v1) .sidebar:hover {
     max-width: none !important;
     overflow: visible !important;
   }
@@ -8902,7 +8902,7 @@ body.gfn-forest-glass-theme::before {
     linear-gradient(180deg, rgba(1, 9, 12, .18), rgba(1, 13, 13, .42));
 }
 
-body.gfn-forest-glass-theme .app {
+body.gfn-forest-glass-theme:not(.gfn-shell-v1) .app {
   background: transparent;
   gap: 16px;
   padding: 16px;
@@ -9233,7 +9233,7 @@ body.gfn-forest-glass-theme #map {
 }
 
 @media (max-width: 1180px) {
-  body.gfn-forest-glass-theme .app { padding: 12px; gap: 12px; }
+  body.gfn-forest-glass-theme:not(.gfn-shell-v1) .app { padding: 12px; gap: 12px; }
   body.gfn-forest-glass-theme .kpi-value,
   body.gfn-forest-glass-theme .metric-value,
   body.gfn-forest-glass-theme .report-kpi-card strong,
@@ -9332,7 +9332,7 @@ body.gfn-forest-glass-theme::before {
 
 
 /* GFN v101 - Inspector view: airier layout, clearer hierarchy, closer to approved mockup */
-body.gfn-forest-glass-theme .sidebar:hover { width: 268px; }
+body.gfn-forest-glass-theme:not(.gfn-shell-v1) .sidebar:hover { width: 268px; }
 
 #view-inspectori { --inspector-gap: 20px; }
 #view-inspectori .inspector-kpi-grid-clean {
@@ -11223,7 +11223,7 @@ body.gfn-forest-glass-theme::after {
     var(--bg-overlay);
 }
 
-body.gfn-forest-glass-theme .app {
+body.gfn-forest-glass-theme:not(.gfn-shell-v1) .app {
   position: relative;
   z-index: 1;
   grid-template-columns: 272px minmax(0, 1fr) !important;
@@ -11231,8 +11231,8 @@ body.gfn-forest-glass-theme .app {
   padding: var(--space-sm);
 }
 
-body.gfn-forest-glass-theme .sidebar,
-body.gfn-forest-glass-theme .sidebar:hover {
+body.gfn-forest-glass-theme:not(.gfn-shell-v1) .sidebar,
+body.gfn-forest-glass-theme:not(.gfn-shell-v1) .sidebar:hover {
   width: 272px !important;
   max-width: 272px !important;
   transition: width 170ms ease, box-shadow 170ms ease;
@@ -11879,12 +11879,12 @@ body.gfn-forest-glass-theme .nav-label {
 }
 
 @media (max-width: 1320px) and (min-width: 861px) {
-  body.gfn-forest-glass-theme .app {
+  body.gfn-forest-glass-theme:not(.gfn-shell-v1) .app {
     grid-template-columns: 264px minmax(0, 1fr) !important;
   }
 
-  body.gfn-forest-glass-theme .sidebar,
-  body.gfn-forest-glass-theme .sidebar:hover {
+  body.gfn-forest-glass-theme:not(.gfn-shell-v1) .sidebar,
+  body.gfn-forest-glass-theme:not(.gfn-shell-v1) .sidebar:hover {
     width: 264px !important;
     max-width: 264px !important;
   }
@@ -13241,21 +13241,21 @@ body.gfn-forest-glass-theme *::-webkit-scrollbar-thumb:hover {
 }
 
 @media (max-width: 860px) {
-  body.gfn-forest-glass-theme .app {
+  body.gfn-forest-glass-theme:not(.gfn-shell-v1) .app {
     grid-template-columns: minmax(0, 1fr) !important;
     height: auto !important;
     min-height: 100vh !important;
     overflow: visible !important;
   }
 
-  body.gfn-forest-glass-theme .sidebar,
-  body.gfn-forest-glass-theme .sidebar:hover {
+  body.gfn-forest-glass-theme:not(.gfn-shell-v1) .sidebar,
+  body.gfn-forest-glass-theme:not(.gfn-shell-v1) .sidebar:hover {
     width: 100% !important;
     max-width: none !important;
     overflow: visible !important;
   }
 
-  body.gfn-forest-glass-theme .main {
+  body.gfn-forest-glass-theme:not(.gfn-shell-v1) .main {
     min-width: 0;
     width: 100%;
     overflow: visible !important;

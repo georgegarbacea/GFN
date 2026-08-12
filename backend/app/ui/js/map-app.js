@@ -91,12 +91,19 @@
     let inspectorSection = "activity";
     let reportStatsMap = null;
     let reportStatsLayer = null;
-    let entityTimelineLimit = 20;
+    let entityTimelineLimit = 10;
     let entityTimelineKey = "";
+    let entityV1Section = "overview";
+    let entityEvolutionMode = "verified";
+    let entityDatabasePage = 1;
+    const ENTITY_DATABASE_PAGE_SIZE = 12;
     let inspectorIndexLimit = 5;
     let inspectorControlsLimit = 11;
     let entityLatestLimit = 5;
     let petitionHistoryLimit = 8;
+    let petitionActiveSection = "overview";
+    let petitionFilteredControls = [];
+    let petitionFilters = {};
     let currentView = "map";
     let map = null;
     let markersLayer = null;
@@ -110,15 +117,21 @@
     let currentLabelLayer = null;
     let guardStatsMap = null;
     let guardStatsLayer = null;
+    let guardSelectedStatsLayer = null;
     let guardStatsBaseLayer = null;
     let guardStatsLabelLayer = null;
     let guardStatsGeoJson = null;
     let guardCenterCache = null;
+    let guardActiveSection = "overview";
+    let guardRankingExpanded = false;
+    let selectedGuardProfileKey = "";
     let entityStatsMap = null;
     let entityStatsLayer = null;
     let entityStatsBaseLayer = null;
     let entityStatsLabelLayer = null;
+    let entitySelectedStatsLayer = null;
     let selectedEntityHistoryYear = "";
+    let selectedEntityProfileKey = "";
     let inspectorCompareNames = [];
     let selectedInspectorName = "";
     let inspectorSortMode = "activity";
@@ -145,19 +158,21 @@
     let isRenderingMarkers = false;
     let mapPointMode = false;
     let mapClusterMode = "guard";
+    let controlsSearchTimer = null;
+    let controlsSearchItems = [];
 
     const NAV_PUBLIC = [
-      { id: "map", icon: "MAP", label: "Controale", title: "Controale", subtitle: "", pill: "Harta" },
-      { id: "garzi", icon: "GF", label: "Garzi", title: "Garzi", subtitle: "", pill: "Analiza" },
+      { id: "map", icon: "MAP", label: "Controale", title: "Controale", subtitle: "Monitorizare nationala si activitate in teren", pill: "Harta operationala" },
       { id: "petitions", icon: "SES", label: "Petitii", title: "Petitii", subtitle: "", pill: "Sesizari" },
+      { id: "garzi", icon: "GF", label: "Garzi", title: "Garzi", subtitle: "", pill: "Analiza" },
       { id: "report", icon: "RPT", label: "Raport", title: "Raport institutional", subtitle: "", pill: "Raport" }
     ];
     const NAV_INTERNAL = [
-      { id: "map", icon: "MAP", label: "Controale", title: "Controale", subtitle: "", pill: "Harta" },
+      { id: "map", icon: "MAP", label: "Controale", title: "Controale", subtitle: "Monitorizare nationala si activitate in teren", pill: "Harta operationala" },
+      { id: "petitions", icon: "SES", label: "Petitii", title: "Petitii", subtitle: "", pill: "Sesizari" },
       { id: "garzi", icon: "GF", label: "Garzi", title: "Garzi", subtitle: "", pill: "Analiza" },
       { id: "inspectori", icon: "INSP", label: "Inspectori", title: "Inspectori", subtitle: "", pill: "Analiza" },
       { id: "entities", icon: "ENT", label: "Entitati", title: "Entitati", subtitle: "", pill: "Istoric" },
-      { id: "petitions", icon: "SES", label: "Petitii", title: "Petitii", subtitle: "", pill: "Sesizari" },
       { id: "report", icon: "RPT", label: "Raport", title: "Raport institutional", subtitle: "", pill: "Raport" }
     ];
 
@@ -254,21 +269,27 @@
       afterDatasetsDraw(chart) {
         if (chart.config.type === "doughnut") return;
         if (chart.options?.plugins?.valueLabelPlugin?.display === false) return;
+        const pluginOptions = chart.options?.plugins?.valueLabelPlugin || {};
         const ctx = chart.ctx;
         const dataset = chart.data.datasets[0];
         if (!dataset || !dataset.data) return;
         ctx.save();
-        ctx.font = "bold 11px Inter, Arial, sans-serif";
+        ctx.font = `${pluginOptions.fontWeight || 700} ${pluginOptions.fontSize || 11}px Inter, Arial, sans-serif`;
         ctx.textAlign = "center";
-        ctx.fillStyle = "#ffffff";
-        ctx.shadowColor = "rgba(0,0,0,.8)";
-        ctx.shadowBlur = 4;
+        ctx.fillStyle = pluginOptions.color || "#ffffff";
+        ctx.shadowColor = pluginOptions.shadowColor || "rgba(0,0,0,.8)";
+        ctx.shadowBlur = Number(pluginOptions.shadowBlur ?? 4);
         const meta = chart.getDatasetMeta(0);
         meta.data.forEach((el, i) => {
           const value = Number(dataset.data[i] || 0);
           if (!value) return;
           const props = el.getProps(["x", "y"], true);
           const label = Number.isInteger(value) ? String(value) : value.toFixed(1);
+          if (pluginOptions.horizontal) {
+            ctx.textAlign = "left";
+            ctx.fillText(label, Math.min(chart.chartArea.right - 28, props.x + 7), props.y + 4);
+            return;
+          }
           const safeY = Math.max(chart.chartArea.top + 14, props.y - 8);
           ctx.fillText(label, props.x, safeY);
         });
@@ -643,8 +664,20 @@
       if (f.garda !== "toate") arr = arr.filter(c => canonicalGuardName(c.garda) === f.garda || c.garda === f.garda);
       if (f.controlType !== "toate") arr = arr.filter(c => c.control_type === f.controlType);
       if (f.category !== "toate") arr = arr.filter(c => categoryMatchesControl(c, f.category));
-      if (f.dateFrom) arr = arr.filter(c => new Date(c.created_at) >= new Date(f.dateFrom));
-      if (f.dateTo) arr = arr.filter(c => new Date(c.created_at) <= new Date(f.dateTo + "T23:59:59"));
+      if (f.dateFrom) {
+        const start = new Date(f.dateFrom + "T00:00:00");
+        arr = arr.filter(c => {
+          const date = getControlDateValue(c);
+          return date && !isNaN(date.getTime()) && date >= start;
+        });
+      }
+      if (f.dateTo) {
+        const end = new Date(f.dateTo + "T23:59:59");
+        arr = arr.filter(c => {
+          const date = getControlDateValue(c);
+          return date && !isNaN(date.getTime()) && date <= end;
+        });
+      }
       return arr;
     }
 
@@ -670,10 +703,37 @@
 
     function renderNav() {
       const nav = getAvailableNavItems();
-      setHtml("navButtons", nav.map(item => {
+      const byId = Object.fromEntries(nav.map(item => [item.id, item]));
+      const headingIcon = label => {
+        const icons = {
+          Operational: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"></circle><path d="m15.5 8.5-2.2 4.8-4.8 2.2 2.2-4.8 4.8-2.2Z"></path></svg>',
+          Management: '<svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"></circle><circle cx="17" cy="9" r="2.3"></circle><path d="M3.5 19c.5-3.3 2.4-5 5.5-5s5 1.7 5.5 5M14 15c2.8-.6 5.3.7 6 3.5"></path></svg>',
+          Analiza: '<svg viewBox="0 0 24 24"><path d="M4 19V9M10 19V5M16 19v-7M22 19V3M2 19h20"></path></svg>',
+          Documente: '<svg viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z"></path><path d="M14 3v5h5M9 13h6M9 17h6"></path></svg>',
+          Administrare: '<svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"></circle><path d="M3.5 19c.5-3.3 2.4-5 5.5-5s5 1.7 5.5 5M17 13v6M14 16h6"></path></svg>'
+        };
+        return icons[label] || icons.Documente;
+      };
+      const renderHeading = label => `<span class="shell-nav-heading"><span class="shell-nav-heading-icon" aria-hidden="true">${headingIcon(label)}</span><span>${escapeHtml(label)}</span></span>`;
+      const renderItem = item => {
         const active = item.id === currentView;
         return `<button type="button" role="tab" class="nav-btn ${active ? "active" : ""}" data-view="${escapeAttr(item.id)}" aria-selected="${active}" aria-controls="view-${escapeAttr(item.id)}" tabindex="${active ? "0" : "-1"}"><span class="nav-icon" aria-hidden="true">${item.icon}</span><span class="nav-label">${item.label}</span></button>`;
-      }).join(""));
+      };
+      const group = (label, ids) => {
+        const items = ids.map(id => byId[id]).filter(Boolean);
+        if (!items.length) return "";
+        return `<section class="shell-nav-group">${renderHeading(label)}${items.map(renderItem).join("")}</section>`;
+      };
+      const administration = isAdminUser()
+        ? `<section class="shell-nav-group">${renderHeading("Administrare")}<a class="shell-home-link" href="/ui/approve_users.html"><span class="shell-home-icon">USR</span><span>Utilizatori</span></a></section>`
+        : "";
+      setHtml("navButtons", `
+        <section class="shell-nav-group">${renderHeading("Operational")}<a class="shell-home-link" href="/ui/index.html"><span class="shell-home-icon">H</span><span>Acasa</span></a>${["map", "petitions"].map(id => byId[id]).filter(Boolean).map(renderItem).join("")}</section>
+        ${group("Management", ["garzi", "inspectori", "entities"])}
+        ${isInternalMode ? `<section class="shell-nav-group">${renderHeading("Analiza")}<div class="shell-nav-disabled" title="Modul planificat"><span class="shell-home-icon">AN</span><span>Analiza avansata</span></div></section>` : ""}
+        ${group("Documente", ["report"])}
+        ${administration}
+      `);
       q("navButtons")?.querySelectorAll(".nav-btn[data-view]").forEach(button => {
         button.addEventListener("click", () => setView(button.dataset.view));
       });
@@ -694,6 +754,7 @@
       setText("viewTitle", nav.title);
       setText("viewSubtitle", nav.subtitle);
       setText("viewPill", nav.pill);
+      setText("topbarViewName", nav.title);
       renderCurrentView();
       if (view === "map") setTimeout(() => { if (map) map.invalidateSize(); }, 160);
       if (view === "garzi") setTimeout(() => { renderGuardStatsMap(); if (guardStatsMap) guardStatsMap.invalidateSize(); }, 180);
@@ -707,13 +768,21 @@
     function syncInspectorSectionUi() {
       const activity = q("inspectorActivitySection");
       const reports = q("inspectorReportsSection");
-      if (activity) activity.hidden = inspectorSection !== "activity";
+      if (activity) activity.hidden = false;
       if (reports) reports.hidden = inspectorSection !== "reports";
+      q("inspectorV1Surface")?.classList.toggle("reports-active", inspectorSection === "reports");
       document.querySelectorAll(".inspector-section-tab[data-inspector-section]").forEach(button => {
         const active = button.dataset.inspectorSection === inspectorSection;
         button.classList.toggle("active", active);
         button.setAttribute("aria-selected", active ? "true" : "false");
         button.tabIndex = active ? 0 : -1;
+      });
+      document.querySelectorAll("#inspectorV1Surface [data-inspector-v1-section]").forEach(button => {
+        const active = inspectorSection === "reports"
+          ? button.dataset.inspectorV1Section === "reports"
+          : button.dataset.inspectorV1Section === inspectorV1ActiveSection;
+        button.classList.toggle("active", active);
+        button.setAttribute("aria-selected", active ? "true" : "false");
       });
     }
 
@@ -746,12 +815,16 @@
         if (q("visitorInfo")) q("visitorInfo").style.setProperty("display", "none", "important");
         if (q("loginForm")) q("loginForm").style.setProperty("display", "none", "important");
         if (q("loggedBox")) q("loggedBox").style.setProperty("display", "block", "important");
+        if (q("sidebarLoginTrigger")) q("sidebarLoginTrigger").style.display = "none";
+        setText("topbarUserLabel", currentUser ? (currentUser.full_name || currentUser.email || "Cont intern") : "Cont intern");
       } else {
         q("modeBadge").className = "mode-badge public";
         setText("modeBadge", "Mod vizitator");
         if (q("visitorInfo")) q("visitorInfo").style.setProperty("display", "block", "important");
         if (q("loginForm")) q("loginForm").style.setProperty("display", "block", "important");
         if (q("loggedBox")) q("loggedBox").style.setProperty("display", "none", "important");
+        if (q("sidebarLoginTrigger")) q("sidebarLoginTrigger").style.display = "block";
+        setText("topbarUserLabel", "Vizitator");
         if (["inspectori", "entities", "reports-workflow"].includes(currentView)) currentView = "map";
       }
       syncViewChrome();
@@ -778,6 +851,7 @@
         setMode(true);
         setMessage("Autentificare reusita. Se incarca datele interne...", true);
         await loadControls();
+        closeAuthModal();
         setView("map");
       } catch (err) { setMessage(err.message, false); }
     }
@@ -838,7 +912,7 @@
     }
 
     function populateFilters() {
-      populateGardaFilter(); populateCategoryFilter(); populateInspectorSearch(); populateInspectorScopeGuards(); populateEntitySearch(); populateEntityFilters(); populatePetitionerSearch(); populateInstitutionTargets();
+      populateGardaFilter(); populateGuardModuleFilters(); populateCategoryFilter(); populateInspectorSearch(); populateInspectorScopeGuards(); populateEntitySearch(); populateEntityFilters(); populatePetitionerSearch(); populateInstitutionTargets();
     }
 
     function populateGardaFilter() {
@@ -855,6 +929,40 @@
       const rows = Object.entries(byKey).sort((a, b) => String(a[1]).localeCompare(String(b[1]), "ro"));
       el.innerHTML = '<option value="toate">Toate garzile</option>' + rows.map(([key, label]) => `<option value="${escapeHtml(key)}">${escapeHtml(label)}</option>`).join("");
       if ([...el.options].some(o => o.value === cur)) el.value = cur;
+    }
+
+    function populateGuardModuleFilters() {
+      const rows = Object.entries(GUARD_DISPLAY_NAMES).sort((a, b) => String(a[1]).localeCompare(String(b[1]), "ro"));
+      ["guardScopeFilter", "guardCompareA", "guardEvolutionA"].forEach(id => {
+        const el = q(id);
+        if (!el) return;
+        const current = el.value;
+        const first = id === "guardScopeFilter" ? '<option value="toate">Toate garzile</option>' : "";
+        el.innerHTML = first + rows.map(([key, label]) => `<option value="${escapeAttr(key)}">${escapeHtml(label)}</option>`).join("");
+        if ([...el.options].some(option => option.value === current)) el.value = current;
+      });
+      ["guardEvolutionB", "guardEvolutionC"].forEach(id => {
+        const el = q(id);
+        if (!el) return;
+        const current = el.value;
+        el.innerHTML = '<option value="">Fara comparatie</option>' + rows.map(([key, label]) => `<option value="${escapeAttr(key)}">${escapeHtml(label)}</option>`).join("");
+        if ([...el.options].some(option => option.value === current)) el.value = current;
+      });
+      ["guardCompareB"].forEach(id => {
+        const el = q(id);
+        if (!el) return;
+        const current = el.value;
+        const first = '<option value="national">Media nationala</option>';
+        el.innerHTML = first + rows.map(([key, label]) => `<option value="${escapeAttr(key)}">${escapeHtml(label)}</option>`).join("");
+        if ([...el.options].some(option => option.value === current)) el.value = current;
+      });
+      const evolutionMetric = q("guardEvolutionMetric");
+      const mapMetric = q("guardMapMetric");
+      if (evolutionMetric && mapMetric) {
+        const current = evolutionMetric.value;
+        evolutionMetric.innerHTML = [...mapMetric.options].map(option => `<option value="${escapeAttr(option.value)}">${escapeHtml(option.textContent)}</option>`).join("");
+        evolutionMetric.value = [...evolutionMetric.options].some(option => option.value === current) ? current : mapMetric.value;
+      }
     }
 
     function fillCategorySelect(el) {
@@ -898,6 +1006,21 @@
             .map(([key, label]) => `<option value="${escapeHtml(key)}">${escapeHtml(label)}</option>`)
             .join("");
         if ([...guardSelect.options].some(option => option.value === current)) guardSelect.value = current;
+      }
+      const typeSelect = q("entityTypeFilter");
+      if (typeSelect) {
+        const current = typeSelect.value;
+        const rows = [...new Map(allControls.filter(getEntityName).map(control => [getEntityTypeKey(control), getEntityTypeLabel(control)])).entries()]
+          .filter(([key]) => key).sort((a, b) => String(a[1]).localeCompare(String(b[1]), "ro"));
+        typeSelect.innerHTML = '<option value="toate">Toate tipurile de entitate</option>' + rows.map(([key, label]) => `<option value="${escapeAttr(key)}">${escapeHtml(label)}</option>`).join("");
+        if ([...typeSelect.options].some(option => option.value === current)) typeSelect.value = current;
+      }
+      const controlTypeSelect = q("entityControlTypeFilter");
+      if (controlTypeSelect) {
+        const current = controlTypeSelect.value;
+        const rows = [...new Set(allControls.filter(getEntityName).map(control => control.control_type || control.tip_control).filter(Boolean))].sort((a, b) => String(a).localeCompare(String(b), "ro"));
+        controlTypeSelect.innerHTML = '<option value="toate">Toate tipurile de control</option>' + rows.map(value => `<option value="${escapeAttr(normalizeText(value))}">${escapeHtml(value)}</option>`).join("");
+        if ([...controlTypeSelect.options].some(option => option.value === current)) controlTypeSelect.value = current;
       }
     }
 
@@ -1145,6 +1268,8 @@
       const controlType = normalizeText(safeValue("entityControlTypeFilter", "toate"));
       const category = safeValue("entityCategoryFilter", "toate");
       const result = normalizeText(safeValue("entityResultFilter", "toate")).replace(/\s+/g, "_");
+      const entityQuery = normalizeText(safeValue("entityAdvancedName", ""));
+      const locationQuery = normalizeText(safeValue("entityLocationFilter", ""));
 
       if (guardKey !== "toate") arr = arr.filter(c => canonicalGuardName(c.garda) === guardKey);
       if (entityType !== "toate") arr = arr.filter(c => getEntityTypeKey(c) === entityType);
@@ -1153,8 +1278,75 @@
       }
       if (category && category !== "toate") arr = arr.filter(c => categoryMatchesControl(c, category));
       if (result && result !== "toate") arr = arr.filter(c => getControlResult(c) === result);
+      if (entityQuery) arr = arr.filter(c => normalizeText(getEntityName(c)).includes(entityQuery));
+      if (locationQuery) arr = arr.filter(c => normalizeText([c.localitate, c.judet].filter(Boolean).join(" ")).includes(locationQuery));
       return arr;
     }
+    function normalizeEntityCui(value) {
+      const compact = String(value || "").toUpperCase().replace(/^RO/, "").replace(/[^0-9A-Z]/g, "");
+      return compact.length >= 2 ? compact : "";
+    }
+
+    function getEntityStableId(control) {
+      return String(firstValue(control, ["entity_id", "id_entitate", "entitate_id", "entityId"]) || "").trim();
+    }
+
+    function getEntityCui(control) {
+      return normalizeEntityCui(firstValue(control, ["cui", "CUI", "cod_fiscal", "entity_cui"]));
+    }
+
+    function getEntityOfficialControlDate(control) {
+      return parseLooseDate(firstValue(control, ["data_control", "date_start", "data_inceput_control"]));
+    }
+
+    function entityOfficialDateValue(control) {
+      return getEntityOfficialControlDate(control) || new Date(0);
+    }
+
+    function buildEntityProfileGroups(controls) {
+      const source = (controls || []).filter(control => getEntityName(control));
+      const cuiEvidence = {};
+      source.forEach(control => {
+        const cui = getEntityCui(control);
+        if (!cui) return;
+        const evidence = cuiEvidence[cui] ||= { names: new Set(), guards: new Set() };
+        evidence.names.add(normalizeText(getEntityName(control)));
+        const guard = canonicalGuardName(control.garda);
+        if (guard) evidence.guards.add(guard);
+      });
+      const ambiguousCuis = new Set(Object.entries(cuiEvidence)
+        .filter(([, evidence]) => evidence.names.size > 12 || evidence.guards.size > 2)
+        .map(([cui]) => cui));
+      const groups = {};
+      source.forEach(control => {
+        const name = getEntityName(control);
+        const entityId = getEntityStableId(control);
+        const cui = getEntityCui(control);
+        const guardKey = canonicalGuardName(control.garda);
+        const localityKey = normalizeText(control.localitate || control.judet || "");
+        const key = entityId
+          ? `entity:${normalizeText(entityId)}`
+          : cui && !ambiguousCuis.has(cui)
+            ? `cui:${cui}`
+            : `name:${normalizeText(name)}|guard:${guardKey || ""}|location:${guardKey ? "" : localityKey}`;
+        if (!groups[key]) groups[key] = { key, name, cui: cui || "", entityId, controls: [], aliases: new Set(), guardKey, localityKey, ambiguousCui: Boolean(cui && ambiguousCuis.has(cui)) };
+        groups[key].controls.push(control);
+        groups[key].aliases.add(name);
+        const currentDate = entityOfficialDateValue(control);
+        const groupDate = groups[key].latest ? entityOfficialDateValue(groups[key].latest) : new Date(0);
+        if (!groups[key].latest || currentDate >= groupDate) {
+          groups[key].latest = control;
+          groups[key].name = name;
+          groups[key].cui = cui || groups[key].cui;
+        }
+      });
+      return Object.values(groups).map(group => ({ ...group, aliases: [...group.aliases], controls: [...group.controls].sort((a, b) => entityOfficialDateValue(b) - entityOfficialDateValue(a)) }));
+    }
+
+    function getEntityProfileGroups() {
+      return buildEntityProfileGroups(entityControlsWithoutModulePeriod());
+    }
+
     function renderEntitySuggestions(showAll = false) {
       const box = q("entitySuggestList");
       const input = q("entitySearch");
@@ -1166,10 +1358,13 @@
         box.innerHTML = "";
         return;
       }
-      const counts = countBy(getEntityBaseControls(), getEntityName);
-      const rows = Object.entries(counts)
-        .filter(([name]) => showAll || normalizeText(name).includes(query))
-        .sort((a, b) => b[1] - a[1] || String(a[0]).localeCompare(String(b[0]), "ro"))
+      const groups = getEntityProfileGroups().map(group => {
+        const latest = group.latest || group.controls[0] || {};
+        return { key: group.key, name: group.name, aliases: group.aliases, cui: group.cui || "", count: group.controls.length, type: getEntityTypeLabel(latest), guard: guardDisplayName(latest.garda), locality: latest.localitate || latest.judet || "" };
+      });
+      const rows = groups
+        .filter(item => showAll || normalizeText([item.name, ...item.aliases, item.cui, item.type, item.guard].join(" ")).includes(query))
+        .sort((a, b) => b.count - a.count || String(a.name).localeCompare(String(b.name), "ro"))
         .slice(0, 12);
 
       if (!rows.length) {
@@ -1178,22 +1373,29 @@
         return;
       }
 
-      box.innerHTML = rows.map(([name, count]) => `<button type="button" onclick="selectEntitySuggestion('${escapeAttr(name)}')">
-        <span>${escapeHtml(name)}</span>
-        <strong>${count}</strong>
+      box.innerHTML = rows.map(item => `<button type="button" class="entity-suggest-item" data-entity="${escapeAttr(item.name)}" data-entity-key="${escapeAttr(item.key)}">
+        <span class="entity-suggest-icon">${ENTITY_ICON_SVGS.building}</span><span><b>${escapeHtml(item.name)}</b><small>${escapeHtml(item.type)} · ${escapeHtml(item.guard || "Garda nespecificata")}</small></span>
+        <svg class="entity-suggest-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg>
       </button>`).join("");
       box.classList.add("open");
     }
-    function selectEntitySuggestion(name) {
+    function selectEntitySuggestion(name, entityKey = "") {
       const input = q("entitySearch");
       if (input) input.value = toAsciiText(name || "");
+      selectedEntityProfileKey = entityKey || "";
       const box = q("entitySuggestList");
       if (box) box.classList.remove("open");
       selectedEntityHistoryYear = "";
+      entityTimelineLimit = 10;
       renderEntitiesView();
+    }
+    function handleEntityProfileSearch() {
+      selectedEntityProfileKey = "";
+      renderEntitySuggestions();
     }
     window.selectEntitySuggestion = selectEntitySuggestion;
     window.renderEntitySuggestions = renderEntitySuggestions;
+    window.handleEntityProfileSearch = handleEntityProfileSearch;
     function populatePetitionerSearch() {
       const list = q("petitionerList"); if (!list) return;
       const names = new Set();
@@ -1309,6 +1511,7 @@
 
     function resetGuardFilters() {
       if (q("guardPeriodPreset")) q("guardPeriodPreset").value = "last6";
+      if (q("guardScopeFilter")) q("guardScopeFilter").value = "toate";
       if (q("guardTypeFilter")) q("guardTypeFilter").value = "toate";
       if (q("guardCategoryFilter")) q("guardCategoryFilter").value = "toate";
       if (q("guardResultFilter")) q("guardResultFilter").value = "toate";
@@ -1317,6 +1520,7 @@
 
     function getGuardFilters() {
       return {
+        guard: safeValue("guardScopeFilter", "toate"),
         type: safeValue("guardTypeFilter", "toate"),
         category: safeValue("guardCategoryFilter", "toate"),
         result: safeValue("guardResultFilter", "toate"),
@@ -1325,9 +1529,10 @@
       };
     }
 
-    function getGuardAnalyticsControls() {
+    function getGuardAnalyticsControls(options = {}) {
       const f = getGuardFilters();
       let arr = [...allControls];
+      if (!options.ignoreGuard && f.guard !== "toate") arr = arr.filter(c => canonicalGuardName(c.garda) === f.guard);
       if (f.type !== "toate") arr = arr.filter(c => c.control_type === f.type);
       if (f.category !== "toate") arr = arr.filter(c => categoryMatchesControl(c, f.category));
       if (f.result !== "toate") arr = arr.filter(c => c.result === f.result);
@@ -1336,12 +1541,111 @@
       return arr;
     }
 
+    function syncGuardSectionUi() {
+      const sections = {
+        overview: q("guardOverviewSection"),
+        comparative: q("guardComparativeSection"),
+        evolution: q("guardEvolutionSection"),
+        matrix: q("guardMatrixSection")
+      };
+      Object.entries(sections).forEach(([key, section]) => {
+        if (section) section.hidden = key !== guardActiveSection;
+      });
+      document.querySelectorAll("#view-garzi [data-guard-section]").forEach(button => {
+        const active = button.dataset.guardSection === guardActiveSection;
+        button.classList.toggle("active", active);
+        button.setAttribute("aria-selected", active ? "true" : "false");
+      });
+    }
+
+    function setGuardSection(section) {
+      guardActiveSection = ["overview", "comparative", "evolution", "matrix"].includes(section) ? section : "overview";
+      syncGuardSectionUi();
+      renderGarziView();
+      if (guardActiveSection === "overview") setTimeout(() => guardStatsMap && guardStatsMap.invalidateSize(), 80);
+    }
+
+    function toggleGuardFilterDrawer(forceOpen) {
+      const drawer = q("guardFilterDrawer");
+      const backdrop = q("guardDrawerBackdrop");
+      if (!drawer) return;
+      const open = typeof forceOpen === "boolean" ? forceOpen : !drawer.classList.contains("open");
+      drawer.classList.toggle("open", open);
+      drawer.setAttribute("aria-hidden", open ? "false" : "true");
+      if (backdrop) backdrop.hidden = !open;
+    }
+
+    function syncGuardMetricSelection(metricKey) {
+      if (q("guardEvolutionMetric")) q("guardEvolutionMetric").value = metricKey;
+      renderGarziView();
+    }
+
+    function toggleGuardRanking() {
+      guardRankingExpanded = !guardRankingExpanded;
+      renderGarziView();
+    }
+
     function resetFilters() {
       ["gardaFilter", "controlTypeFilter", "categoryFilter", "resultFilter"].forEach(id => { if (q(id)) q(id).value = "toate"; });
       if (q("periodPreset")) q("periodPreset").value = "all";
       if (q("globalAdvancedFilters")) q("globalAdvancedFilters").open = false;
       setGlobalPeriodPresetDates("all");
       applyFilters();
+    }
+
+    function toggleControlsFilterDrawer(forceOpen) {
+      const drawer = q("globalAdvancedFilters");
+      if (!drawer) return;
+      drawer.open = typeof forceOpen === "boolean" ? forceOpen : !drawer.open;
+    }
+
+    function setControlsSideTab(tab) {
+      const selected = tab === "alerts" ? "alerts" : "recent";
+      document.querySelectorAll("[data-controls-side-tab]").forEach(button => {
+        const active = button.dataset.controlsSideTab === selected;
+        button.classList.toggle("active", active);
+        button.setAttribute("aria-selected", active ? "true" : "false");
+      });
+      document.querySelectorAll("[data-controls-side-pane]").forEach(pane => {
+        const active = pane.dataset.controlsSidePane === selected;
+        pane.classList.toggle("active", active);
+        pane.hidden = !active;
+      });
+    }
+
+    function toggleShellSidebar(forceOpen) {
+      const open = typeof forceOpen === "boolean"
+        ? forceOpen
+        : !document.body.classList.contains("shell-sidebar-open");
+      document.body.classList.toggle("shell-sidebar-open", open);
+    }
+
+    function openAuthModal() {
+      if (isInternalMode) return;
+      const modal = q("authModal");
+      if (!modal) return;
+      modal.classList.remove("hidden");
+      modal.setAttribute("aria-hidden", "false");
+      setTimeout(() => q("email")?.focus(), 0);
+    }
+
+    function closeAuthModal() {
+      const modal = q("authModal");
+      if (!modal) return;
+      modal.classList.add("hidden");
+      modal.setAttribute("aria-hidden", "true");
+    }
+
+    function togglePasswordVisibility() {
+      const input = q("password");
+      const button = q("passwordVisibilityToggle");
+      if (!input || !button) return;
+      const visible = input.type === "text";
+      input.type = visible ? "password" : "text";
+      button.classList.toggle("password-visible", !visible);
+      button.setAttribute("aria-label", visible ? "Afiseaza parola" : "Ascunde parola");
+      button.title = visible ? "Afiseaza parola" : "Ascunde parola";
+      input.focus();
     }
 
     function selectedOptionLabel(id) {
@@ -1407,27 +1711,59 @@
     function renderKpis() {
       const now = new Date();
       const startToday = new Date(now); startToday.setHours(0,0,0,0);
-      const start7 = new Date(now); start7.setDate(now.getDate() - 7); start7.setHours(0,0,0,0);
       const start30 = new Date(now); start30.setDate(now.getDate() - 30); start30.setHours(0,0,0,0);
-      const today = allControls.filter(c => new Date(c.created_at) >= startToday);
-      const last7 = allControls.filter(c => new Date(c.created_at) >= start7);
-      const last30 = allControls.filter(c => new Date(c.created_at) >= start30);
-      setKpiCard(0, "OK", "Controale azi", today.length, "ziua curenta");
-      setKpiCard(1, "7", "Ultimele 7 zile", last7.length, "activitate recenta");
-      setKpiCard(2, "30", "Ultimele 30 zile", last30.length, "perioada operationala");
-      setKpiCard(3, "!", "Neconforme 30 zile", last30.filter(c => isProblemResult(c.result)).length, "controale cu probleme", true);
-      setText("kpiToday", today.length); setText("kpi7Days", last7.length); setText("kpi30Days", last30.length); setText("kpi30Bad", last30.filter(c => isProblemResult(c.result)).length);
+      const scoped = Array.isArray(filteredControls) ? filteredControls : [];
+      const validDate = c => {
+        const date = getControlDateValue(c);
+        return date && !isNaN(date.getTime()) ? date : null;
+      };
+      const today = scoped.filter(c => {
+        const date = validDate(c);
+        return date && date >= startToday;
+      });
+      const last30 = scoped.filter(c => {
+        const date = validDate(c);
+        return date && date >= start30;
+      });
+      const problems = scoped.filter(c => isProblemResult(c.result));
+      setKpiCard(0, "clipboard", "Controale in perioada", scoped.length, "dupa data controlului");
+      setKpiCard(1, "today", "Controale astazi", today.length, "in selectia curenta");
+      setKpiCard(2, "problem", "Controale cu probleme", problems.length, "neconformitati si masuri", problems.length > 0);
+      setKpiCard(3, "history", "Ultimele 30 zile", last30.length, "in selectia curenta");
+      setText("kpiToday", scoped.length);
+      setText("kpi7Days", today.length);
+      setText("kpi30Days", problems.length);
+      setText("kpi30Bad", last30.length);
     }
 
     function setKpiCard(index, icon, label, value, note, isDanger = false) {
       const card = document.querySelectorAll(".kpi-row .kpi")[index];
       if (!card) return;
+      const palette = {
+        clipboard: ["#0b8f58", "rgba(11,143,88,.11)"],
+        today: ["#25c66f", "rgba(37,198,111,.11)"],
+        problem: ["#ff7417", "rgba(255,116,23,.11)"],
+        history: ["#ae8410", "rgba(247,198,47,.16)"]
+      };
+      const [accent, tint] = palette[icon] || palette.clipboard;
+      card.style.setProperty("--map-kpi-accent", accent, "important");
+      card.style.setProperty("--map-kpi-tint", tint, "important");
       const iconEl = card.querySelector(".kpi-icon");
       const labelEl = card.querySelector(".kpi-label");
       const valueEl = card.querySelector(".kpi-value");
       const noteEl = card.querySelector(".kpi-note");
       if (iconEl) {
-        iconEl.textContent = icon;
+        const icons = {
+          clipboard: '<svg viewBox="0 0 24 24"><path d="M9 5H6.8A1.8 1.8 0 0 0 5 6.8v12.4A1.8 1.8 0 0 0 6.8 21h10.4a1.8 1.8 0 0 0 1.8-1.8V6.8A1.8 1.8 0 0 0 17.2 5H15"></path><rect x="9" y="3" width="6" height="4" rx="1.5"></rect><path d="m8.5 13 2 2 5-5"></path></svg>',
+          today: '<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M16 3v4M8 3v4M3 10h18"></path><path d="M8 14h3v3H8z"></path></svg>',
+          problem: '<svg viewBox="0 0 24 24"><path d="M10.4 4.1 2.7 18a2 2 0 0 0 1.8 3h15a2 2 0 0 0 1.8-3L13.6 4.1a1.85 1.85 0 0 0-3.2 0Z"></path><path d="M12 9v4M12 17h.01"></path></svg>',
+          history: '<svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"></path><path d="M3 3v5h5M12 7v5l3 2"></path></svg>'
+        };
+        iconEl.innerHTML = icons[icon] || icons.clipboard;
+        iconEl.dataset.kpiIcon = icon;
+        iconEl.style.setProperty("color", accent, "important");
+        iconEl.style.setProperty("background", tint, "important");
+        iconEl.style.setProperty("border-color", accent, "important");
         iconEl.classList.toggle("red", isDanger);
       }
       if (labelEl) labelEl.textContent = label;
@@ -1653,8 +1989,9 @@
 
     function setOperationalMapHomeView() {
       if (!map) return;
-      map.setView([45.85, 24.9], 7.5, { animate: false });
-      map.setMaxBounds([[43.55, 20.05], [48.65, 29.85]]);
+      const contextBounds = L.latLngBounds([[42.9, 19.35], [49.45, 31.15]]);
+      map.fitBounds(contextBounds, { padding: [18, 18], maxZoom: 7, animate: false });
+      map.setMaxBounds([[42.2, 18.4], [50.1, 32.1]]);
     }
 
     function keepMarkersOnTop() { if (markersLayer) markersLayer.eachLayer(m => { if (m.bringToFront) m.bringToFront(); }); }
@@ -1664,27 +2001,70 @@
       setOperationalMapHomeView();
       const sideStack = document.querySelector("#view-map .side-stack");
       if (sideStack) sideStack.scrollTop = 0;
-      renderMarkers(filteredControls); renderRecent(filteredControls); renderMoneySummary(filteredControls);
+      renderMarkers(filteredControls);
+      renderRecent(filteredControls);
+      renderControlsAlerts(filteredControls);
+      renderMoneySummary(filteredControls);
       renderLinkedMapFilterPill();
       setTimeout(() => map.invalidateSize(), 100);
     }
 
     function renderRecent(arr) {
-      const recent = [...arr].filter(c => normalizeControlCoordinates(c)).sort((a,b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 6);
+      const recent = [...arr]
+        .filter(c => normalizeControlCoordinates(c))
+        .sort((a, b) => (getControlDateValue(b)?.getTime() || 0) - (getControlDateValue(a)?.getTime() || 0))
+        .slice(0, 8);
       if (!recent.length) return setHtml("recentControls", `<div class="empty">Nu exista controale pentru filtrele selectate.</div>`);
       setHtml("recentControls", recent.map(c => {
         const color = colorByResult(c.result);
         const active = String(c.id) === String(selectedControlId) ? " active" : "";
-        return `<div class="recent-row${active}" data-control-id="${escapeAttr(c.id)}" title="Click pentru fisa si pozitionare pe harta"><div class="status-dot" style="color:${color}">OK</div><div><div class="recent-title">${escapeHtml(c.control_type || "Control")}</div><div class="recent-meta">${escapeHtml(c.garda || "-")} - ${escapeHtml(formatDate(c.created_at))}</div><div class="recent-meta">Rezultat: <span class="result" style="color:${color}">${escapeHtml(resultLabel(c.result))}</span></div></div><div>&gt;</div></div>`;
+        const controlDate = getControlDateValue(c);
+        const compactGuard = (guardDisplayName(c.garda) || "Garda neprecizata")
+          .replace(/^Garda Forestiera\s+/i, "GF ")
+          .replace("Ramnicu-Valcea", "R. Valcea");
+        return `<div class="recent-row${active}" data-control-id="${escapeAttr(c.id)}" title="Deschide controlul pe harta">
+          <span class="recent-status-line" style="color:${color}" aria-hidden="true"></span>
+          <div>
+            <div class="recent-title">${escapeHtml(c.control_type || "Control")}</div>
+            <div class="recent-meta">${escapeHtml(compactGuard)} · ${escapeHtml(c.localitate || "Localitate neprecizata")}</div>
+            <div class="recent-meta">${escapeHtml(formatDay(controlDate))}</div>
+          </div>
+          <div><span class="recent-result-badge" style="--result-color:${color}">${escapeHtml(resultLabel(c.result))}</span></div>
+        </div>`;
       }).join(""));
+    }
+
+    function renderControlsAlerts(arr) {
+      const controls = Array.isArray(arr) ? arr : [];
+      const problems = controls.filter(c => isProblemResult(c.result));
+      const missingLocation = controls.filter(c => !normalizeControlCoordinates(c));
+      const missingReports = isInternalMode ? controls.filter(c => !getControlHasReport(c)) : [];
+      const summaries = [
+        ["Controale cu probleme", problems.length],
+        ["Localizare indisponibila", missingLocation.length],
+      ];
+      if (isInternalMode) summaries.splice(1, 0, ["Controale fara raport", missingReports.length]);
+      const highlighted = [...problems]
+        .sort((a, b) => (getControlDateValue(b)?.getTime() || 0) - (getControlDateValue(a)?.getTime() || 0))
+        .slice(0, 5);
+      setHtml("controlsAlerts", `
+        ${summaries.map(([label, value]) => `<div class="controls-alert-summary"><span>${escapeHtml(label)}</span><strong>${value}</strong></div>`).join("")}
+        ${highlighted.length ? highlighted.map(c => `<div class="recent-row controls-alert-row" data-control-id="${escapeAttr(c.id)}" title="Deschide controlul pe harta"><span class="recent-status-line" style="color:${colorByResult(c.result)}"></span><div><div class="recent-title">${escapeHtml(c.control_type || "Control")}</div><div class="recent-meta">${escapeHtml(guardDisplayName(c.garda) || "-")} · ${escapeHtml(formatDate(getControlDateValue(c)))}</div></div></div>`).join("") : `<div class="controls-alert-empty">Nu exista controale cu probleme in selectia curenta.</div>`}
+      `);
     }
 
     function renderMoneySummary(arr) {
       const now = new Date();
       const startToday = new Date(now); startToday.setHours(0,0,0,0);
       const start30 = new Date(now); start30.setDate(now.getDate() - 30); start30.setHours(0,0,0,0);
-      const today = arr.filter(c => new Date(c.created_at) >= startToday);
-      const last30 = arr.filter(c => new Date(c.created_at) >= start30);
+      const today = arr.filter(c => {
+        const date = getControlDateValue(c);
+        return date && !isNaN(date.getTime()) && date >= startToday;
+      });
+      const last30 = arr.filter(c => {
+        const date = getControlDateValue(c);
+        return date && !isNaN(date.getTime()) && date >= start30;
+      });
       setText("moneyTodayCount", today.length);
       setText("moneyTodayTotal", formatMoney(sumBy(today, getFineAmount)));
       setText("money30Count", last30.length);
@@ -1708,6 +2088,165 @@
         anchor.insertAdjacentElement("afterend", pill);
       }
       pill.innerHTML = `<span>${escapeHtml(linkedMapFilterLabel)}</span><b>Reset</b>`;
+    }
+
+    function closeControlsSearch() {
+      const results = q("controlsSearchResults");
+      const input = q("controlsSearchInput");
+      if (results) {
+        results.hidden = true;
+        results.innerHTML = "";
+      }
+      if (input) input.setAttribute("aria-expanded", "false");
+      controlsSearchItems = [];
+    }
+
+    function clearControlsSearch() {
+      const input = q("controlsSearchInput");
+      const clear = q("controlsSearchClear");
+      if (input) {
+        input.value = "";
+        input.focus();
+      }
+      if (clear) clear.hidden = true;
+      closeControlsSearch();
+    }
+
+    function controlsSearchInspectorNames(control) {
+      if (!isInternalMode || !control) return [];
+      const team = Array.isArray(control.echipa) ? control.echipa : [];
+      return [...new Set(team.map(member => firstValue(member || {}, ["nume", "name", "full_name", "email"]))
+        .filter(name => name && name !== "-"))];
+    }
+
+    function pushControlsSearchGroup(target, type, values, query, controlsGetter) {
+      const grouped = new Map();
+      values.forEach(({ value, control }) => {
+        const clean = String(value || "").trim();
+        if (!clean || !normalizeText(clean).includes(query)) return;
+        const key = normalizeText(clean);
+        if (!grouped.has(key)) grouped.set(key, { value: clean, controls: [] });
+        grouped.get(key).controls.push(control);
+      });
+      [...grouped.values()]
+        .sort((a, b) => {
+          const aStarts = normalizeText(a.value).startsWith(query) ? 0 : 1;
+          const bStarts = normalizeText(b.value).startsWith(query) ? 0 : 1;
+          return aStarts - bStarts || b.controls.length - a.controls.length || a.value.localeCompare(b.value, "ro");
+        })
+        .slice(0, 4)
+        .forEach(group => target.push({
+          type,
+          title: group.value,
+          meta: `${group.controls.length} ${group.controls.length === 1 ? "control" : "controale"}`,
+          controls: controlsGetter ? controlsGetter(group) : group.controls
+        }));
+    }
+
+    function buildControlsSearchItems(rawQuery) {
+      const query = normalizeText(rawQuery).replace(/^#/, "");
+      const controls = Array.isArray(allControls) ? allControls : [];
+      if (query.length < 2) return [];
+      const items = [];
+      controls
+        .filter(control => normalizeText(String(control.id || "")).includes(query))
+        .sort((a, b) => {
+          const aExact = normalizeText(String(a.id || "")) === query ? 0 : 1;
+          const bExact = normalizeText(String(b.id || "")) === query ? 0 : 1;
+          return aExact - bExact;
+        })
+        .slice(0, 3)
+        .forEach(control => items.push({
+          type: "Control",
+          title: `Control #${control.id}`,
+          meta: `${control.control_type || "Control"} · ${guardDisplayName(control.garda) || "Garda neprecizata"}`,
+          controlId: String(control.id),
+          controls: [control]
+        }));
+
+      if (isInternalMode) {
+        pushControlsSearchGroup(items, "Entitate", controls.map(control => ({ value: getEntityName(control), control })), query);
+        const inspectorValues = [];
+        controls.forEach(control => controlsSearchInspectorNames(control).forEach(value => inspectorValues.push({ value, control })));
+        pushControlsSearchGroup(items, "Inspector", inspectorValues, query);
+      }
+      pushControlsSearchGroup(items, "Localitate", controls.map(control => ({ value: control.localitate, control })), query);
+      pushControlsSearchGroup(items, "Garda", controls.map(control => ({ value: guardDisplayName(control.garda), control })), query);
+
+      const petitions = controls
+        .filter(control => normalizeText(getPetitionNumber(control)).includes(query))
+        .slice(0, 3);
+      petitions.forEach(control => items.push({
+        type: "Sesizare",
+        title: getPetitionNumber(control),
+        meta: `Control #${control.id} · ${control.localitate || "Localitate neprecizata"}`,
+        controlId: String(control.id),
+        controls: [control]
+      }));
+      return items.slice(0, 8);
+    }
+
+    function renderControlsSearchResults() {
+      const input = q("controlsSearchInput");
+      const results = q("controlsSearchResults");
+      const clear = q("controlsSearchClear");
+      if (!input || !results) return;
+      const value = input.value.trim();
+      if (clear) clear.hidden = !value;
+      if (normalizeText(value).replace(/^#/, "").length < 2) {
+        closeControlsSearch();
+        return;
+      }
+      controlsSearchItems = buildControlsSearchItems(value);
+      results.innerHTML = controlsSearchItems.length
+        ? controlsSearchItems.map((item, index) => `<button class="controls-search-result" type="button" role="option" data-search-index="${index}"><span class="controls-search-type">${escapeHtml(item.type)}</span><span class="controls-search-copy"><strong>${escapeHtml(item.title)}</strong><small>${escapeHtml(item.meta)}</small></span></button>`).join("")
+        : `<div class="controls-search-empty">Niciun rezultat</div>`;
+      results.hidden = false;
+      input.setAttribute("aria-expanded", "true");
+    }
+
+    function runControlsSearchItem(index) {
+      const item = controlsSearchItems[Number(index)];
+      if (!item) return;
+      closeControlsSearch();
+      if (item.type === "Control" || item.type === "Sesizare") {
+        focusControl(item.controlId);
+        return;
+      }
+      if (item.type === "Entitate" && isInternalMode) {
+        setView("entities");
+        setTimeout(() => selectEntitySuggestion(item.title), 60);
+        return;
+      }
+      if (item.type === "Inspector" && isInternalMode) {
+        setView("inspectori");
+        setTimeout(() => selectInspector(item.title), 60);
+        return;
+      }
+      goToMapWithControls(item.controls, `${item.type}: ${item.title}`);
+    }
+
+    function initControlsSearch() {
+      const input = q("controlsSearchInput");
+      const clear = q("controlsSearchClear");
+      const results = q("controlsSearchResults");
+      if (!input || input.dataset.searchReady === "1") return;
+      input.dataset.searchReady = "1";
+      input.addEventListener("input", () => {
+        clearTimeout(controlsSearchTimer);
+        controlsSearchTimer = setTimeout(renderControlsSearchResults, 250);
+      });
+      input.addEventListener("keydown", event => {
+        if (event.key === "Escape") {
+          event.preventDefault();
+          closeControlsSearch();
+        }
+      });
+      if (clear) clear.addEventListener("click", clearControlsSearch);
+      if (results) results.addEventListener("click", event => {
+        const button = event.target.closest(".controls-search-result[data-search-index]");
+        if (button) runControlsSearchItem(button.dataset.searchIndex);
+      });
     }
 
     function goToMapWithControls(controls, label = "") {
@@ -1748,10 +2287,13 @@
       if (!entityName) return setMessage("Controlul nu are entitate controlata completata.", false);
       closeControlFullModal();
       if (q("entitySearch")) q("entitySearch").value = entityName;
+      const profileGroup = getEntityProfileGroups().find(group => group.controls.some(item => String(item.id) === String(control.id)));
+      selectedEntityProfileKey = profileGroup ? profileGroup.key : "";
       setView("entities");
       setTimeout(() => {
+        setEntityV1Section("profile");
         renderEntitiesView();
-        q("entitySummary")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        q("entityDossier")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
       }, 60);
     }
 
@@ -1843,14 +2385,17 @@
         ? quantitativeColors(data, isRiskQuantitativeMetric(options.metricKey))
         : labels.map((_, i) => palette[i % palette.length]));
       const quiet = options.quiet === true;
+      const light = options.light === true;
+      const axisColor = light ? "#66736e" : (quiet ? "rgba(235,246,242,.80)" : chartColors.text);
+      const gridColor = light ? "#e4ebe7" : (quiet ? "rgba(205,238,228,.08)" : chartColors.grid);
       charts[id] = new Chart(el.getContext("2d"), {
         type,
         data: { labels, datasets: [{ label: options.label || "Nr.", data, backgroundColor: type === "line" ? "rgba(22,217,119,.18)" : colors, borderColor: type === "line" ? chartColors.green : colors, borderWidth: type === "doughnut" ? 2 : 1, tension: .42, fill: type === "line", pointRadius: type === "line" ? 4 : 0, pointBackgroundColor: chartColors.green }] },
         options: {
           responsive: true, maintainAspectRatio: false, animation: { duration: quiet ? 480 : 950, easing: "easeOutQuart" }, indexAxis: options.horizontal ? "y" : "x", cutout: type === "doughnut" ? "62%" : undefined,
           layout: type === "bar" ? { padding: { top: 28, right: 10, bottom: 4, left: 4 } } : { padding: { top: 8, right: 8, bottom: 4, left: 4 } },
-          plugins: { legend: { display: type === "doughnut", position: "right", labels: { color: quiet ? "rgba(244,252,249,.90)" : chartColors.text, boxWidth: 11, font: { size: 11, weight: "600" } } }, tooltip: { backgroundColor: quiet ? "rgba(3,18,22,.98)" : "rgba(5,16,14,.95)", titleColor:"#fff", bodyColor: quiet ? "rgba(239,250,247,.90)" : "#d7eee6", borderColor: quiet ? "rgba(34,211,238,.28)" : "rgba(22,217,119,.35)", borderWidth:1, padding:10, callbacks: Array.isArray(options.tooltipLabels) ? { title(items) { const index = items && items.length ? items[0].dataIndex : -1; return index >= 0 ? String(options.tooltipLabels[index] || items[0].label || "") : ""; } } : undefined } },
-          scales: type === "doughnut" ? {} : { x: { ticks: { color: quiet ? "rgba(235,246,242,.80)" : chartColors.text, font: { size: 13, weight: "500" } }, grid: { display: !options.horizontal, color: quiet ? "rgba(205,238,228,.08)" : chartColors.grid } }, y: { beginAtZero: true, grace: "12%", ticks: { precision: 0, color: quiet ? "rgba(235,246,242,.80)" : chartColors.text, font: { size: 13, weight: "500" } }, grid: { color: quiet ? "rgba(205,238,228,.08)" : chartColors.grid } } }
+          plugins: { valueLabelPlugin: light ? { color: "#17231f", fontWeight: 700, shadowColor: "transparent", shadowBlur: 0 } : {}, legend: { display: type === "doughnut", position: "right", labels: { color: light ? "#66736e" : (quiet ? "rgba(244,252,249,.90)" : chartColors.text), boxWidth: 11, font: { size: 11, weight: "600" } } }, tooltip: { backgroundColor: light ? "rgba(255,255,255,.98)" : (quiet ? "rgba(3,18,22,.98)" : "rgba(5,16,14,.95)"), titleColor: light ? "#17231f" : "#fff", bodyColor: light ? "#43544d" : (quiet ? "rgba(239,250,247,.90)" : "#d7eee6"), borderColor: light ? "#dce6e1" : (quiet ? "rgba(34,211,238,.28)" : "rgba(22,217,119,.35)"), borderWidth:1, padding:10, callbacks: Array.isArray(options.tooltipLabels) ? { title(items) { const index = items && items.length ? items[0].dataIndex : -1; return index >= 0 ? String(options.tooltipLabels[index] || items[0].label || "") : ""; } } : undefined } },
+          scales: type === "doughnut" ? {} : { x: { ticks: { color: axisColor, font: { size: 13, weight: light ? "600" : "500" } }, grid: { display: !options.horizontal, color: gridColor } }, y: { beginAtZero: true, grace: "12%", ticks: { precision: 0, color: axisColor, font: { size: 13, weight: light ? "600" : "500" } }, grid: { color: gridColor } } }
         }
       });
       return charts[id];
@@ -2040,7 +2585,7 @@
         if (isPetition(c)) stats[key].petitions += 1;
         const reportDays = getControlDaysToReport(c);
         const hasReport = getControlHasReport(c);
-        if (Number.isFinite(Number(reportDays))) {
+        if (hasReport && Number.isFinite(Number(reportDays))) {
           stats[key].reportDaysSum += Number(reportDays);
           stats[key].reportDaysCount += 1;
           if (isPetition(c)) {
@@ -2194,7 +2739,9 @@
         zoomControl: false,
         attributionControl: false,
         dragging: true,
-        scrollWheelZoom: false
+        scrollWheelZoom: false,
+        minZoom: 5,
+        zoomSnap: .25
       }).setView([45.8, 24.9], 6);
 
       guardStatsMap.createPane("guardBasePane");
@@ -2205,14 +2752,14 @@
       guardStatsMap.createPane("guardStatsPane");
       guardStatsMap.getPane("guardStatsPane").style.zIndex = 430;
 
-      guardStatsBaseLayer = L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+      guardStatsBaseLayer = L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
         attribution: "&copy; OpenStreetMap contributors &copy; CARTO",
         subdomains: "abcd",
         maxZoom: 20,
         pane: "guardBasePane"
       }).addTo(guardStatsMap);
 
-      guardStatsLabelLayer = L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png", {
+      guardStatsLabelLayer = L.tileLayer("https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png", {
         attribution: "&copy; OpenStreetMap contributors &copy; CARTO",
         subdomains: "abcd",
         maxZoom: 20,
@@ -2316,82 +2863,103 @@
       setText("guardMapMax", metric.palette === "time" && !values.length ? "-" : metric.format(max));
       setText("guardMapAvg", metric.palette === "time" && !values.length ? "-" : metric.format(avg));
       setText("guardMapMonths", months.toFixed(1) + " luni");
-      setText("guardMetricLabel", metric.short);
 
+      closeGuardProfile();
       if (guardStatsLayer) guardStatsMap.removeLayer(guardStatsLayer);
+      guardSelectedStatsLayer = null;
 
       guardStatsLayer = L.geoJSON(guardStatsGeoJson, {
         pane: "guardStatsPane",
         style: feature => {
           const item = getGuardStatForFeature(feature, stats, statsLookup);
-          const value = metricValue(item) || 0;
+          const metricDataValue = metricValue(item);
+          const hasMetricData = metricDataValue !== null;
+          const value = hasMetricData ? metricDataValue : 0;
           const fill = quantitativeColor(value, min, max, isRiskQuantitativeMetric(metricKey));
           return {
-            color: value ? "rgba(230,255,248,1)" : "rgba(148,213,190,.38)",
-            weight: value ? 2.05 : 1.0,
+            color: hasMetricData && value ? "rgba(230,255,248,1)" : "rgba(148,163,173,.6)",
+            weight: hasMetricData && value ? 2.05 : 1.0,
             opacity: 1,
-            fillColor: fill,
-            fillOpacity: guardValueOpacity(value, max),
+            fillColor: hasMetricData ? fill : "#dfe7e3",
+            fillOpacity: hasMetricData ? guardValueOpacity(value, max) : .58,
             className: "garda-boundary"
           };
         },
         onEachFeature: (feature, layer) => {
           const name = getGuardNameFromFeature(feature);
           const item = getGuardStatForFeature(feature, stats, statsLookup) || { total: 0, monthly: 0, density: 0, problems: 0, problemRate: 0, sanctions: 0, sanctionRate: 0, petitionShare: 0, fines: 0, finePerControl: 0, damage: 0, damagePerControl: 0, forestAreaHa: 0, reportAvgDays: null, petitionAvgDays: null, missingReports: 0, overdueReports: 0 };
-          const html = `<div class="guard-stat-tooltip">
-            <div class="guard-stat-tooltip-title">${escapeHtml(name)}</div>
-            <div class="guard-stat-tooltip-row"><span>${escapeHtml(metric.label)}</span><span>${escapeHtml(metric.format(item[metricKey] || 0))}</span></div>
-            <div class="guard-stat-tooltip-row"><span>Total controale</span><span>${item.total || 0}</span></div>
-            <div class="guard-stat-tooltip-row"><span>Controale/luna</span><span>${Number(item.monthly || 0).toFixed(1)}</span></div>
-            <div class="guard-stat-tooltip-row"><span>Suprafata padure</span><span>${Number(item.forestAreaHa || 0).toLocaleString("ro-RO")} ha</span></div>
-            <div class="guard-stat-tooltip-row"><span>Controale/10.000 ha</span><span>${Number(item.density || 0).toFixed(2)}</span></div>
-            <div class="guard-stat-tooltip-row"><span>Probleme</span><span>${item.problems || 0}</span></div>
-            <div class="guard-stat-tooltip-row"><span>Rata probleme</span><span>${formatPercent(item.problemRate || 0)}</span></div>
-            <div class="guard-stat-tooltip-row"><span>Pondere sesizari</span><span>${formatPercent(item.petitionShare || 0)}</span></div>
-            <div class="guard-stat-tooltip-row"><span>Timp finalizare raport</span><span>${escapeHtml(formatDays(item.reportAvgDays))}</span></div>
-            <div class="guard-stat-tooltip-row"><span>Raspuns sesizari</span><span>${escapeHtml(formatDays(item.petitionAvgDays))}</span></div>
-            <div class="guard-stat-tooltip-row"><span>Fara raport</span><span>${item.missingReports || 0}</span></div>
-            <div class="guard-stat-tooltip-row"><span>Intarziate &gt;10 zile</span><span>${item.overdueReports || 0}</span></div>
-            <div class="guard-stat-tooltip-row"><span>Amenzi</span><span>${escapeHtml(formatMoney(item.fines))}</span></div>
-            <div class="guard-stat-tooltip-row"><span>Amenzi/control</span><span>${escapeHtml(formatMoney(item.finePerControl))}</span></div>
-            <div class="guard-stat-tooltip-row"><span>Prejudiciu</span><span>${escapeHtml(formatMoney(item.damage))}</span></div>
-          </div>`;
+          const html = `<div class="guard-stat-tooltip guard-stat-tooltip-compact"><div class="guard-stat-tooltip-title">${escapeHtml(name)}</div><div class="guard-stat-tooltip-row"><span>${escapeHtml(metric.label)}</span><span>${escapeHtml(item[metricKey] === null || item[metricKey] === undefined ? "Date insuficiente" : metric.format(item[metricKey]))}</span></div><div class="guard-stat-tooltip-row"><span>Total controale</span><span>${Number(item.total || 0).toLocaleString("ro-RO")}</span></div></div>`;
 
-          layer.bindTooltip(html, { sticky: true, direction: "auto", opacity: .96, className: "leaflet-popup-content-wrapper" });
+          layer.bindTooltip(html, { sticky: true, direction: "auto", opacity: .96, className: "guard-quick-tooltip" });
           layer.on("mouseover", () => layer.setStyle({ weight: 2.2, color: "#ffffff", fillOpacity: .88 }));
-          layer.on("mouseout", () => guardStatsLayer.resetStyle(layer));
+          layer.on("mouseout", () => { if (layer !== guardSelectedStatsLayer) guardStatsLayer.resetStyle(layer); });
+          layer.on("click", () => {
+            try { guardStatsMap.closeTooltip(layer.getTooltip()); } catch {}
+            if (guardSelectedStatsLayer && guardSelectedStatsLayer !== layer) guardStatsLayer.resetStyle(guardSelectedStatsLayer);
+            guardSelectedStatsLayer = layer;
+            layer.setStyle({ weight: 3, color: "#0b8f58", fillOpacity: .9 });
+            guardStatsMap.panTo(layer.getBounds().getCenter(), { animate: true, duration: .35 });
+            openGuardProfile(name);
+          });
         }
       }).addTo(guardStatsMap);
 
-      try { guardStatsMap.fitBounds(guardStatsLayer.getBounds(), { padding: [18, 18] }); } catch {}
+      const territorialBounds = guardStatsLayer.getBounds();
+      setTimeout(() => {
+        if (!guardStatsMap) return;
+        guardStatsMap.invalidateSize();
+        try {
+          guardStatsMap.fitBounds(territorialBounds, { padding: [18, 18], maxZoom: 6.5, animate: false });
+          guardStatsMap.setZoom(Math.min(6.5, guardStatsMap.getZoom() + .5), { animate: false });
+        } catch {}
+      }, 100);
 
       const legend = q("guardMapLegend");
       if (legend) {
         const gradient = `linear-gradient(90deg,${quantitativePaletteForMetric(metricKey).join(",")})`;
-        legend.innerHTML = `<div class="guard-stat-legend-title">${escapeHtml(metric.label)}</div><div class="guard-stat-gradient" style="background:${gradient}"></div><div class="guard-stat-legend-range"><span>${escapeHtml(metric.format(min))}</span><span>${escapeHtml(metric.format(max))}</span></div>`;
+        legend.innerHTML = `<div class="guard-stat-legend-title">${escapeHtml(metric.label)}</div><div class="guard-stat-gradient" style="background:${values.length ? gradient : "#dfe7e3"}"></div><div class="guard-stat-legend-range"><span>${escapeHtml(values.length ? metric.format(min) : "-")}</span><span>${escapeHtml(values.length ? metric.format(max) : "-")}</span></div>`;
       }
 
       renderGuardRanking(stats, metricKey);
-      setTimeout(() => guardStatsMap.invalidateSize(), 120);
     }
 
     function renderGuardRanking(stats, metricKey) {
       const metric = GUARD_METRICS[metricKey] || GUARD_METRICS.monthly;
-      const rows = Object.values(stats)
-        .sort((a, b) => Number(b[metricKey] || 0) - Number(a[metricKey] || 0))
-        .slice(0, 8);
+      const rankedRows = Object.values(stats)
+        .filter(item => Object.prototype.hasOwnProperty.call(GUARD_DISPLAY_NAMES, item.guard_key))
+        .sort((a, b) => {
+          const valueA = a[metricKey];
+          const valueB = b[metricKey];
+          const validA = valueA !== null && valueA !== undefined && Number.isFinite(Number(valueA));
+          const validB = valueB !== null && valueB !== undefined && Number.isFinite(Number(valueB));
+          if (validA !== validB) return validA ? -1 : 1;
+          return Number(valueB || 0) - Number(valueA || 0);
+        });
+      const rows = rankedRows;
 
       if (!rows.length) {
         setHtml("guardRankingList", `<div class="empty">Nu exista date pe filtrele selectate.</div>`);
         return;
       }
 
-      const rankingRange = getQuantitativeRange(rows.map(item => Number(item[metricKey] || 0)));
-      setHtml("guardRankingList", rows.map((item, i) => `<div class="guard-rank-row">
-        <div class="guard-rank-index">#${i + 1}</div>
-        <div class="guard-rank-name" title="${escapeHtml(item.garda)}">${escapeHtml(item.garda)}</div>
-        <div class="guard-rank-value" style="--guard-rank-color:${quantitativeColor(item[metricKey], rankingRange.min, rankingRange.max, isRiskQuantitativeMetric(metricKey))}">${escapeHtml(metric.format(item[metricKey] || 0))}</div>
-      </div>`).join(""));
+      const rankingRange = getQuantitativeRange(rankedRows.map(item => item[metricKey]).filter(value => value !== null && value !== undefined && Number.isFinite(Number(value))).map(Number));
+      const span = Math.max(1, rankingRange.max - rankingRange.min);
+      setHtml("guardRankingList", rows.map((item, i) => {
+        const rawValue = item[metricKey];
+        const hasValue = rawValue !== null && rawValue !== undefined && Number.isFinite(Number(rawValue));
+        const color = hasValue ? quantitativeColor(rawValue, rankingRange.min, rankingRange.max, isRiskQuantitativeMetric(metricKey)) : "#aab6b0";
+        const width = hasValue ? 18 + ((Number(rawValue) - rankingRange.min) / span) * 82 : 0;
+        return `<div class="guard-rank-row" data-guard="${escapeAttr(item.guard_key || canonicalGuardName(item.garda))}" tabindex="0" role="button" aria-label="Deschide profilul ${escapeAttr(item.garda)}">
+         <div class="guard-rank-index">#${i + 1}</div>
+         <div class="guard-rank-name" title="${escapeHtml(item.garda)}">${escapeHtml(item.garda)}</div>
+        <div class="guard-rank-value" style="--guard-rank-color:${color}">${escapeHtml(hasValue ? metric.format(rawValue) : "-")}</div>
+        <div class="guard-rank-bar" style="--guard-rank-color:${color}"><i style="width:${hasValue ? Math.max(18, Math.min(100, width)) : 0}%"></i></div>
+      </div>`;
+      }).join(""));
+      const toggle = q("guardRankingToggle");
+      if (toggle) {
+        toggle.hidden = true;
+      }
     }
 
     function getGuardDensityBenchmark(stats) {
@@ -2405,9 +2973,21 @@
       if (!item || !item.total) return { label: "fara date", cls: "muted" };
       if (!avgDensity) return { label: "in calcul", cls: "neutral" };
       const ratio = Number(item.density || 0) / avgDensity;
-      if (ratio >= 1.1) return { label: "peste medie", cls: "good" };
+      if (ratio >= 1.1) return { label: "peste medie", cls: "neutral" };
       if (ratio >= 0.75) return { label: "in parametri", cls: "neutral" };
-      return { label: "sub medie", cls: "warn" };
+      return { label: "sub medie", cls: "neutral" };
+    }
+
+    function guardMatrixIcon(type) {
+      const icons = {
+        controls: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5h6M9 3h6v4H9z"></path><rect x="5" y="5" width="14" height="16" rx="2"></rect><path d="M8 11h8M8 15h8"></path></svg>',
+        area: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3V6Z"></path><path d="M9 3v15M15 6v15"></path></svg>',
+        benchmark: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V9M10 19V5M16 19v-7M22 19V3M2 19h20"></path></svg>',
+        clock: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>',
+        response: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 15a4 4 0 0 1-4 4H8l-5 3 1.5-5A7 7 0 0 1 3 13V8a4 4 0 0 1 4-4h9a4 4 0 0 1 4 4v7Z"></path><path d="M8 10h8M8 14h5"></path></svg>',
+        overdue: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2.8 20h18.4L12 3Z"></path><path d="M12 9v5M12 17h.01"></path></svg>'
+      };
+      return icons[type] || icons.controls;
     }
 
     function renderGuardScorecard(stats, months) {
@@ -2420,17 +3000,25 @@
       const avgDensity = getGuardDensityBenchmark(stats);
       const maxDensity = Math.max(0, ...rows.map(item => Number(item.density || 0)));
       const densityRange = getQuantitativeRange(rows.map(item => Number(item.density || 0)));
+      const problemRange = getQuantitativeRange(rows.map(item => Number(item.problemRate || 0)));
+      const petitionRange = getQuantitativeRange(rows.map(item => Number(item.petitionShare || 0)));
+      const reportRange = getQuantitativeRange(rows.map(item => Number(item.reportAvgDays || 0)));
+      const responseRange = getQuantitativeRange(rows.map(item => Number(item.petitionAvgDays || 0)));
+      const overdueRange = getQuantitativeRange(rows.map(item => Number(item.overdueReports || 0)));
+      const fineRange = getQuantitativeRange(rows.map(item => Number(item.finePerControl || 0)));
       const totalArea = rows.reduce((sum, item) => sum + Number(item.forestAreaHa || 0), 0);
       const totalControls = rows.reduce((sum, item) => sum + Number(item.total || 0), 0);
-      const avgReportDays = averageDays(rows.map(item => item.reportAvgDays));
-      const avgPetitionDays = averageDays(rows.map(item => item.petitionAvgDays));
+      const avgReportDays = averageDays(rows.map(item => item.reportAvgDays).filter(value => value !== null && value !== undefined && value !== ""));
+      const avgPetitionDays = averageDays(rows.map(item => item.petitionAvgDays).filter(value => value !== null && value !== undefined && value !== ""));
       const totalOverdueReports = rows.reduce((sum, item) => sum + Number(item.overdueReports || 0), 0);
 
       const body = rows.map(item => {
         const status = guardDensityStatus(item, avgDensity);
         const densityPct = maxDensity ? Math.max(3, Math.min(100, (Number(item.density || 0) / maxDensity) * 100)) : 0;
         const delayStatus = Number(item.overdueReports || 0) ? "warn" : "good";
-        return `<div class="guard-score-row">
+        const heat = (value, range, risk = false) => quantitativeColor(value, range.min, range.max, risk);
+        const heatOrNeutral = (value, range, risk = false) => value === null || value === undefined || value === "" ? "#dfe7e3" : heat(value, range, risk);
+        return `<div class="guard-score-row" data-guard="${escapeAttr(item.guard_key || canonicalGuardName(item.garda))}" tabindex="0" role="button">
           <div class="guard-score-main">
             <strong>${escapeHtml(item.garda)}</strong>
             <span>${Number(item.forestAreaHa || 0).toLocaleString("ro-RO")} ha padure</span>
@@ -2439,24 +3027,24 @@
             <span>${Number(item.density || 0).toFixed(2)}</span>
             <div class="guard-score-bar"><i style="width:${densityPct}%;background:${quantitativeColor(item.density, densityRange.min, densityRange.max)}"></i></div>
           </div>
-          <div>${formatPercent(item.problemRate)}</div>
-          <div>${formatPercent(item.petitionShare)}</div>
-          <div>${escapeHtml(formatDays(item.reportAvgDays))}</div>
-          <div>${escapeHtml(formatDays(item.petitionAvgDays))}</div>
-          <div><span class="guard-status ${delayStatus}">${Number(item.overdueReports || 0)}</span></div>
-          <div>${escapeHtml(formatMoney(item.finePerControl))}</div>
+          <div class="guard-heat-cell" style="--guard-cell:${heat(item.problemRate, problemRange, true)}">${formatPercent(item.problemRate)}</div>
+          <div class="guard-heat-cell" style="--guard-cell:${heat(item.petitionShare, petitionRange, true)}">${formatPercent(item.petitionShare)}</div>
+          <div class="guard-heat-cell" style="--guard-cell:${heatOrNeutral(item.reportAvgDays, reportRange, true)}">${escapeHtml(formatDays(item.reportAvgDays))}</div>
+          <div class="guard-heat-cell" style="--guard-cell:${heatOrNeutral(item.petitionAvgDays, responseRange, true)}">${escapeHtml(formatDays(item.petitionAvgDays))}</div>
+          <div class="guard-heat-cell" style="--guard-cell:${heat(item.overdueReports, overdueRange, true)}"><span class="guard-status ${delayStatus}">${Number(item.overdueReports || 0)}</span></div>
+          <div class="guard-heat-cell" style="--guard-cell:${heat(item.finePerControl, fineRange, true)}">${escapeHtml(formatMoney(item.finePerControl))}</div>
           <div><span class="guard-status ${status.cls}">${escapeHtml(status.label)}</span></div>
         </div>`;
       }).join("");
 
       setHtml("guardKpiScorecard", `
         <div class="guard-score-summary guard-kpi-matrix">
-          <div><span class="guard-kpi-icon" aria-hidden="true">CTRL</span><span class="guard-kpi-label">Total controale</span><strong>${totalControls}</strong></div>
-          <div><span class="guard-kpi-icon" aria-hidden="true">HA</span><span class="guard-kpi-label">Suprafata totala</span><strong>${totalArea.toLocaleString("ro-RO")} ha</strong></div>
-          <div><span class="guard-kpi-icon" aria-hidden="true">AVG</span><span class="guard-kpi-label">Media nationala</span><strong>${avgDensity.toFixed(2)} / 10.000 ha</strong></div>
-          <div><span class="guard-kpi-icon" aria-hidden="true">DOC</span><span class="guard-kpi-label">Timp finalizare</span><strong>${escapeHtml(formatDays(avgReportDays))}</strong></div>
-          <div><span class="guard-kpi-icon" aria-hidden="true">SES</span><span class="guard-kpi-label">Raspuns sesizari</span><strong>${escapeHtml(formatDays(avgPetitionDays))}</strong></div>
-          <div><span class="guard-kpi-icon" aria-hidden="true">LATE</span><span class="guard-kpi-label">Intarzieri &gt;10 zile</span><strong>${totalOverdueReports}</strong></div>
+          <div class="guard-matrix-kpi matrix-kpi-controls"><span class="guard-kpi-icon">${guardMatrixIcon("controls")}</span><span class="guard-kpi-label">Total controale</span><strong>${totalControls.toLocaleString("ro-RO")}</strong><small>selectia curenta</small></div>
+          <div class="guard-matrix-kpi matrix-kpi-area"><span class="guard-kpi-icon">${guardMatrixIcon("area")}</span><span class="guard-kpi-label">Suprafata totala</span><strong>${totalArea.toLocaleString("ro-RO")} ha</strong><small>fond forestier analizat</small></div>
+          <div class="guard-matrix-kpi matrix-kpi-benchmark"><span class="guard-kpi-icon">${guardMatrixIcon("benchmark")}</span><span class="guard-kpi-label">Media nationala</span><strong>${avgDensity.toFixed(2)}</strong><small>controale / 10.000 ha</small></div>
+          <div class="guard-matrix-kpi matrix-kpi-time"><span class="guard-kpi-icon">${guardMatrixIcon("clock")}</span><span class="guard-kpi-label">Timp finalizare</span><strong>${escapeHtml(formatDays(avgReportDays))}</strong><small>${avgReportDays === null ? "Date insuficiente" : "media rapoartelor"}</small></div>
+          <div class="guard-matrix-kpi matrix-kpi-response"><span class="guard-kpi-icon">${guardMatrixIcon("response")}</span><span class="guard-kpi-label">Raspuns sesizari</span><strong>${escapeHtml(formatDays(avgPetitionDays))}</strong><small>${avgPetitionDays === null ? "Date insuficiente" : "media sesizarilor"}</small></div>
+          <div class="guard-matrix-kpi matrix-kpi-overdue"><span class="guard-kpi-icon">${guardMatrixIcon("overdue")}</span><span class="guard-kpi-label">Intarzieri &gt;10 zile</span><strong>${totalOverdueReports}</strong><small>controale fara raport</small></div>
         </div>
         <div class="guard-score-head">
           <span>Garda</span>
@@ -2473,58 +3061,282 @@
       `);
     }
 
+    function medianValue(values) {
+      const sorted = (values || []).map(Number).filter(Number.isFinite).sort((a, b) => a - b);
+      if (!sorted.length) return null;
+      const middle = Math.floor(sorted.length / 2);
+      return sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2;
+    }
+
+    function activeGuardRows(stats) {
+      return Object.values(stats || {}).filter(item => Number(item.total || 0) > 0);
+    }
+
+    function getNationalGuardMetric(stats, metricKey, months = 1) {
+      const rows = activeGuardRows(stats);
+      if (!rows.length) return metricKey === "reportAvgDays" || metricKey === "petitionAvgDays" ? null : 0;
+      const total = rows.reduce((sum, item) => sum + Number(item.total || 0), 0);
+      const sum = key => rows.reduce((result, item) => result + Number(item[key] || 0), 0);
+      if (metricKey === "total") return total;
+      if (metricKey === "monthly") return total / Math.max(1, Number(months || 1));
+      if (metricKey === "density") {
+        const area = sum("forestAreaHa");
+        return area ? (total / area) * 10000 : 0;
+      }
+      if (metricKey === "problemRate") return total ? (sum("problems") / total) * 100 : 0;
+      if (metricKey === "sanctionRate") return total ? (sum("sanctions") / total) * 100 : 0;
+      if (metricKey === "petitionShare") return total ? (sum("petitions") / total) * 100 : 0;
+      if (metricKey === "finePerControl") return total ? sum("fines") / total : 0;
+      if (metricKey === "damagePerControl") return total ? sum("damage") / total : 0;
+      if (metricKey === "reportAvgDays") {
+        const count = sum("reportDaysCount");
+        return count ? sum("reportDaysSum") / count : null;
+      }
+      if (metricKey === "petitionAvgDays") {
+        const count = sum("petitionReportDaysCount");
+        return count ? sum("petitionReportDaysSum") / count : null;
+      }
+      return sum(metricKey);
+    }
+
+    function guardMetricValueForScope(stats, metricKey, months, guardKey = "toate") {
+      if (guardKey && guardKey !== "toate" && stats[guardKey]) return stats[guardKey][metricKey];
+      return getNationalGuardMetric(stats, metricKey, months);
+    }
+
+    function guardMonthKeys(filters, arr) {
+      let start = filters.dateFrom ? new Date(filters.dateFrom + "T00:00:00") : null;
+      let end = filters.dateTo ? new Date(filters.dateTo + "T23:59:59") : null;
+      const dates = (arr || []).map(getControlDateValue).filter(date => date && !isNaN(date));
+      if (!start || isNaN(start)) start = dates.length ? new Date(Math.min(...dates)) : new Date();
+      if (!end || isNaN(end)) end = dates.length ? new Date(Math.max(...dates)) : new Date();
+      start = new Date(start.getFullYear(), start.getMonth(), 1);
+      end = new Date(end.getFullYear(), end.getMonth(), 1);
+      const keys = [];
+      const cursor = new Date(start);
+      while (cursor <= end && keys.length < 72) {
+        keys.push(cursor.getFullYear() + "-" + String(cursor.getMonth() + 1).padStart(2, "0"));
+        cursor.setMonth(cursor.getMonth() + 1);
+      }
+      return keys;
+    }
+
+    function controlsForMonth(arr, key) {
+      return (arr || []).filter(control => {
+        const date = getControlDateValue(control);
+        if (!date || isNaN(date)) return false;
+        return date.getFullYear() + "-" + String(date.getMonth() + 1).padStart(2, "0") === key;
+      });
+    }
+
+    function guardMetricMonthlySeries(arr, metricKey, guardKey, filters) {
+      const keys = guardMonthKeys(filters, arr);
+      const values = keys.map(key => {
+        const bucket = controlsForMonth(arr, key);
+        const { stats, months } = buildGuardStats(bucket, null);
+        const value = metricKey === "monthly"
+          ? guardMetricValueForScope(stats, "total", 1, guardKey)
+          : guardMetricValueForScope(stats, metricKey, months, guardKey);
+        return value === null || value === undefined || !Number.isFinite(Number(value)) ? null : Number(Number(value).toFixed(2));
+      });
+      return { keys, values };
+    }
+
+    function guardBenchmarkMonthlySeries(arr, metricKey, filters) {
+      const keys = guardMonthKeys(filters, arr);
+      const values = keys.map(key => {
+        const bucket = controlsForMonth(arr, key);
+        const { stats } = buildGuardStats(bucket, null);
+        const metricValues = activeGuardRows(stats)
+          .map(item => metricKey === "monthly" ? item.total : item[metricKey])
+          .filter(value => value !== null && value !== undefined && Number.isFinite(Number(value)))
+          .map(Number);
+        if (!metricValues.length) return null;
+        return Number((metricValues.reduce((sum, value) => sum + value, 0) / metricValues.length).toFixed(2));
+      });
+      return { keys, values };
+    }
+
+    function renderGuardOverviewTrend(arr, metricKey, guardKey, filters) {
+      const metric = GUARD_METRICS[metricKey] || GUARD_METRICS.monthly;
+      const series = guardMetricMonthlySeries(arr, metricKey, guardKey, filters);
+      setText("guardTrendTitle", `Evolutie - ${metric.label}`);
+      setText("guardTrendSubtitle", guardKey === "toate" ? "Toate garzile - agregare lunara" : `${GUARD_DISPLAY_NAMES[guardKey] || guardKey} - agregare lunara`);
+      const finiteValues = series.values.map(value => value === null ? 0 : value);
+      makeChart("chartGarziMonthly", "bar", series.keys.map(monthLabel), series.values, {
+        label: metric.short,
+        metricKey,
+        colors: gradientColorsByValues(finiteValues, metricKey),
+        light: true
+      });
+    }
+
+    function getPreviousGuardMetric(filters, metricKey) {
+      if (!filters.dateFrom || !filters.dateTo) return null;
+      const start = new Date(filters.dateFrom + "T00:00:00");
+      const end = new Date(filters.dateTo + "T23:59:59");
+      if (isNaN(start) || isNaN(end) || end < start) return null;
+      const duration = end - start + 1;
+      const previousEnd = new Date(start.getTime() - 1);
+      const previousStart = new Date(previousEnd.getTime() - duration + 1);
+      let arr = [...allControls];
+      if (filters.guard !== "toate") arr = arr.filter(c => canonicalGuardName(c.garda) === filters.guard);
+      if (filters.type !== "toate") arr = arr.filter(c => c.control_type === filters.type);
+      if (filters.category !== "toate") arr = arr.filter(c => categoryMatchesControl(c, filters.category));
+      if (filters.result !== "toate") arr = arr.filter(c => c.result === filters.result);
+      arr = arr.filter(control => {
+        const date = getControlDateValue(control);
+        return date && !isNaN(date) && date >= previousStart && date <= previousEnd;
+      });
+      const range = { dateFrom: toIsoDate(previousStart), dateTo: toIsoDate(previousEnd) };
+      const { stats, months } = buildGuardStats(arr, range);
+      return guardMetricValueForScope(stats, metricKey, months, filters.guard);
+    }
+
+    function renderGuardKpis(arr, stats) {
+      const rows = activeGuardRows(stats);
+      const totalArea = rows.reduce((sum, item) => sum + Number(item.forestAreaHa || 0), 0);
+      const problems = arr.filter(control => isProblemResult(control.result)).length;
+      const reportDays = arr.filter(getControlHasReport).map(getControlDaysToReport).filter(value => Number.isFinite(Number(value)));
+      setText("guardKpiTotal", arr.length.toLocaleString("ro-RO"));
+      setText("guardKpiDensity", totalArea ? ((arr.length / totalArea) * 10000).toFixed(2) : "-");
+      setText("guardKpiProblemRate", arr.length ? ((problems / arr.length) * 100).toFixed(1) + "%" : "0%");
+      const medianDays = medianValue(reportDays);
+      setText("guardKpiMedianDays", medianDays === null ? "-" : formatDays(medianDays));
+      setText("guardKpiMedianNote", medianDays === null ? "Date insuficiente" : `${reportDays.length} rapoarte finalizate`);
+    }
+
+    function renderGuardBenchmarks(stats, months, metricKey, filters) {
+      const metric = GUARD_METRICS[metricKey] || GUARD_METRICS.monthly;
+      const values = activeGuardRows(stats).map(item => item[metricKey]).filter(value => value !== null && value !== undefined && Number.isFinite(Number(value))).map(Number);
+      const min = values.length ? Math.min(...values) : null;
+      const max = values.length ? Math.max(...values) : null;
+      const current = guardMetricValueForScope(stats, metricKey, months, filters.guard);
+      const previous = getPreviousGuardMetric(filters, metricKey);
+      const delta = Number.isFinite(Number(current)) && Number.isFinite(Number(previous)) && Number(previous) !== 0
+        ? ((Number(current) - Number(previous)) / Math.abs(Number(previous))) * 100
+        : null;
+      setText("guardMapMin", min === null ? "-" : metric.format(min));
+      setText("guardMapMax", max === null ? "-" : metric.format(max));
+      setText("guardMapAvg", metric.format(getNationalGuardMetric(stats, metricKey, months)));
+      setText("guardMapDelta", delta === null ? "-" : `${delta > 0 ? "+" : ""}${delta.toFixed(1)}%`);
+      setText("guardMapMonths", `${months.toFixed(1)} luni analizate`);
+    }
+
+    function renderGuardComparative() {
+      const arr = getGuardAnalyticsControls({ ignoreGuard: true });
+      const filters = getGuardFilters();
+      const { stats, months } = buildGuardStats(arr, filters);
+      const keyA = safeValue("guardCompareA", Object.keys(GUARD_DISPLAY_NAMES)[0]);
+      const keyB = safeValue("guardCompareB", "national");
+      const itemA = stats[keyA];
+      const labelA = GUARD_DISPLAY_NAMES[keyA] || keyA;
+      const labelB = keyB === "national" ? "Media nationala" : (GUARD_DISPLAY_NAMES[keyB] || keyB);
+      const metrics = ["density", "problemRate", "petitionShare", "reportAvgDays", "petitionAvgDays", "overdueReports", "finePerControl"];
+      const rows = metrics.map(metricKey => {
+        const metric = GUARD_METRICS[metricKey];
+        const valueA = itemA ? itemA[metricKey] : null;
+        const valueB = keyB === "national" ? getNationalGuardMetric(stats, metricKey, months) : (stats[keyB] ? stats[keyB][metricKey] : null);
+        const hasA = valueA !== null && valueA !== undefined && valueA !== "" && Number.isFinite(Number(valueA));
+        const hasB = valueB !== null && valueB !== undefined && valueB !== "" && Number.isFinite(Number(valueB));
+        const delta = hasA && hasB ? Number(valueA) - Number(valueB) : null;
+        const favorable = delta === null ? null : (isRiskQuantitativeMetric(metricKey) ? delta <= 0 : delta >= 0);
+        return `<div class="guard-comparison-row" data-guard="${escapeAttr(keyA)}"><span>${escapeHtml(metric.label)}</span><strong>${escapeHtml(metric.format(valueA))}</strong><strong>${escapeHtml(metric.format(valueB))}</strong><span class="guard-comparison-delta ${delta === null ? "neutral" : favorable ? "good" : "bad"}">${delta === null ? "-" : `${delta > 0 ? "+" : ""}${metricKey.includes("Rate") || metricKey === "petitionShare" ? delta.toFixed(1) + " pp" : metric.format(Math.abs(delta))}`}</span></div>`;
+      }).join("");
+      setHtml("guardComparisonTable", `<div class="guard-comparison-head"><span>Indicator</span><span>${escapeHtml(labelA)}</span><span>${escapeHtml(labelB)}</span><span>Diferenta</span></div>${rows}`);
+    }
+
+    function renderGuardEvolution() {
+      const arr = getGuardAnalyticsControls({ ignoreGuard: true });
+      const filters = getGuardFilters();
+      const metricKey = safeValue("guardEvolutionMetric", safeValue("guardMapMetric", "monthly"));
+      const metric = GUARD_METRICS[metricKey] || GUARD_METRICS.monthly;
+      const keyA = safeValue("guardEvolutionA", Object.keys(GUARD_DISPLAY_NAMES)[0]);
+      const selectedKeys = [keyA, safeValue("guardEvolutionB", ""), safeValue("guardEvolutionC", "")]
+        .filter((key, index, values) => key && key !== "toate" && values.indexOf(key) === index)
+        .slice(0, 3);
+      const nationalSeries = guardBenchmarkMonthlySeries(arr, metricKey, filters);
+      setText("guardEvolutionTitle", `Evolutie - ${metric.label}`);
+      setText("guardEvolutionSubtitle", `${selectedKeys.map(key => GUARD_DISPLAY_NAMES[key] || key).join(" · ")} fata de media nationala`);
+      const canvas = q("chartGuardEvolution");
+      if (!canvas) return;
+      if (charts.chartGuardEvolution) charts.chartGuardEvolution.destroy();
+      const seriesColors = [
+        { border: "#0b8f58", fill: "rgba(11,143,88,.10)" },
+        { border: "#ff7417", fill: "rgba(255,116,23,.075)" },
+        { border: "#75b900", fill: "rgba(117,185,0,.07)" }
+      ];
+      const datasets = selectedKeys.map((key, index) => {
+        const series = guardMetricMonthlySeries(arr, metricKey, key, filters);
+        const color = seriesColors[index];
+        return { label: GUARD_DISPLAY_NAMES[key] || key, data: series.values, borderColor: color.border, backgroundColor: color.fill, borderWidth: 2.25, tension: .32, fill: true, pointRadius: 1.8, pointHoverRadius: 4.5, pointBackgroundColor: color.border };
+      });
+      datasets.push({ label: "Media nationala", data: nationalSeries.values, borderColor: "#1687c9", backgroundColor: "rgba(22,135,201,.025)", borderWidth: 3.2, tension: .34, fill: false, pointRadius: 2.4, pointHoverRadius: 5, pointBackgroundColor: "#1687c9" });
+      charts.chartGuardEvolution = new Chart(canvas.getContext("2d"), {
+        type: "line",
+        data: { labels: nationalSeries.keys.map(monthLabel), datasets },
+        options: { responsive: true, maintainAspectRatio: false, interaction: { intersect: false, mode: "index" }, plugins: { valueLabelPlugin: { display: false }, legend: { display: true, labels: { color: "#43544d", boxWidth: 12, boxHeight: 3, padding: 18, font: { size: 12, weight: "700" } } }, tooltip: { backgroundColor: "#17231f", titleColor: "#fff", bodyColor: "#eef7f3", borderColor: "rgba(255,255,255,.16)", borderWidth: 1, padding: 12, callbacks: { label(context) { return `${context.dataset.label}: ${metric.format(context.parsed.y)}`; } } } }, scales: { x: { ticks: { color: "#66736e" }, grid: { color: "rgba(23,35,31,.055)" } }, y: { beginAtZero: true, ticks: { color: "#66736e" }, grid: { color: "rgba(23,35,31,.07)" } } } }
+      });
+    }
+
+    function openGuardProfile(guardName) {
+      const key = canonicalGuardName(guardName);
+      const card = q("guardMapSummaryCard");
+      if (!card || !key) return;
+      const arr = getGuardAnalyticsControls({ ignoreGuard: guardActiveSection !== "overview" });
+      const filters = getGuardFilters();
+      const { stats, months } = buildGuardStats(arr, filters);
+      const item = stats[key];
+      if (!item) return;
+      selectedGuardProfileKey = key;
+      const activeRows = activeGuardRows(stats);
+      const nationalMonthly = activeRows.length ? activeRows.reduce((sum, row) => sum + Number(row.monthly || 0), 0) / activeRows.length : null;
+      const monthlyDelta = nationalMonthly ? ((Number(item.monthly || 0) - nationalMonthly) / nationalMonthly) * 100 : null;
+      card.innerHTML = `<button class="guard-summary-close" type="button" onclick="closeGuardProfile()" aria-label="Inchide sumarul">&times;</button><div class="guard-summary-heading"><span class="guard-summary-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 7v5c0 5 3.4 8 8 9 4.6-1 8-4 8-9V7l-8-4Z"></path><path d="M9 12h6M12 9v6"></path></svg></span><div><h3>${escapeHtml(item.garda)}</h3><span>Controale / luna <strong>${Number(item.monthly || 0).toFixed(1)}</strong></span></div></div><div class="guard-summary-lines"><p><strong>${Number(item.total || 0).toLocaleString("ro-RO")}</strong> controale <i></i> <strong>${Number(item.density || 0).toFixed(2)}</strong> / 10.000 ha</p><p><strong>${formatPercent(item.problemRate)}</strong> probleme <i></i> <strong>${formatPercent(item.petitionShare)}</strong> din sesizari</p></div><p class="guard-summary-comparison">Comparativ cu media GFN: <strong>${monthlyDelta === null ? "-" : `${monthlyDelta >= 0 ? "+" : ""}${monthlyDelta.toFixed(0)}%`}</strong></p><button type="button" class="guard-summary-action guard-map-btn" data-guard="${escapeAttr(item.garda)}">Deschide profilul <span aria-hidden="true">&rarr;</span></button>`;
+      card.hidden = false;
+      card.classList.add("open");
+      card.setAttribute("aria-hidden", "false");
+    }
+
+    function closeGuardProfile() {
+      const card = q("guardMapSummaryCard");
+      if (card) {
+        card.classList.remove("open");
+        card.hidden = true;
+        card.setAttribute("aria-hidden", "true");
+      }
+      if (guardSelectedStatsLayer && guardStatsLayer) {
+        try { guardStatsLayer.resetStyle(guardSelectedStatsLayer); } catch {}
+      }
+      guardSelectedStatsLayer = null;
+      selectedGuardProfileKey = "";
+    }
+
     function renderGarziView() {
-      const arr = getGuardAnalyticsControls();
+      syncGuardSectionUi();
+      const arr = getGuardAnalyticsControls({ ignoreGuard: guardActiveSection !== "overview" });
       const guardRange = getGuardFilters();
       const { stats, months } = buildGuardStats(arr, guardRange);
-      const byG = countBy(arr, c => guardDisplayName(c.garda));
-      const top = topEntries(byG, 10);
-      const monthlyValues = Object.values(stats).map(s => s.monthly || 0);
-      const avgMonthly = monthlyValues.length ? monthlyValues.reduce((a,b) => a+b, 0) / monthlyValues.length : 0;
-      const topMonthly = Object.values(stats).sort((a,b) => b.monthly - a.monthly)[0];
-
+      const monthlyValues = activeGuardRows(stats).map(item => Number(item.monthly || 0));
+      const avgMonthly = monthlyValues.length ? monthlyValues.reduce((a, b) => a + b, 0) / monthlyValues.length : 0;
+      const topMonthly = activeGuardRows(stats).sort((a, b) => b.monthly - a.monthly)[0];
       setText("garziTotal", arr.length);
       setText("garziAverage", avgMonthly.toFixed(1));
       setText("garziTop", topMonthly ? gardaShortLabel(topMonthly.garda) : "-");
 
-      renderGuardStatsMap();
-
-      const metricKey = safeValue("guardMapMetric", "monthly");
-      const metric = GUARD_METRICS[metricKey] || GUARD_METRICS.monthly;
-      const ranked = Object.values(stats).sort((a,b) => Number(b[metricKey] || 0) - Number(a[metricKey] || 0)).slice(0, 5);
-      const moneyMetrics = ["fines", "damage", "finePerControl", "damagePerControl"];
-      const chartValues = ranked.map(x => moneyMetrics.includes(metricKey) ? Math.round(Number(x[metricKey] || 0)) : Number(Number(x[metricKey] || 0).toFixed(2)));
-      makeChart("chartGarziBars", "bar", ranked.map(x => gardaShortLabel(x.garda)), chartValues, { label: metric.short, colors: gradientColorsByValues(chartValues, metricKey), tooltipLabels: ranked.map(x => x.garda) });
-      renderGuardScorecard(stats, months);
-
-      const byM = countBy(arr, monthKey); const monthsKeys = Object.keys(byM).sort();
-      makeChart("chartGarziMonthly", "line", monthsKeys.map(monthLabel), monthsKeys.map(k => byM[k]), { label: "Controale" });
-
-      const problems = topEntries(countBy(arr.filter(c => isProblemResult(c.result)), c => guardDisplayName(c.garda)), 10);
-      const problemValues = problems.map(x => Number(x[1] || 0));
-      makeChart("chartGarziProblems", "bar", problems.map(x => gardaShortLabel(x[0])), problemValues, {
-        colors: gradientColorsByValues(problemValues, "problems"),
-        label: "Probleme"
-      });
-
-      const byType = countBy(arr, c => c.control_type); const types = Object.keys(byType); const guards = Math.max(1, Object.keys(byG).length);
-      const typeAvgValues = types.map(t => Math.round(byType[t] / guards));
-      makeChart("chartTypeAverage", "bar", types, typeAvgValues, {
-        label: "Media / garda",
-        colors: gradientColorsByValues(typeAvgValues, "total")
-      });
-
-      const moneyByG = {};
-      arr.forEach(c => {
-        const g = c.garda || "Necunoscut";
-        moneyByG[g] = (moneyByG[g] || 0) + getFineAmount(c) + getDamageAmount(c);
-      });
-      const moneyTop = topEntries(moneyByG, 10);
-      const moneyValues = moneyTop.map(x => Math.round(x[1]));
-      makeChart("chartGarziMoney", "bar", moneyTop.map(x => gardaShortLabel(x[0])), moneyValues, {
-        label: "lei",
-        colors: gradientColorsByValues(moneyValues, "fines")
-      });
+      if (guardActiveSection === "overview") {
+        const metricKey = safeValue("guardMapMetric", "monthly");
+        renderGuardKpis(arr, stats);
+        renderGuardStatsMap();
+        renderGuardBenchmarks(stats, months, metricKey, guardRange);
+        renderGuardOverviewTrend(arr, metricKey, guardRange.guard, guardRange);
+      } else if (guardActiveSection === "comparative") {
+        renderGuardComparative();
+      } else if (guardActiveSection === "evolution") {
+        renderGuardEvolution();
+      } else if (guardActiveSection === "matrix") {
+        renderGuardScorecard(stats, months);
+      }
     }
 
     function readInspectorFilterState() {
@@ -4436,6 +5248,10 @@
 
     function renderInspectorsView() {
       if (!isInternalMode) return;
+      if (q("inspectorV1Surface") && typeof renderInspectorsV1 === "function") {
+        renderInspectorsV1();
+        return;
+      }
       syncInspectorAnalysisMode();
       const filterState = readInspectorFilterState();
       const customPeriod = q("inspectorCustomPeriod");
@@ -4567,8 +5383,14 @@
       ["entityGuardFilter", "entityTypeFilter", "entityControlTypeFilter", "entityCategoryFilter", "entityResultFilter"].forEach(id => {
         if (q(id)) q(id).value = "toate";
       });
-      if (q("entitySearch")) q("entitySearch").value = "";
+      ["entitySearch", "entityAdvancedName", "entityLocationFilter", "entityDatabaseSearch"].forEach(id => {
+        if (q(id)) q(id).value = "";
+      });
+      if (q("entityDatabaseDisplay")) q("entityDatabaseDisplay").value = "toate";
+      if (q("entityDatabaseSort")) q("entityDatabaseSort").value = "controls";
+      entityDatabasePage = 1;
       selectedEntityHistoryYear = "";
+      selectedEntityProfileKey = "";
       entityTimelineKey = "";
       entityLatestLimit = 5;
       applyModulePeriodPreset("entity", "last180");
@@ -4631,7 +5453,353 @@
       });
     }
 
-    function renderPetitionsView() { renderPetitionSearch(false); renderPetitionersView(); }
+    function setPetitionSection(section) {
+      if (section === "petitioners" && !isInternalMode) section = "overview";
+      petitionActiveSection = section || "overview";
+      document.querySelectorAll("[data-petition-section]").forEach(button => {
+        button.classList.toggle("active", button.dataset.petitionSection === petitionActiveSection);
+      });
+      document.querySelectorAll("[data-petition-panel]").forEach(panel => {
+        panel.hidden = panel.dataset.petitionPanel !== petitionActiveSection;
+      });
+      const overviewHead = q("petitionOverviewHead");
+      if (overviewHead) overviewHead.hidden = petitionActiveSection !== "overview";
+      const filterArea = q("petitionFilterArea");
+      if (filterArea) filterArea.hidden = !["overview", "cases"].includes(petitionActiveSection);
+      togglePetitionAdvancedFilters(false);
+      renderPetitionsView();
+      setTimeout(refreshCharts, 60);
+    }
+
+    function togglePetitionAdvancedFilters(force) {
+      const panel = q("petitionAdvancedFilters");
+      if (!panel) return;
+      const open = typeof force === "boolean" ? force : panel.hidden;
+      panel.hidden = !open;
+      const backdrop = q("petitionDrawerBackdrop");
+      if (backdrop) backdrop.hidden = !open;
+      document.body.classList.toggle("petition-drawer-open", open);
+    }
+
+    function resetPetitionFilters() {
+      if (q("petitionPeriodPreset")) q("petitionPeriodPreset").value = "last90";
+      ["petitionGuardFilter", "petitionStatusFilter", "petitionTypeFilter", "petitionResultFilter"].forEach(id => {
+        if (q(id)) q(id).value = "toate";
+      });
+      ["petitionLocalityFilter", "petitionEntityFilter", "petitionMinDaysFilter", "petitionMaxDaysFilter", "petitionPetitionerFilter"].forEach(id => {
+        if (q(id)) q(id).value = "";
+      });
+      petitionHistoryLimit = 8;
+      togglePetitionAdvancedFilters(false);
+      applyModulePeriodPreset("petition", "last90");
+    }
+
+    function petitionMedian(values) {
+      const sorted = values.filter(Number.isFinite).sort((a, b) => a - b);
+      if (!sorted.length) return null;
+      const middle = Math.floor(sorted.length / 2);
+      return sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2;
+    }
+
+    function petitionResponseAge(c) {
+      const registered = getPetitionRegisteredDate(c);
+      if (!registered) return null;
+      const end = getControlHasReport(c)
+        ? (parseLooseDate(c.report_date) || (c.report_uploaded_at ? new Date(c.report_uploaded_at) : getControlDateValue(c)))
+        : new Date();
+      const value = daysBetweenDates(registered, end);
+      return Number.isFinite(value) && value >= 0 ? value : null;
+    }
+
+    function petitionResponseValue(c) {
+      const explicit = Number(c && c.days_to_report);
+      if (c && c.days_to_report !== null && c.days_to_report !== undefined && c.days_to_report !== "" && Number.isFinite(explicit) && explicit >= 0) return explicit;
+      const responseRaw = firstValue(c, ["data_raspuns", "report_uploaded_at", "report_date"]);
+      const registered = getPetitionRegisteredDate(c);
+      if (responseRaw && registered) {
+        const days = daysBetweenDates(registered, new Date(responseRaw));
+        if (Number.isFinite(days)) return days;
+      }
+      if (getControlHasReport(c)) {
+        const value = getPetitionResponseDays(c);
+        if (Number.isFinite(value) && value >= 0) return value;
+      }
+      return null;
+    }
+
+    function petitionOperationalStatus(c) {
+      const days = petitionResponseValue(c);
+      const resolved = isResolvedPetition(c) || getControlHasReport(c);
+      if (resolved) return days !== null && days > 30 ? "late" : "resolved";
+      const age = petitionResponseAge(c);
+      if (age !== null && age > 30) return "late";
+      if (age !== null && age >= 21) return "near";
+      return "pending";
+    }
+
+    function petitionTypeLabel(c) {
+      return firstValue(c, ["tip_sesizare", "categorie_sesizare"]) || getControlCategory(c) || getControlDomainRaw(c) || "Nespecificat";
+    }
+
+    function fillPetitionSelect(id, entries, allLabel) {
+      const select = q(id);
+      if (!select) return;
+      const current = select.value || "toate";
+      select.innerHTML = `<option value="toate">${escapeHtml(allLabel)}</option>` + entries.map(([value, label]) => `<option value="${escapeAttr(value)}">${escapeHtml(label)}</option>`).join("");
+      if ([...select.options].some(option => option.value === current)) select.value = current;
+    }
+
+    function populatePetitionFilterOptions() {
+      const petitions = allControls.filter(isPetition);
+      const guards = new Map();
+      const types = new Map();
+      petitions.forEach(c => {
+        const guardKey = canonicalGuardName(c.garda);
+        if (guardKey && !guards.has(guardKey)) guards.set(guardKey, guardDisplayName(c.garda));
+        const typeLabel = petitionTypeLabel(c);
+        const typeKey = normalizeText(typeLabel);
+        if (typeKey && !types.has(typeKey)) types.set(typeKey, typeLabel);
+      });
+      fillPetitionSelect("petitionGuardFilter", [...guards].sort((a, b) => a[1].localeCompare(b[1], "ro")), "Toate garzile");
+      fillPetitionSelect("petitionerGuardFilter", [...guards].sort((a, b) => a[1].localeCompare(b[1], "ro")), "Toate garzile");
+      fillPetitionSelect("petitionAnalysisGuard", [...guards].sort((a, b) => a[1].localeCompare(b[1], "ro")), "Toate garzile");
+      fillPetitionSelect("petitionTypeFilter", [...types].sort((a, b) => a[1].localeCompare(b[1], "ro")), "Toate tipurile");
+    }
+
+    function petitionContextPeriodLabel(preset) {
+      return { last30:"ultima luna", last90:"ultimele 3 luni", last180:"ultimele 6 luni", year:"anul curent", all:"toata perioada" }[preset] || "perioada selectata";
+    }
+
+    function filterPetitionsByContext(periodId, guardId) {
+      const preset = safeValue(periodId, "last180");
+      const guard = safeValue(guardId, "toate");
+      const now = new Date();
+      let start = null;
+      if (preset === "last30") { start = new Date(now); start.setDate(now.getDate() - 30); }
+      if (preset === "last90") { start = new Date(now); start.setDate(now.getDate() - 90); }
+      if (preset === "last180") { start = new Date(now.getFullYear(), now.getMonth() - 5, 1); }
+      if (preset === "year") start = new Date(now.getFullYear(), 0, 1);
+      let arr = [...filteredControls].filter(isPetition);
+      if (start) arr = arr.filter(c => { const date = getPetitionRegisteredDate(c) || getControlDateValue(c); return date && date >= start && date <= now; });
+      if (guard !== "toate") arr = arr.filter(c => canonicalGuardName(c.garda) === guard);
+      return arr;
+    }
+
+    function getPetitionerContextControls() { return filterPetitionsByContext("petitionerPeriodPreset", "petitionerGuardFilter"); }
+    function getPetitionAnalysisControls() { return filterPetitionsByContext("petitionAnalysisPeriod", "petitionAnalysisGuard"); }
+
+    function readPetitionFilters() {
+      petitionFilters = {
+        guard: safeValue("petitionGuardFilter", "toate"),
+        status: safeValue("petitionStatusFilter", "toate"),
+        type: safeValue("petitionTypeFilter", "toate"),
+        locality: normalizeText(safeValue("petitionLocalityFilter", "")),
+        entity: normalizeText(safeValue("petitionEntityFilter", "")),
+        result: safeValue("petitionResultFilter", "toate"),
+        minDays: safeValue("petitionMinDaysFilter", "") === "" ? null : normalizeNumber(safeValue("petitionMinDaysFilter", "")),
+        maxDays: safeValue("petitionMaxDaysFilter", "") === "" ? null : normalizeNumber(safeValue("petitionMaxDaysFilter", "")),
+        petitioner: isInternalMode ? normalizeText(safeValue("petitionPetitionerFilter", "")) : ""
+      };
+      return petitionFilters;
+    }
+
+    function getFilteredPetitions() {
+      const filters = readPetitionFilters();
+      let arr = [...filteredControls].filter(isPetition);
+      const from = safeValue("petitionDateFrom", "");
+      const to = safeValue("petitionDateTo", "");
+      if (from) arr = arr.filter(c => {
+        const date = getPetitionRegisteredDate(c) || getControlDateValue(c);
+        return date && date >= new Date(from + "T00:00:00");
+      });
+      if (to) arr = arr.filter(c => {
+        const date = getPetitionRegisteredDate(c) || getControlDateValue(c);
+        return date && date <= new Date(to + "T23:59:59");
+      });
+      if (filters.guard !== "toate") arr = arr.filter(c => canonicalGuardName(c.garda) === filters.guard);
+      if (filters.status !== "toate") arr = arr.filter(c => petitionOperationalStatus(c) === filters.status);
+      if (filters.type !== "toate") arr = arr.filter(c => normalizeText(petitionTypeLabel(c)) === filters.type);
+      if (filters.locality) arr = arr.filter(c => normalizeText(c.localitate).includes(filters.locality));
+      if (filters.entity) arr = arr.filter(c => normalizeText([getEntityName(c), c.reper].filter(Boolean).join(" ")).includes(filters.entity));
+      if (filters.result !== "toate") arr = arr.filter(c => String(c.result || "") === filters.result);
+      if (Number.isFinite(filters.minDays)) arr = arr.filter(c => { const value = petitionResponseValue(c); return Number.isFinite(value) && value >= filters.minDays; });
+      if (Number.isFinite(filters.maxDays)) arr = arr.filter(c => { const value = petitionResponseValue(c); return Number.isFinite(value) && value <= filters.maxDays; });
+      if (filters.petitioner) arr = arr.filter(c => normalizeText(getPetitionerName(c)).includes(filters.petitioner));
+      return arr;
+    }
+
+    function petitionMetrics(arr) {
+      const responseValues = arr.map(petitionResponseValue).filter(Number.isFinite);
+      const resolved = arr.filter(c => isResolvedPetition(c) || getControlHasReport(c));
+      const resolvedWithTime = resolved.map(c => petitionResponseValue(c)).filter(Number.isFinite);
+      const onTime = resolvedWithTime.filter(days => days <= 30).length;
+      const unresolved = arr.filter(c => !isResolvedPetition(c) && !getControlHasReport(c));
+      return {
+        total: uniqueCount(arr, c => getPetitionNumber(c) || c.id),
+        median: petitionMedian(responseValues),
+        average: responseValues.length ? responseValues.reduce((sum, value) => sum + value, 0) / responseValues.length : null,
+        calculated: responseValues.length,
+        resolved: resolved.length,
+        onTimeRate: resolvedWithTime.length ? onTime / resolvedWithTime.length * 100 : null,
+        pending: unresolved.filter(c => { const age = petitionResponseAge(c); return age === null || age < 21; }).length,
+        near: unresolved.filter(c => { const age = petitionResponseAge(c); return age !== null && age >= 21 && age <= 30; }).length,
+        lateOpen: unresolved.filter(c => { const age = petitionResponseAge(c); return age !== null && age > 30; }).length,
+        lateResponse: resolvedWithTime.filter(days => days > 30).length
+      };
+    }
+
+    function renderPetitionOverviewKpis(arr) {
+      const metrics = petitionMetrics(arr);
+      setText("petitionKpiTotal", metrics.total);
+      setText("petitionKpiTotalMeta", getModulePeriodLabel("petition"));
+      setText("petitionKpiMedian", metrics.median === null ? "Indisponibil" : formatDays(metrics.median));
+      setText("petitionKpiMedianMeta", `${metrics.calculated} cazuri cu termen calculabil`);
+      setText("petitionKpiOnTime", metrics.onTimeRate === null ? "Indisponibil" : `${Math.round(metrics.onTimeRate)}%`);
+      setText("petitionKpiOnTimeMeta", `${metrics.resolved} cazuri solutionate`);
+      setText("petitionKpiPending", metrics.pending + metrics.near);
+      setText("petitionKpiPendingMeta", `${metrics.near} aproape de termen`);
+    }
+
+    function petitionMonthKey(c) {
+      const date = getPetitionRegisteredDate(c) || getControlDateValue(c);
+      return date && !isNaN(date) ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}` : "";
+    }
+
+    function renderPetitionResponseTrend(arr) {
+      const canvas = q("chartPetitionResponseTrend");
+      if (!canvas) return;
+      const grouped = {};
+      arr.forEach(c => {
+        const key = petitionMonthKey(c);
+        const days = petitionResponseValue(c);
+        if (key && Number.isFinite(days)) (grouped[key] ||= []).push(days);
+      });
+      const keys = Object.keys(grouped).sort();
+      const medians = keys.map(key => petitionMedian(grouped[key]));
+      const averages = keys.map(key => grouped[key].reduce((sum, value) => sum + value, 0) / grouped[key].length);
+      if (charts.chartPetitionResponseTrend) charts.chartPetitionResponseTrend.destroy();
+      charts.chartPetitionResponseTrend = new Chart(canvas.getContext("2d"), {
+        type: "line",
+        data: { labels: keys.map(monthLabel), datasets: [
+          { label:"Mediana", data:medians, borderColor:"#0b8f58", backgroundColor:"rgba(11,143,88,.10)", fill:true, tension:.35, pointRadius:3, pointBackgroundColor:"#0b8f58" },
+          { label:"Media", data:averages, borderColor:"#1f9fc1", backgroundColor:"transparent", tension:.35, pointRadius:2, borderDash:[5,4] }
+        ] },
+        options: { responsive:true, maintainAspectRatio:false, interaction:{ mode:"index", intersect:false }, plugins:{ legend:{ display:false }, tooltip:{ callbacks:{ label:item => `${item.dataset.label}: ${formatDays(item.raw)}` } } }, scales:{ x:{ grid:{ display:false }, ticks:{ color:"#66736e" } }, y:{ beginAtZero:true, ticks:{ color:"#66736e", callback:value => `${value} zile` }, grid:{ color:"rgba(58,86,76,.09)" } } } }
+      });
+      const empty = q("petitionResponseEmpty");
+      if (empty) empty.hidden = keys.length > 0;
+      canvas.hidden = keys.length === 0;
+      setText("petitionResponsePeriod", keys.length ? `${getModulePeriodLabel("petition")} - mediana si media cazurilor calculabile` : `${getModulePeriodLabel("petition")} - date structurate indisponibile`);
+    }
+
+    function renderPetitionAttention(arr) {
+      const metrics = petitionMetrics(arr);
+      const incomplete = arr.filter(c => !getPetitionNumber(c) || !getPetitionRegisteredDate(c) || !c.garda).length;
+      setHtml("petitionAttentionList", `
+        <div class="petition-attention-item"><b>${metrics.lateOpen}</b><div><strong>Nesolutionate peste termen</strong><small>Vechime peste 30 de zile, fara raspuns final.</small></div></div>
+        <div class="petition-attention-item near"><b>${metrics.near}</b><div><strong>Aproape de termen</strong><small>Sesizari deschise cu vechime intre 21 si 30 zile.</small></div></div>
+        <div class="petition-attention-item"><b>${metrics.lateResponse}</b><div><strong>Raspuns peste 30 zile</strong><small>Doar sesizari solutionate cu durata calculabila.</small></div></div>
+        <div class="petition-attention-item missing"><b>${incomplete}</b><div><strong>Date incomplete</strong><small>Lipseste numarul, data sau garda.</small></div></div>
+      `);
+    }
+
+    function renderPetitionGuardChart() {
+      const arr = petitionFilteredControls;
+      const metric = safeValue("petitionGuardMetric", "count");
+      const groups = {};
+      arr.forEach(c => (groups[guardDisplayName(c.garda) || "Garda nespecificata"] ||= []).push(c));
+      const rows = Object.entries(groups).map(([name, controls]) => {
+        const values = controls.map(petitionResponseValue).filter(Number.isFinite);
+        const onTime = values.filter(value => value <= 30).length;
+        let value = controls.length;
+        if (metric === "median") value = petitionMedian(values) || 0;
+        if (metric === "ontime") value = values.length ? onTime / values.length * 100 : 0;
+        if (metric === "late") value = values.length ? (values.length - onTime) / values.length * 100 : 0;
+        return { name, value };
+      }).sort((a, b) => b.value - a.value).slice(0, 9);
+      const values = rows.map(row => row.value);
+      const risk = metric === "median" || metric === "late";
+      const chart = makeChart("chartPetitionGuards", "bar", rows.map(row => row.name.replace("Garda Forestiera ", "GF ")), values, {
+        label: metric === "count" ? "Petitii" : metric === "median" ? "Zile" : "%",
+        horizontal: true,
+        colors: quantitativeColors(values, risk),
+        tooltipLabels: rows.map(row => row.name)
+      });
+      stylePetitionChart(chart);
+    }
+
+    function stylePetitionChart(chart) {
+      if (!chart) return chart;
+      ["x", "y"].forEach(axis => {
+        if (!chart.options.scales || !chart.options.scales[axis]) return;
+        chart.options.scales[axis].ticks.color = "#66736e";
+        chart.options.scales[axis].grid.color = "rgba(58,86,76,.09)";
+      });
+      if (chart.options.plugins && chart.options.plugins.legend) chart.options.plugins.legend.labels.color = "#66736e";
+      chart.update("none");
+      return chart;
+    }
+
+    function renderPetitionAnalysisContext() {
+      const arr = getPetitionAnalysisControls();
+      const metric = safeValue("petitionAnalysisMetric", "volume");
+      const canvas = q("chartPetitionAnalysis");
+      const empty = q("petitionAnalysisEmpty");
+      if (!canvas) return;
+      let labels = [];
+      let values = [];
+      let type = "bar";
+      let options = { label:"Petitii" };
+      let title = "Volum sesizari";
+      if (metric === "volume") {
+        const byMonth = countBy(arr, petitionMonthKey);
+        const months = Object.keys(byMonth).filter(Boolean).sort();
+        labels = months.map(monthLabel); values = months.map(key => byMonth[key]);
+      } else if (metric === "response") {
+        title = "Timp median de raspuns";
+        const grouped = {};
+        arr.forEach(c => { const key = petitionMonthKey(c); const days = petitionResponseValue(c); if (key && Number.isFinite(days)) (grouped[key] ||= []).push(days); });
+        const months = Object.keys(grouped).sort();
+        labels = months.map(monthLabel); values = months.map(key => petitionMedian(grouped[key])); options = { label:"Zile", colors:quantitativeColors(values, true) };
+      } else if (metric === "guards") {
+        title = "Distributie pe garzi";
+        const rows = topEntries(countBy(arr, c => guardDisplayName(c.garda)), 9);
+        labels = rows.map(row => row[0].replace("Garda Forestiera ", "GF ")); values = rows.map(row => row[1]); options = { label:"Petitii", horizontal:true };
+      } else {
+        title = "Rezultatele sesizarilor";
+        const byResult = countBy(arr, c => resultLabel(c.result));
+        labels = Object.keys(byResult); values = Object.values(byResult); type = "doughnut"; options = { colors:labels.map(label => colorByResult(normalizeResultLabelBack(label))) };
+      }
+      setText("petitionAnalysisTitle", title);
+      setText("petitionAnalysisSubtitle", `${petitionContextPeriodLabel(safeValue("petitionAnalysisPeriod", "last180"))} - ${arr.length} sesizari`);
+      const hasData = values.length > 0 && values.some(value => Number.isFinite(value));
+      canvas.hidden = !hasData;
+      if (empty) empty.hidden = hasData;
+      if (charts.chartPetitionAnalysis) {
+        charts.chartPetitionAnalysis.destroy();
+        delete charts.chartPetitionAnalysis;
+      }
+      if (hasData) stylePetitionChart(makeChart("chartPetitionAnalysis", type, labels, values, options));
+    }
+
+    function renderPetitionsView() {
+      if (petitionActiveSection === "petitioners" && !isInternalMode) {
+        setPetitionSection("overview");
+        return;
+      }
+      populatePetitionFilterOptions();
+      petitionFilteredControls = getFilteredPetitions();
+      setText("petitionVisibleCount", `${petitionFilteredControls.length} petitii / sesizari afisate`);
+      setText("petitionTabCount", petitionFilteredControls.length);
+      renderPetitionOverviewKpis(petitionFilteredControls);
+      renderPetitionResponseTrend(petitionFilteredControls);
+      renderPetitionAttention(petitionFilteredControls);
+      renderPetitionGuardChart();
+      renderPetitionAnalysisContext();
+      renderPetitionTable(petitionFilteredControls);
+      renderPetitionerProfile(getPetitionerContextControls());
+      renderPetitionSearch(false);
+    }
     function renderPetitionSearch(showEmpty = true) {
       const nr = normalizeText(safeValue("petitionNumberSearch", ""));
       if (!nr) { if (showEmpty) setHtml("petitionPublicResult", `<div class="empty">Introdu numarul sesizarii pentru verificare.</div>`); return; }
@@ -4639,7 +5807,7 @@
       if (!found) return setHtml("petitionPublicResult", `<div class="empty">Nu am gasit nicio sesizare cu acest numar in datele incarcate.</div>`);
       const privateLine = isInternalMode && getPetitionerName(found) ? `<p><b>Petitionar:</b> ${escapeHtml(getPetitionerName(found))}</p>` : "";
       const confirmation = getPetitionConfirmation(found);
-      const responseDays = getPetitionResponseDays(found);
+      const responseDays = petitionResponseValue(found);
       const hasReport = getControlHasReport(found);
       const registeredDate = getPetitionRegisteredDate(found);
       const controlDate = getControlDateValue(found);
@@ -4673,8 +5841,8 @@
             <div><span>Localitate</span><b>${escapeHtml(found.localitate || "-")}</b></div>
           </div>
           <div class="petition-response-card">
-            <p>${escapeHtml(getPetitionResponseText(found))}</p>
-            ${renderResponseTimeBar(responseDays, hasReport)}
+            <p>${escapeHtml(responseDays === null ? "Timpul de raspuns nu este disponibil in datele publice structurate." : `Raspuns in ${formatDays(responseDays)}.`)}</p>
+            ${responseDays === null ? "" : renderResponseTimeBar(responseDays, hasReport)}
           </div>
           ${privateLine ? `<div class="petition-private-line">${privateLine}</div>` : ""}
           <div class="petition-public-section">
@@ -4693,71 +5861,76 @@
         </article>
       `);
     }
-    function renderPetitionersView() {
-      renderPetitionKpis();
-      let arr = getModulePeriodControls("petition").filter(isPetition);
-      setText("petitionVisibleCount", arr.length + " petitii / sesizari afisate");
+    function renderPetitionerProfile(baseArr) {
+      if (!isInternalMode) return;
       const petitioner = safeValue("petitionerSearch", "").trim();
-      if (isInternalMode && petitioner) arr = arr.filter(c => getPetitionerName(c) === petitioner);
-      const responseStats = computePetitionResponseStats(arr);
-      const confirmed = arr.filter(c => getPetitionConfirmation(c).className === "confirmed").length;
-      const partial = arr.filter(c => getPetitionConfirmation(c).className === "partial").length;
-      if (isInternalMode && petitioner) setText("petitionerSummary", `${petitioner}: ${arr.length} petitii / sesizari in ${getModulePeriodLabel("petition")}. Timp mediu raspuns administrativ: ${formatDays(responseStats.avg)}.`);
-      else setText("petitionerSummary", `Total petitii / sesizari in ${getModulePeriodLabel("petition")}: ${arr.length}. Timp mediu raspuns administrativ: ${formatDays(responseStats.avg)}.`);
-      if (q("petitionResponseStats")) {
-        setHtml("petitionResponseStats", isInternalMode ? `
-          <div><span>Timp mediu raspuns</span><strong>${escapeHtml(formatDays(responseStats.avg))}</strong><small>${responseStats.count} petitii / sesizari cu termen calculat</small></div>
-          <div><span>Mediana raspuns</span><strong>${escapeHtml(formatDays(responseStats.median))}</strong><small>indicator robust</small></div>
-          <div><span>Maxim raspuns</span><strong>${escapeHtml(formatDays(responseStats.max))}</strong><small>caz cel mai intarziat</small></div>
-          <div><span>Confirmate</span><strong>${confirmed + partial}</strong><small>${confirmed} integral / ${partial} partial</small></div>
-        ` : "");
+      const arr = petitioner ? baseArr.filter(c => normalizeText(getPetitionerName(c)) === normalizeText(petitioner)) : [];
+      if (!petitioner) {
+        setText("petitionerSummary", "Selecteaza un petitionar pentru istoricul intern.");
+        setHtml("petitionResponseStats", "");
+        setHtml("petitionerCases", "");
+        return;
       }
-      if (isCollapseOpen("collapsePetitionStats")) {
-        const byYear = countBy(arr, yearKey); const years = Object.keys(byYear).sort(); makeChart("chartPetitionsYears", "bar", years, years.map(y => byYear[y]));
-        const byG = countBy(arr, c => c.garda); const g = topEntries(byG, 9); makeChart("chartPetitionsGarzi", "bar", g.map(x => gardaShortLabel(x[0])), g.map(x => x[1]));
-        const byR = countBy(arr, c => resultLabel(c.result)); makeChart("chartPetitionsResults", "doughnut", Object.keys(byR), Object.values(byR), { colors: Object.keys(byR).map(label => colorByResult(normalizeResultLabelBack(label))) });
-        if (isInternalMode && q("chartPetitionsResponse")) {
-          const labels = Object.keys(responseStats.buckets);
-          const responseValues = labels.map(label => responseStats.buckets[label]);
-          makeChart("chartPetitionsResponse", "bar", labels, labels.map(label => responseStats.buckets[label]), {
-            label: "Sesizari",
-            colors: quantitativeColors(labels.map((_, index) => index), true)
-          });
-        }
-      }
-      renderPetitionTable(arr);
+      const metrics = petitionMetrics(arr);
+      setText("petitionerSummary", `${petitioner}: ${arr.length} sesizari in ${petitionContextPeriodLabel(safeValue("petitionerPeriodPreset", "last180"))}. Sunt afisate exclusiv date factuale din inregistrarile disponibile.`);
+      setHtml("petitionResponseStats", `
+        <div><span>Total sesizari</span><strong>${metrics.total}</strong><small>in filtrul curent</small></div>
+        <div><span>Solutionate</span><strong>${metrics.resolved}</strong><small>cu rezultat final</small></div>
+        <div><span>In lucru</span><strong>${metrics.pending + metrics.near + metrics.lateOpen}</strong><small>${metrics.near} aproape / ${metrics.lateOpen} peste termen</small></div>
+        <div><span>Mediana raspuns</span><strong>${metrics.median === null ? "-" : escapeHtml(formatDays(metrics.median))}</strong><small>${metrics.calculated} termene calculabile</small></div>
+      `);
+      const byMonth = countBy(arr, petitionMonthKey);
+      const months = Object.keys(byMonth).filter(Boolean).sort();
+      stylePetitionChart(makeChart("chartPetitionerTimeline", "bar", months.map(monthLabel), months.map(key => byMonth[key]), { label:"Sesizari" }));
+      const byGuard = topEntries(countBy(arr, c => guardDisplayName(c.garda)), 8);
+      stylePetitionChart(makeChart("chartPetitionerGuards", "bar", byGuard.map(row => row[0].replace("Garda Forestiera ", "GF ")), byGuard.map(row => row[1]), { label:"Sesizari", horizontal:true }));
+      const recent = [...arr].sort((a, b) => (getPetitionRegisteredDate(b) || 0) - (getPetitionRegisteredDate(a) || 0)).slice(0, 8);
+      setHtml("petitionerCases", `<h4>Sesizarile persoanei</h4>${recent.length ? `<div class="petition-history-wrap">${petitionTableMarkup(recent, false)}</div>` : `<div class="petition-empty">Nu exista sesizari in filtrul curent.</div>`}`);
     }
-    function renderPetitionTable(arr) {
-      const sorted = [...arr].sort((a,b) => new Date(b.created_at)-new Date(a.created_at));
-      const visible = sorted.slice(0, petitionHistoryLimit);
-      const rows = visible.map(c => {
+
+    function renderPetitionersView() {
+      populatePetitionFilterOptions();
+      renderPetitionerProfile(getPetitionerContextControls());
+    }
+
+    function petitionStatusMarkup(c) {
+      const status = petitionOperationalStatus(c);
+      const resolved = isResolvedPetition(c) || getControlHasReport(c);
+      const label = status === "late" && resolved ? "Solutionata peste termen" : ({ resolved:"Solutionata", pending:"In lucru", near:"Aproape de termen", late:"Peste termen" }[status] || "In lucru");
+      return `<span class="petition-status ${status}">${label}</span>`;
+    }
+
+    function petitionResponseMarkup(value) {
+      if (!Number.isFinite(value)) return `<span class="petition-response-value unavailable"><i></i>-</span>`;
+      const className = value <= 15 ? "rapid" : value <= 21 ? "near" : value <= 30 ? "attention" : "late";
+      return `<span class="petition-response-value ${className}"><i></i>${escapeHtml(formatDays(value))}</span>`;
+    }
+
+    function petitionTableMarkup(arr, includeMore = true) {
+      const rows = arr.map(c => {
         const registered = getPetitionRegisteredDate(c);
-        const responseDays = getPetitionResponseDays(c);
-        const hasReport = getControlHasReport(c);
-        const reportStatus = getPetitionReportStatus(c);
-        const entityOrPlace = getEntityName(c) || c.reper || "-";
+        const responseDays = petitionResponseValue(c);
+        const entityOrPlace = getEntityName(c) || c.reper || c.localitate || "-";
         return `<tr class="petition-history-row" data-control-id="${escapeAttr(c.id)}" tabindex="0">
           <td><b>${escapeHtml(getPetitionNumber(c) || "-")}</b><small>Control #${escapeHtml(c.id || "-")}</small></td>
           <td>${escapeHtml(registered ? formatDay(registered) : "-")}</td>
-          <td>${escapeHtml(c.garda || "-")}</td>
-          <td>${escapeHtml(c.localitate || "-")}</td>
-          <td>${escapeHtml(entityOrPlace)}</td>
-          <td><span class="status-badge ${statusClassForResult(c.result)}">${escapeHtml(resultLabel(c.result))}</span></td>
-          <td>${renderResponseTimeBar(responseDays, hasReport)}</td>
-          <td><span class="status-badge ${reportStatus.className === "done" ? "status-finalizat" : reportStatus.className === "late" ? "status-intarziat" : "status-fara-raport"}">${escapeHtml(reportStatus.label)}</span></td>
-          <td>
-            <div class="report-actions petition-actions">
-              <button class="secondary petition-detail-btn" type="button" data-control-id="${escapeAttr(c.id)}">Detalii</button>
-              <button class="secondary petition-map-btn" type="button" data-control-id="${escapeAttr(c.id)}"${controlMapButtonAttributes(c)}>Harta</button>
-              ${isInternalMode && hasReport ? `<button class="control-report-open-pdf" type="button" data-control-id="${escapeAttr(c.id)}">Raport</button>` : ""}
-            </div>
-          </td>
+          <td>${escapeHtml(guardDisplayName(c.garda) || "-")}</td>
+          <td><b>${escapeHtml(entityOrPlace)}</b><small>${escapeHtml(c.localitate || "")}</small></td>
+          <td>${petitionStatusMarkup(c)}</td>
+          <td>${petitionResponseMarkup(responseDays)}</td>
+          <td><button class="petition-open-btn petition-detail-btn" type="button" data-control-id="${escapeAttr(c.id)}"><span>Deschide</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7"></path></svg></button></td>
         </tr>`;
       }).join("");
-      const more = sorted.length > visible.length
-        ? `<button type="button" class="gfn-more-btn petition-more-btn" onclick="showMorePetitions()">Afiseaza istoric extins (${sorted.length - visible.length})</button>`
+      const more = includeMore && petitionFilteredControls.length > arr.length
+        ? `<button type="button" class="gfn-more-btn petition-more-btn" onclick="showMorePetitions()">Afiseaza inca ${Math.min(8, petitionFilteredControls.length - arr.length)} sesizari</button>`
         : "";
-      setHtml("petitionHistory", `<table class="petition-history-table"><thead><tr><th>Numar sesizare</th><th>Data sesizarii</th><th>Garda</th><th>Localitate</th><th>Entitate / Reper</th><th>Rezultat</th><th>Timp raspuns</th><th>Raport</th><th>Actiune</th></tr></thead><tbody>${rows || `<tr><td colspan="9">Nu exista petitii / sesizari in filtrele active.</td></tr>`}</tbody></table>${more}`);
+      return `<table class="petition-history-table"><thead><tr><th>Nr. sesizare</th><th>Data</th><th>Garda</th><th>Entitate / reper</th><th>Status</th><th>Timp raspuns</th><th>Actiune</th></tr></thead><tbody>${rows || `<tr><td colspan="7">Nu exista petitii / sesizari in filtrele active.</td></tr>`}</tbody></table>${more}`;
+    }
+    function renderPetitionTable(arr) {
+      const sorted = [...arr].sort((a,b) => (getPetitionRegisteredDate(b) || new Date(b.created_at)) - (getPetitionRegisteredDate(a) || new Date(a.created_at)));
+      const visible = sorted.slice(0, petitionHistoryLimit);
+      setText("petitionTableCount", `${sorted.length} inregistrari`);
+      setHtml("petitionHistory", petitionTableMarkup(visible));
     }
 
     function getControlEntityName(control) { return getEntityName(control) || "-"; }
@@ -4796,12 +5969,21 @@
 
     const ENTITY_MAP_METRICS = {
       entities: { label: "Entitati verificate", short: "entitati", format: v => String(Math.round(Number(v || 0))), risk: false },
+      controls: { label: "Total controale", short: "controale", format: v => String(Math.round(Number(v || 0))), risk: false },
       controlsPerEntity: { label: "Controale / entitate", short: "controale/entitate", format: v => Number(v || 0).toFixed(2), risk: false },
       problemEntityRate: { label: "Entitati cu probleme", short: "probleme %", format: v => formatPercent(v), risk: true },
-      avgFinePerEntity: { label: "Amenda medie / entitate", short: "amenda medie", format: v => formatMoney(v), risk: true }
+      problemControls: { label: "Controale cu probleme", short: "probleme", format: v => String(Math.round(Number(v || 0))), risk: true },
+      fines: { label: "Amenzi", short: "amenzi", format: v => formatMoney(v), risk: false },
+      damage: { label: "Prejudicii", short: "prejudicii", format: v => formatMoney(v), risk: false },
+      penal: { label: "Sesizari penale", short: "sesizari penale", format: v => String(Math.round(Number(v || 0))), risk: true },
+      reverified: { label: "Entitati reverificate", short: "reverificate", format: v => String(Math.round(Number(v || 0))), risk: false },
+      recurringProblems: { label: "Probleme recurente", short: "probleme recurente", format: v => String(Math.round(Number(v || 0))), risk: true }
     };
 
     function buildEntityGuardStats(controls) {
+      const stableGroups = buildEntityProfileGroups(controls || []);
+      const stableKeyByControl = new Map();
+      stableGroups.forEach(group => group.controls.forEach(control => stableKeyByControl.set(control, group.key)));
       const stats = {};
       Object.keys(GUARD_DISPLAY_NAMES).forEach(key => {
         stats[key] = {
@@ -4809,6 +5991,11 @@
           guard_key: key,
           controls: 0,
           fines: 0,
+          fineCount: 0,
+          damage: 0,
+          damageCount: 0,
+          problemControls: 0,
+          penal: 0,
           entityKeys: new Set(),
           problemEntityKeys: new Set(),
           entities: 0,
@@ -4829,6 +6016,11 @@
             guard_key: key,
             controls: 0,
             fines: 0,
+            fineCount: 0,
+            damage: 0,
+            damageCount: 0,
+            problemControls: 0,
+            penal: 0,
             entityKeys: new Set(),
             problemEntityKeys: new Set(),
             entities: 0,
@@ -4837,18 +6029,36 @@
             avgFinePerEntity: 0
           };
         }
-        const entityKey = normalizeText(entityName);
+        const entityKey = stableKeyByControl.get(control);
+        if (!entityKey) return;
         stats[key].controls += 1;
-        stats[key].fines += getControlFine(control);
+        const fine = getControlFine(control);
+        const damage = getControlDamage(control);
+        if (Number.isFinite(fine)) { stats[key].fines += fine; stats[key].fineCount += 1; }
+        if (Number.isFinite(damage)) { stats[key].damage += damage; stats[key].damageCount += 1; }
+        if (isControlProblem(control)) stats[key].problemControls += 1;
+        if (getControlResult(control) === "sesizare_penala") stats[key].penal += 1;
         stats[key].entityKeys.add(entityKey);
         if (isControlProblem(control)) stats[key].problemEntityKeys.add(entityKey);
       });
 
       Object.values(stats).forEach(item => {
         item.entities = item.entityKeys.size;
+        if (!item.fineCount) item.fines = Number.NaN;
+        if (!item.damageCount) item.damage = Number.NaN;
         item.controlsPerEntity = item.entities ? item.controls / item.entities : 0;
         item.problemEntityRate = item.entities ? (item.problemEntityKeys.size / item.entities) * 100 : 0;
-        item.avgFinePerEntity = item.entities ? item.fines / item.entities : 0;
+        item.avgFinePerEntity = item.entities && Number.isFinite(item.fines) ? item.fines / item.entities : Number.NaN;
+        const entityCounts = {};
+        const entityProblems = {};
+        (controls || []).filter(control => canonicalGuardName(control.garda) === item.guard_key).forEach(control => {
+          const entityKey = stableKeyByControl.get(control);
+          if (!entityKey) return;
+          entityCounts[entityKey] = Number(entityCounts[entityKey] || 0) + 1;
+          if (isControlProblem(control)) entityProblems[entityKey] = Number(entityProblems[entityKey] || 0) + 1;
+        });
+        item.reverified = Object.values(entityCounts).filter(value => value > 1).length;
+        item.recurringProblems = Object.values(entityProblems).filter(value => value > 1).length;
       });
       return stats;
     }
@@ -4857,25 +6067,42 @@
       const rows = Object.values(groups || {}).map(item => {
         const controls = item.controls || [];
         const problems = controls.filter(isControlProblem).length;
-        const fines = sumBy(controls, getControlFine);
+        const fineValues = controls.map(getControlFine).filter(Number.isFinite);
+        const damageValues = controls.map(getControlDamage).filter(Number.isFinite);
+        const fines = fineValues.length ? fineValues.reduce((sum, value) => sum + value, 0) : null;
+        const damage = damageValues.length ? damageValues.reduce((sum, value) => sum + value, 0) : null;
+        const penal = controls.filter(control => getControlResult(control) === "sesizare_penala").length;
         let value = controls.length;
         let label = "controale";
-        let risk = false;
+        let risk = Boolean(ENTITY_MAP_METRICS[metricKey]?.risk);
         if (metricKey === "problemEntityRate") {
           value = controls.length ? (problems / controls.length) * 100 : 0;
           label = "probleme %";
-          risk = true;
-        } else if (metricKey === "avgFinePerEntity") {
+        } else if (metricKey === "problemControls") {
+          value = problems;
+          label = "probleme";
+        } else if (metricKey === "fines") {
           value = fines;
           label = "amenzi";
-          risk = true;
+        } else if (metricKey === "damage") {
+          value = damage;
+          label = "prejudicii";
+        } else if (metricKey === "penal") {
+          value = penal;
+          label = "sesizari penale";
+        } else if (metricKey === "reverified") {
+          value = controls.length > 1 ? controls.length : 0;
+          label = "controale";
+        } else if (metricKey === "recurringProblems") {
+          value = problems > 1 ? problems : 0;
+          label = "probleme recurente";
         } else if (metricKey === "controlsPerEntity") {
           value = controls.length;
           label = "controale";
         }
-        return { name: item.name, controls, problems, fines, value, label, risk };
+        return { name: item.name, type: getEntityTypeLabel(controls[0] || {}), controls, problems, fines, damage, value, label, risk };
       });
-      rows.sort((a, b) => Number(b.value || 0) - Number(a.value || 0) || String(a.name).localeCompare(String(b.name), "ro"));
+      rows.sort((a, b) => (Number.isFinite(b.value) ? b.value : -Infinity) - (Number.isFinite(a.value) ? a.value : -Infinity) || String(a.name).localeCompare(String(b.name), "ro"));
       return rows;
     }
 
@@ -4896,14 +6123,14 @@
       entityStatsMap.createPane("entityStatsPane");
       entityStatsMap.getPane("entityStatsPane").style.zIndex = 430;
 
-      entityStatsBaseLayer = L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+      entityStatsBaseLayer = L.tileLayer("https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png", {
         attribution: "&copy; OpenStreetMap contributors &copy; CARTO",
         subdomains: "abcd",
         maxZoom: 20,
         pane: "entityBasePane"
       }).addTo(entityStatsMap);
 
-      entityStatsLabelLayer = L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png", {
+      entityStatsLabelLayer = L.tileLayer("https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png", {
         attribution: "&copy; OpenStreetMap contributors &copy; CARTO",
         subdomains: "abcd",
         maxZoom: 20,
@@ -4914,7 +6141,7 @@
     }
 
     function renderEntityRanking(groups, metricKey) {
-      const rows = getEntityTopRows(groups, metricKey).slice(0, 8);
+      const rows = getEntityTopRows(groups, metricKey).filter(row => Number.isFinite(row.value)).slice(0, 10);
       const metric = ENTITY_MAP_METRICS[metricKey] || ENTITY_MAP_METRICS.entities;
       const list = q("entityRankingList");
       if (!list) return;
@@ -4922,21 +6149,56 @@
         list.innerHTML = `<div class="empty">Nu exista entitati pe filtrele selectate.</div>`;
         return;
       }
-      const range = getQuantitativeRange(rows.map(row => Number(row.value || 0)));
+      const range = getQuantitativeRange(rows.map(row => row.value));
       list.innerHTML = rows.map((row, index) => {
         const color = quantitativeColor(row.value, range.min, range.max, Boolean(row.risk));
-        const displayValue = metricKey === "problemEntityRate"
-          ? formatPercent(row.value)
-          : metricKey === "avgFinePerEntity"
-            ? formatMoney(row.value)
-            : String(Math.round(row.value || 0));
-        return `<button type="button" class="entity-rank-row" data-entity="${escapeAttr(row.name)}" style="--entity-rank-color:${color}">
-          <span class="entity-rank-index">#${index + 1}</span>
-          <span class="entity-rank-name">${escapeHtml(row.name)}</span>
-          <strong class="entity-rank-value">${escapeHtml(displayValue)}</strong>
+        const displayValue = metricKey === "problemEntityRate" ? formatPercent(row.value)
+          : ["fines", "damage"].includes(metricKey) ? formatMoney(row.value)
+          : String(Math.round(row.value || 0));
+        const width = range.max > 0 ? Math.max(4, Math.round(row.value / range.max * 100)) : 0;
+        return `<button type="button" class="guard-rank-row entity-rank-row" data-entity="${escapeAttr(row.name)}" style="--entity-rank-color:${color};--guard-rank-color:${color}">
+          <span class="guard-rank-index entity-rank-index">#${index + 1}</span>
+          <span class="guard-rank-name entity-rank-name">${escapeHtml(row.name)}<small>${escapeHtml(row.type || "Tip nespecificat")}</small></span>
+          <strong class="guard-rank-value entity-rank-value">${escapeHtml(displayValue)}</strong>
+          <span class="guard-rank-bar entity-rank-bar" aria-hidden="true"><i style="width:${width}%"></i></span>
         </button>`;
       }).join("");
     }
+
+    function closeEntityMapSummary() {
+      const card = q("entityMapSummaryCard");
+      if (card) {
+        card.hidden = true;
+        card.setAttribute("aria-hidden", "true");
+        card.innerHTML = "";
+      }
+      if (entityStatsLayer && entitySelectedStatsLayer) entityStatsLayer.resetStyle(entitySelectedStatsLayer);
+      entitySelectedStatsLayer = null;
+    }
+
+    function openEntityMapSummary(guardName, item) {
+      const card = q("entityMapSummaryCard");
+      if (!card) return;
+      const fineText = item.fineCount > 0 ? formatEntityMoney(item.fines) : "—";
+      const damageText = item.damageCount > 0 ? formatEntityMoney(item.damage) : "—";
+      card.innerHTML = `<button class="guard-summary-close" type="button" onclick="closeEntityMapSummary()" aria-label="Inchide sumarul">&times;</button>
+        <div class="guard-summary-heading"><span class="guard-summary-icon">${ENTITY_ICON_SVGS.building}</span><div><h3>${escapeHtml(guardName)}</h3><span>Entitati verificate <strong>${Number(item.entities || 0).toLocaleString("ro-RO")}</strong></span></div></div>
+        <div class="guard-summary-lines"><p><strong>${Number(item.controls || 0).toLocaleString("ro-RO")}</strong> controale <i></i> <strong>${Number(item.controlsPerEntity || 0).toFixed(2)}</strong> / entitate</p><p><strong>${formatPercent(item.problemEntityRate || 0)}</strong> entitati cu probleme</p></div>
+        <p class="guard-summary-comparison">Amenzi <strong>${escapeHtml(fineText)}</strong>${item.damageCount > 0 ? ` <i></i> Prejudicii <strong>${escapeHtml(damageText)}</strong>` : ""}</p>
+        <button type="button" class="guard-summary-action entity-guard-details-btn" data-guard="${escapeAttr(guardName)}">Vezi detalii <span aria-hidden="true">&rarr;</span></button>`;
+      card.hidden = false;
+      card.setAttribute("aria-hidden", "false");
+    }
+
+    function openEntityGuardDetails(guardName) {
+      const select = q("entityGuardFilter");
+      if (select) select.value = canonicalGuardName(guardName) || "toate";
+      entityDatabasePage = 1;
+      closeEntityMapSummary();
+      setEntityV1Section("database");
+    }
+
+    window.closeEntityMapSummary = closeEntityMapSummary;
 
     function renderEntityTopChart(groups, metricKey) {
       const rows = getEntityTopRows(groups, metricKey).slice(0, 5);
@@ -4961,11 +6223,8 @@
       const metricKey = safeValue("entityMapMetric", "entities");
       const metric = ENTITY_MAP_METRICS[metricKey] || ENTITY_MAP_METRICS.entities;
 
-      setText("entityMapEntities", stats.totalEntities);
-      setText("entityMapControlsAvg", stats.totalEntities ? (stats.globalControlCount / stats.totalEntities).toFixed(2) : "0.00");
-      setText("entityMapProblemRate", formatPercent(stats.totalEntities ? (stats.problemEntities.length / stats.totalEntities) * 100 : 0));
-      setText("entityMapFineAvg", formatMoney(stats.totalEntities ? sumBy(stats.allControls, getControlFine) / stats.totalEntities : 0));
-      renderEntityTopChart(stats.groups, metricKey);
+      renderEntityOverviewKpis(stats);
+      setText("entityMetricLabel", `Top 10 · ${metric.label}`);
       renderEntityRanking(stats.groups, metricKey);
 
       if (!q("entityStatsMap")) return;
@@ -4976,27 +6235,27 @@
       }
 
       const lookup = buildGuardStatsLookup(byGuard);
-      const values = Object.values(byGuard)
-        .filter(item => item.entities > 0)
-        .map(item => Number(item[metricKey] || 0));
+      const values = Object.values(byGuard).filter(item => item.entities > 0)
+        .map(item => Number(item[metricKey])).filter(Number.isFinite);
       const range = getQuantitativeRange(values);
       const min = range.min;
       const max = range.max;
 
+      closeEntityMapSummary();
       if (entityStatsLayer) entityStatsMap.removeLayer(entityStatsLayer);
 
       entityStatsLayer = L.geoJSON(guardStatsGeoJson, {
         pane: "entityStatsPane",
         style: feature => {
           const item = getGuardStatForFeature(feature, byGuard, lookup);
-          const value = item ? Number(item[metricKey] || 0) : 0;
+          const value = item ? Number(item[metricKey]) : Number.NaN;
           const fill = quantitativeColor(value, min, max, Boolean(metric.risk));
           return {
-            color: value ? "rgba(230,255,248,1)" : "rgba(148,213,190,.34)",
-            weight: value ? 2.05 : 1.0,
+            color: Number.isFinite(value) ? "#ffffff" : "#b7c7c0",
+            weight: Number.isFinite(value) ? 1.8 : 1.0,
             opacity: 1,
             fillColor: fill,
-            fillOpacity: value ? .82 : .14,
+            fillOpacity: Number.isFinite(value) ? .78 : .12,
             className: "garda-boundary"
           };
         },
@@ -5005,7 +6264,7 @@
           const item = getGuardStatForFeature(feature, byGuard, lookup) || {
             entities: 0, controls: 0, controlsPerEntity: 0, problemEntityRate: 0, avgFinePerEntity: 0, fines: 0
           };
-          const metricValue = Number(item[metricKey] || 0);
+          const metricValue = Number(item[metricKey]);
           const html = `<div class="guard-stat-tooltip">
             <div class="guard-stat-tooltip-title">${escapeHtml(name)}</div>
             <div class="guard-stat-tooltip-row"><span>${escapeHtml(metric.label)}</span><span>${escapeHtml(metric.format(metricValue))}</span></div>
@@ -5013,54 +6272,80 @@
             <div class="guard-stat-tooltip-row"><span>Total controale</span><span>${item.controls || 0}</span></div>
             <div class="guard-stat-tooltip-row"><span>Controale / entitate</span><span>${Number(item.controlsPerEntity || 0).toFixed(2)}</span></div>
             <div class="guard-stat-tooltip-row"><span>Entitati cu probleme</span><span>${formatPercent(item.problemEntityRate || 0)}</span></div>
-            <div class="guard-stat-tooltip-row"><span>Amenda medie / entitate</span><span>${escapeHtml(formatMoney(item.avgFinePerEntity || 0))}</span></div>
+            <div class="guard-stat-tooltip-row"><span>Amenzi inregistrate</span><span>${item.fines > 0 ? escapeHtml(formatMoney(item.fines)) : "—"}</span></div>
           </div>`;
           layer.bindTooltip(html, { sticky: true, direction: "auto", opacity: .96, className: "leaflet-popup-content-wrapper" });
           layer.on("mouseover", () => layer.setStyle({ weight: 2.2, color: "#ffffff", fillOpacity: .9 }));
-          layer.on("mouseout", () => entityStatsLayer && entityStatsLayer.resetStyle(layer));
+          layer.on("mouseout", () => {
+            if (entityStatsLayer && layer !== entitySelectedStatsLayer) entityStatsLayer.resetStyle(layer);
+          });
+          layer.on("click", () => {
+            if (entityStatsLayer && entitySelectedStatsLayer && entitySelectedStatsLayer !== layer) entityStatsLayer.resetStyle(entitySelectedStatsLayer);
+            entitySelectedStatsLayer = layer;
+            layer.closeTooltip();
+            layer.setStyle({ weight: 3, color: "#0b6f49", fillOpacity: .92 });
+            entityStatsMap.panTo(layer.getBounds().getCenter(), { animate: true, duration: .35 });
+            openEntityMapSummary(name, item);
+          });
         }
       }).addTo(entityStatsMap);
-
-      try { entityStatsMap.fitBounds(entityStatsLayer.getBounds(), { padding: [18, 18] }); } catch {}
 
       const legend = q("entityMapLegend");
       if (legend) {
         const colors = metric.risk ? [...QUANTITATIVE_PALETTE].reverse() : [...QUANTITATIVE_PALETTE];
-        legend.innerHTML = `<div class="entity-stat-legend-title">${escapeHtml(metric.label)}</div>
-          <div class="entity-stat-gradient" style="background:linear-gradient(90deg,${colors.join(",")})"></div>
-          <div class="entity-stat-legend-range"><span>${escapeHtml(metric.format(min))}</span><span>${escapeHtml(metric.format(max))}</span></div>`;
+        legend.innerHTML = `<div class="guard-stat-legend-title">${escapeHtml(metric.label)}</div>
+          <div class="guard-stat-gradient" style="background:linear-gradient(90deg,${colors.join(",")})"></div>
+          <div class="guard-stat-legend-range"><span>${escapeHtml(metric.format(min))}</span><span>${escapeHtml(metric.format(max))}</span></div>`;
       }
-      setTimeout(() => entityStatsMap.invalidateSize(), 120);
+      setTimeout(() => {
+        entityStatsMap.invalidateSize();
+        try {
+          const territorialBounds = entityStatsLayer.getBounds();
+          entityStatsMap.fitBounds(territorialBounds, { padding: [30, 30], maxZoom: 6.22, animate: false });
+        } catch {}
+      }, 120);
     }
 
     function renderEntityMainCharts(stats) {
+      const stableGroups = buildEntityProfileGroups(stats.allControls || []);
+      const stableKeyByControl = new Map();
+      stableGroups.forEach(group => group.controls.forEach(control => stableKeyByControl.set(control, group.key)));
       const monthSets = {};
       (stats.allControls || []).forEach(control => {
         const key = monthKey(control);
         if (!monthSets[key]) monthSets[key] = new Set();
-        const entityName = getEntityName(control);
-        if (entityName) monthSets[key].add(normalizeText(entityName));
+        const entityKey = stableKeyByControl.get(control);
+        if (entityKey) monthSets[key].add(entityKey);
       });
       const months = Object.keys(monthSets).sort();
-      makeChart("chartEntitiesMonthly", "line", months.map(monthLabel), months.map(key => monthSets[key].size), { label: "Entitati verificate" });
+      const previous = entityPreviousPeriodControls(stats.allControls);
+      const previousMonthSets = {};
+      previous.forEach(control => {
+        const key = entityMonthKey(control);
+        if (!key) return;
+        (previousMonthSets[key] ||= new Set()).add(normalizeText(getEntityName(control)));
+      });
+      const previousValues = Object.keys(previousMonthSets).sort().map(key => previousMonthSets[key].size);
+      renderEntityLineChart("chartEntitiesMonthly", months, [
+        { label: "Perioada curenta", data: months.map(key => monthSets[key].size), borderColor: "#0b8f58", backgroundColor: "rgba(11,143,88,.12)", fill: true, tension: .35, pointRadius: 3 },
+        { label: "Perioada anterioara", data: months.map((_, index) => previousValues[index] || 0), borderColor: "#1687c9", backgroundColor: "transparent", borderDash: [6,5], tension: .35, pointRadius: 2 }
+      ]);
 
       const typeGroups = {};
-      (stats.allControls || []).forEach(control => {
-        const type = getEntityTypeLabel(control);
-        if (!typeGroups[type]) typeGroups[type] = { entities: new Set(), problemEntities: new Set() };
-        const entityKey = normalizeText(getEntityName(control));
-        if (!entityKey) return;
-        typeGroups[type].entities.add(entityKey);
-        if (isControlProblem(control)) typeGroups[type].problemEntities.add(entityKey);
+      stableGroups.forEach(group => {
+        const type = getEntityTypeLabel(group.latest || group.controls[0] || {});
+        if (!typeGroups[type]) typeGroups[type] = { entities: new Set() };
+        typeGroups[type].entities.add(group.key);
       });
       const rows = Object.entries(typeGroups).map(([label, group]) => ({
         label,
-        value: group.entities.size ? (group.problemEntities.size / group.entities.size) * 100 : 0
+        value: group.entities.size
       })).sort((a, b) => b.value - a.value).slice(0, 8);
-      const values = rows.map(row => Number(row.value.toFixed(1)));
+      const values = rows.map(row => row.value);
       makeChart("chartEntityTypes", "bar", rows.map(row => row.label), values, {
-        label: "Probleme %",
-        metricKey: "problemRate"
+        label: "Entitati",
+        horizontal: true,
+        light: true
       });
     }
 
@@ -5097,24 +6382,31 @@
     function renderEntityYearHistory(controls, stats) {
       const tabs = q("entityYearTabs");
       const container = q("entityTimeline");
+      const more = q("entityHistoryMore");
       if (!tabs || !container) return;
       if (!stats.hasSelection) {
         tabs.innerHTML = "";
         container.innerHTML = `<div class="entity-empty-state compact">Selecteaza o entitate pentru istoricul complet.</div>`;
+        if (more) more.innerHTML = "";
         return;
       }
 
       const byYear = {};
       (controls || []).forEach(control => {
-        const date = new Date(getControlDate(control));
-        const year = Number.isFinite(date.getTime()) ? String(date.getFullYear()) : "Fara data";
+        const date = getEntityOfficialControlDate(control);
+        const year = date && Number.isFinite(date.getTime()) ? String(date.getFullYear()) : "Fara data";
         if (!byYear[year]) byYear[year] = [];
         byYear[year].push(control);
       });
-      const years = Object.keys(byYear).sort((a, b) => Number(b) - Number(a));
+      const years = Object.keys(byYear).sort((a, b) => {
+        if (a === "Fara data") return 1;
+        if (b === "Fara data") return -1;
+        return Number(b) - Number(a);
+      });
       if (!years.length) {
         tabs.innerHTML = "";
         container.innerHTML = `<div class="entity-empty-state compact">Nu exista controale in istoricul entitatii.</div>`;
+        if (more) more.innerHTML = "";
         return;
       }
       if (!selectedEntityHistoryYear || !byYear[selectedEntityHistoryYear]) selectedEntityHistoryYear = years[0];
@@ -5131,48 +6423,41 @@
         </button>`;
       }).join("");
 
-      const rows = [...byYear[selectedEntityHistoryYear]].sort((a, b) => entityDateValue(b) - entityDateValue(a));
-      container.innerHTML = rows.map(control => {
+      const rows = [...byYear[selectedEntityHistoryYear]].sort((a, b) => entityOfficialDateValue(b) - entityOfficialDateValue(a));
+      const visibleRows = rows.slice(0, entityTimelineLimit);
+      setText("entityHistoryCount", `${controls.length} controale in istoricul exact · ${visibleRows.length} afisate pentru ${selectedEntityHistoryYear}`);
+      container.innerHTML = visibleRows.map(control => {
         const result = getControlResult(control);
         const tone = entityResultTone(result);
         const type = control.control_type || control.tip_control || "Control";
-        const category = getControlCategory(control) || getControlCategoryRaw(control) || "-";
         const guard = guardDisplayName(control.garda) || "-";
         const locality = control.localitate || "-";
         const fine = getControlFine(control);
-        const fineMissing = fine === null || fine === undefined || fine === "";
+        const damage = getControlDamage(control);
+        const fineKnown = Number.isFinite(fine);
+        const damageKnown = Number.isFinite(damage);
         return `<article class="entity-history-control entity-row-${tone}" data-control-id="${escapeAttr(control.id)}" role="button" tabindex="0" style="--entity-row-color:${colorByResult(result)}">
           <div class="entity-history-accent"></div>
-          <div class="entity-history-cell entity-history-date" data-label="Data / ID">
-            <strong>${escapeHtml(formatDay(getControlDate(control)))}</strong>
+          <div class="entity-history-cell entity-history-date" data-label="Data">
+            <strong>${escapeHtml(formatDay(getEntityOfficialControlDate(control)))}</strong>
             <span>Control #${escapeHtml(control.id || "-")}</span>
           </div>
-          <div class="entity-history-cell entity-history-result" data-label="Rezultat">
-            <span class="entity-result-chip entity-result-${tone}" style="--entity-result-color:${colorByResult(result)}">${escapeHtml(resultLabel(result))}</span>
-          </div>
           <div class="entity-history-cell entity-history-type" data-label="Tip control">
-            <strong>${escapeHtml(type)}</strong><small title="${escapeAttr(category)}">${escapeHtml(category)}</small>
+            <strong>${escapeHtml(type)}</strong>
           </div>
+          <div class="entity-history-cell entity-history-result" data-label="Rezultat"><span class="entity-result-chip entity-result-${tone}" style="--entity-result-color:${colorByResult(result)}">${escapeHtml(resultLabel(result))}</span></div>
           <div class="entity-history-cell entity-history-place" data-label="Garda / Localitate">
             <strong title="${escapeAttr(guard)}">${escapeHtml(guard)}</strong><small title="${escapeAttr(locality)}">${escapeHtml(locality)}</small>
           </div>
-          <div class="entity-history-cell entity-history-money ${fineMissing ? "is-missing" : ""}" data-label="Amenda"><strong>${escapeHtml(formatMoney(fine))}</strong></div>
-          <div class="entity-history-cell entity-history-report" data-label="Raport">${entityReportBadge(control)}</div>
-          <div class="entity-history-cell entity-history-open" data-label="Fisa"><span>Deschide fisa</span><b aria-hidden="true">›</b></div>
+          <div class="entity-history-cell entity-history-money ${!fineKnown && !damageKnown ? "is-missing" : ""}" data-label="Amenda / prejudiciu"><strong>${fineKnown ? escapeHtml(formatEntityMoney(fine)) : "—"}</strong>${damageKnown ? `<small>Prejudiciu ${escapeHtml(formatEntityMoney(damage))}</small>` : ""}</div>
+          <div class="entity-history-cell entity-history-open" data-label="Actiune"><span>Deschide</span><b aria-hidden="true">&rarr;</b></div>
         </article>`;
       }).join("");
+      if (more) more.innerHTML = rows.length > visibleRows.length ? `<button type="button" class="entity-history-all-btn">Vezi toate controalele <span aria-hidden="true">&rarr;</span></button>` : "";
     }
 
     function buildEntityGroups(controls) {
-      const groups = {};
-      controls.forEach(control => {
-        const name = getControlEntityName(control);
-        if (!name || name === "-") return;
-        const key = normalizeText(name);
-        if (!groups[key]) groups[key] = { name, controls: [] };
-        groups[key].controls.push(control);
-      });
-      return groups;
+      return Object.fromEntries(buildEntityProfileGroups(controls || []).map(group => [group.key, group]));
     }
 
     function buildEntityStats(controls, selectedEntity = "") {
@@ -5181,7 +6466,7 @@
       const groups = buildEntityGroups(arr);
       const groupRows = Object.values(groups);
       const selectedNorm = normalizeText(selectedEntity);
-      const exactGroup = selectedNorm ? groupRows.find(item => normalizeText(item.name) === selectedNorm) : null;
+      const exactGroup = selectedNorm ? groupRows.find(item => normalizeText(item.name) === selectedNorm || normalizeText(item.cui) === selectedNorm) : null;
       const selectedControls = exactGroup ? [...exactGroup.controls].sort((a, b) => entityDateValue(b) - entityDateValue(a)) : arr;
       const hasSelection = Boolean(exactGroup);
       const entityControls = selectedControls;
@@ -5589,39 +6874,23 @@
 
     function renderEntityDossierSummary(stats) {
       if (!stats || !stats.hasSelection) {
-        setHtml("entityDossierStats", "");
-        setHtml("entityDossierMeta", "");
+        setText("entityDossierType", "-");
+        setText("entityDossierDetail", "-");
         return;
       }
 
       const total = stats.totalControls || 0;
       const problems = stats.problemControls.length;
       const problemRate = total ? (problems / total) * 100 : 0;
-      const reports = stats.displayControls.filter(hasControlReport).length;
-      const lastDate = stats.lastControl ? formatDay(getControlDate(stats.lastControl)) : "-";
       const type = stats.types[0] || "Tip nespecificat";
-      const guard = stats.guards[0] || "Garda nespecificata";
       const locality = stats.localities[0] || "Localitate nespecificata";
-
-      const profileItems = [
-        ["TIP", type],
-        ["GF", guard],
-        ["LOC", locality]
-      ];
-      if (isInternalMode && stats.cui) profileItems.push(["CUI", stats.cui]);
-
-      setHtml("entityDossierMeta", profileItems.map(([icon, value]) => `
-        <span class="entity-profile-chip"><b>${escapeHtml(icon)}</b>${escapeHtml(value)}</span>
-      `).join(""));
-
-      setHtml("entityDossierStats", [
-        entityDossierStat("CTR", "Total controale", String(total), "info"),
-        entityDossierStat("!", "Probleme", `${problems} · ${formatPercent(problemRate)}`, problems ? "danger" : "good"),
-        entityDossierStat("SAN", "Sanctiuni", String(stats.sanctions.length), stats.sanctions.length ? "warn" : "good"),
-        entityDossierStat("LEI", "Amenzi", formatMoney(stats.fines), stats.fines ? "warn" : "neutral"),
-        entityDossierStat("CAL", "Ultimul control", lastDate, "info"),
-        entityDossierStat("PDF", "Rapoarte", `${reports}/${total}`, reports === total && total ? "good" : "neutral")
-      ].join(""));
+      setText("entityDossierType", type);
+      setText("entityDossierDetail", [stats.cui ? `CUI ${stats.cui}` : "", locality].filter(Boolean).join(" · ") || "Date de identificare indisponibile");
+      const avatar = q("entityDossierAvatar");
+      if (avatar) {
+        avatar.className = `entity-profile-avatar tone-${entityDatabaseIconTone(type)}`;
+        avatar.innerHTML = entityDatabaseIcon(type);
+      }
     }
 
     function renderEntityConnections(stats) {
@@ -5629,72 +6898,397 @@
         setHtml("entityQuickActions", "");
         return;
       }
-      setHtml("entityQuickActions", `
-        <button class="quick-action-btn entity-map-btn" type="button" data-entity="${escapeAttr(stats.selectedEntity)}"><span class="entity-action-icon">MAP</span>Harta</button>
-        <button class="quick-action-btn entity-petitions-btn" type="button" data-entity="${escapeAttr(stats.selectedEntity)}"><span class="entity-action-icon">SES</span>Petitii</button>
-        <button class="quick-action-btn entity-reports-btn" type="button" data-entity="${escapeAttr(stats.selectedEntity)}"><span class="entity-action-icon">PDF</span>Rapoarte</button>
-      `);
+      const hasLocation = stats.displayControls.some(control => normalizeControlCoordinates(control));
+      const hasPetitions = stats.displayControls.some(isControlPetition);
+      const hasReports = stats.displayControls.some(hasControlReport);
+      setHtml("entityQuickActions", [
+        hasLocation ? `<button class="quick-action-btn entity-map-btn" type="button" data-entity="${escapeAttr(stats.selectedEntity)}"><span class="entity-action-icon">MAP</span>Harta</button>` : "",
+        hasPetitions ? `<button class="quick-action-btn entity-petitions-btn" type="button" data-entity="${escapeAttr(stats.selectedEntity)}"><span class="entity-action-icon">SES</span>Petitii</button>` : "",
+        hasReports ? `<button class="quick-action-btn entity-reports-btn" type="button" data-entity="${escapeAttr(stats.selectedEntity)}"><span class="entity-action-icon">PDF</span>Rapoarte</button>` : ""
+      ].join(""));
     }
+
+    const ENTITY_ICON_SVGS = {
+      building: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 21V5l8-3 8 3v16M9 9h1M14 9h1M9 13h1M14 13h1M9 17h1M14 17h1M2 21h20"></path></svg>',
+      repeat: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m17 2 4 4-4 4"></path><path d="M3 11V9a3 3 0 0 1 3-3h15M7 22l-4-4 4-4"></path><path d="M21 13v2a3 3 0 0 1-3 3H3"></path></svg>',
+      alert: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.3 3.6 2.4 18a2 2 0 0 0 1.8 3h15.6a2 2 0 0 0 1.8-3L13.7 3.6a2 2 0 0 0-3.4 0Z"></path><path d="M12 9v4M12 17h.01"></path></svg>',
+      coins: '<svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="8" cy="8" rx="5" ry="3"></ellipse><path d="M3 8v4c0 1.7 2.2 3 5 3 1 0 1.9-.2 2.7-.5M13 8v3"></path><ellipse cx="16" cy="16" rx="5" ry="3"></ellipse><path d="M11 16v4c0 1.7 2.2 3 5 3s5-1.3 5-3v-4"></path></svg>'
+    };
+
+    function entityKnownAmountSummary(controls, getter) {
+      const values = (controls || []).map(getter).filter(Number.isFinite);
+      return { available: values.length > 0, count: values.length, value: values.reduce((sum, current) => sum + current, 0) };
+    }
+
+    function formatEntityMoney(value) {
+      const numeric = Number(value);
+      return Number.isFinite(numeric) ? `${Math.round(numeric).toLocaleString("ro-RO")} lei` : "—";
+    }
+
+    function entitySharedKpi(icon, label, value, note, tone) {
+      return `<article class="guard-kpi guard-kpi-${escapeAttr(tone)}"><span class="guard-kpi-icon">${ENTITY_ICON_SVGS[icon] || ENTITY_ICON_SVGS.building}</span><div><span>${escapeHtml(label)}</span><strong>${escapeHtml(String(value))}</strong><small>${escapeHtml(note)}</small></div></article>`;
+    }
+
+    function renderEntityOverviewKpis(stats) {
+      const controls = stats.allControls || [];
+      const fine = entityKnownAmountSummary(controls, getControlFine);
+      const damage = entityKnownAmountSummary(controls, getControlDamage);
+      const problemRate = stats.totalEntities ? stats.problemEntities.length / stats.totalEntities * 100 : 0;
+      const mainFinancial = fine.available ? formatEntityMoney(fine.value) : damage.available ? formatEntityMoney(damage.value) : "—";
+      const financialNote = damage.available ? `Prejudicii ${formatEntityMoney(damage.value)}` : "Prejudicii —";
+      setHtml("entityOverviewKpis", [
+        entitySharedKpi("building", "Entitati verificate", stats.totalEntities, getModulePeriodLabel("entity"), "total"),
+        entitySharedKpi("repeat", "Controale / entitate", stats.totalEntities ? (stats.globalControlCount / stats.totalEntities).toFixed(2) : "0,00", `${stats.globalControlCount} controale`, "density"),
+        entitySharedKpi("alert", "Entitati cu probleme", stats.problemEntities.length, formatPercent(problemRate), "problems"),
+        entitySharedKpi("coins", "Amenzi / prejudicii", mainFinancial, financialNote, "time")
+      ].join(""));
+    }
+
+    function setEntityV1Section(section) {
+      const allowed = ["overview", "database", "profile", "evolution"];
+      entityV1Section = allowed.includes(section) ? section : "overview";
+      document.querySelectorAll("#view-entities [data-entity-section]").forEach(button => button.classList.toggle("active", button.dataset.entitySection === entityV1Section));
+      const panels = { overview: "entityV1Overview", database: "entityV1Database", profile: "entityV1Profile", evolution: "entityV1Evolution" };
+      Object.entries(panels).forEach(([key, id]) => { const panel = q(id); if (panel) panel.hidden = key !== entityV1Section; });
+      const shared = q("entitySharedFilters");
+      if (shared) shared.hidden = entityV1Section === "profile";
+      if (entityV1Section === "profile" && q("entityFilterDrawer")) q("entityFilterDrawer").hidden = true;
+      renderEntitiesView();
+    }
+
+    function toggleEntityV1Filters(force) {
+      const drawer = q("entityFilterDrawer");
+      if (!drawer) return;
+      drawer.hidden = typeof force === "boolean" ? !force : !drawer.hidden;
+    }
+
+    function entityMonthKey(control) {
+      const date = entityDateValue(control);
+      return date && date.getTime() ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}` : "";
+    }
+
+    function entityOfficialMonthKey(control) {
+      const date = getEntityOfficialControlDate(control);
+      return date && date.getTime() ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}` : "";
+    }
+
+    function entityControlsWithoutModulePeriod() {
+      let arr = [...filteredControls].filter(control => getEntityName(control));
+      const guardKey = safeValue("entityGuardFilter", "toate");
+      const entityType = safeValue("entityTypeFilter", "toate");
+      const controlType = normalizeText(safeValue("entityControlTypeFilter", "toate"));
+      const category = safeValue("entityCategoryFilter", "toate");
+      const result = normalizeText(safeValue("entityResultFilter", "toate")).replace(/\s+/g, "_");
+      const entityQuery = normalizeText(safeValue("entityAdvancedName", ""));
+      const locationQuery = normalizeText(safeValue("entityLocationFilter", ""));
+      if (guardKey !== "toate") arr = arr.filter(control => canonicalGuardName(control.garda) === guardKey);
+      if (entityType !== "toate") arr = arr.filter(control => getEntityTypeKey(control) === entityType);
+      if (controlType && controlType !== "toate") arr = arr.filter(control => normalizeText(control.control_type || control.tip_control || "necunoscut") === controlType);
+      if (category && category !== "toate") arr = arr.filter(control => categoryMatchesControl(control, category));
+      if (result && result !== "toate") arr = arr.filter(control => getControlResult(control) === result);
+      if (entityQuery) arr = arr.filter(control => normalizeText(getEntityName(control)).includes(entityQuery));
+      if (locationQuery) arr = arr.filter(control => normalizeText([control.localitate, control.judet].filter(Boolean).join(" ")).includes(locationQuery));
+      return arr;
+    }
+
+    function entityCurrentPeriodBounds(controls) {
+      const explicitFrom = safeValue("entityDateFrom", "");
+      const explicitTo = safeValue("entityDateTo", "");
+      const dates = (controls || []).map(entityDateValue).filter(date => date && date.getTime() > 0);
+      const start = explicitFrom ? new Date(explicitFrom + "T00:00:00") : (dates.length ? new Date(Math.min(...dates.map(Number))) : null);
+      const end = explicitTo ? new Date(explicitTo + "T23:59:59") : (dates.length ? new Date(Math.max(...dates.map(Number))) : null);
+      return { start, end };
+    }
+
+    function entityPreviousPeriodControls(currentControls, entityName = "") {
+      const { start, end } = entityCurrentPeriodBounds(currentControls);
+      if (!start || !end || end < start) return [];
+      const span = end.getTime() - start.getTime() + 86400000;
+      const previousEnd = new Date(start.getTime() - 1);
+      const previousStart = new Date(previousEnd.getTime() - span + 1);
+      const selected = normalizeText(entityName);
+      return entityControlsWithoutModulePeriod().filter(control => {
+        const date = entityDateValue(control);
+        if (!date || date < previousStart || date > previousEnd) return false;
+        return !selected || normalizeText(getEntityName(control)) === selected;
+      });
+    }
+
+    function renderEntityLineChart(id, labels, datasets, options = {}) {
+      const canvas = q(id);
+      if (!canvas) return;
+      if (charts[id]) charts[id].destroy();
+      charts[id] = new Chart(canvas.getContext("2d"), {
+        type: "line",
+        data: { labels: labels.map(options.labelFormatter || monthLabel), datasets },
+        options: {
+          responsive: true, maintainAspectRatio: false, interaction: { mode: "index", intersect: false },
+          plugins: { valueLabelPlugin: { display: false }, legend: { position: "top", align: "end", labels: { color: "#51635c", usePointStyle: true, boxWidth: 7, font: { size: 10, weight: "700" } } }, tooltip: { backgroundColor: "rgba(255,255,255,.98)", titleColor: "#17231f", bodyColor: "#43544d", borderColor: "#dce6e1", borderWidth: 1, padding: 10, callbacks: options.tooltipCallbacks } },
+          scales: { x: { ticks: { color: "#66736e", font: { size: 10, weight: "600" } }, grid: { color: "#eef2f0" } }, y: { beginAtZero: true, ticks: { color: "#66736e", precision: 0, font: { size: 10 } }, grid: { color: "#e4ebe7" } } }
+        }
+      });
+    }
+
+    function renderEntityAnnualActivityChart(controls) {
+      const id = "chartEntityProfileEvolution";
+      const canvas = q(id);
+      const empty = q("entityProfileChartEmpty");
+      if (!canvas) return;
+
+      const byYear = {};
+      (controls || []).forEach(control => {
+        const date = getEntityOfficialControlDate(control);
+        const key = date && Number.isFinite(date.getTime()) ? String(date.getFullYear()) : "Fara data";
+        (byYear[key] ||= []).push(control);
+      });
+      const years = Object.keys(byYear).sort((a, b) => {
+        if (a === "Fara data") return 1;
+        if (b === "Fara data") return -1;
+        return Number(a) - Number(b);
+      });
+      if (charts[id]) charts[id].destroy();
+      if (!years.length) {
+        if (empty) { empty.hidden = false; empty.textContent = "Nu exista controale cu date disponibile."; }
+        return;
+      }
+      if (empty) empty.hidden = true;
+
+      const totals = years.map(year => byYear[year].length);
+      const problems = years.map(year => byYear[year].filter(isControlProblem).length);
+      const regular = totals.map((total, index) => Math.max(0, total - problems[index]));
+      const yearlyFine = years.map(year => entityKnownAmountSummary(byYear[year], getControlFine));
+      const activityColors = quantitativeColors(totals, false);
+
+      charts[id] = new Chart(canvas.getContext("2d"), {
+        type: "bar",
+        data: {
+          labels: years,
+          datasets: [
+            { label: "Fara probleme clasificate", data: regular, backgroundColor: activityColors, borderColor: activityColors, borderWidth: 1, borderRadius: 7, borderSkipped: false, maxBarThickness: 72 },
+            { label: "Cu probleme", data: problems, backgroundColor: "#ff5a52", borderColor: "#d84040", borderWidth: 1, borderRadius: 7, borderSkipped: false, maxBarThickness: 72 }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: "index", intersect: false },
+          layout: { padding: { top: 12, right: 10, bottom: 2, left: 2 } },
+          plugins: {
+            valueLabelPlugin: { display: false },
+            legend: { position: "top", align: "end", labels: { color: "#51635c", usePointStyle: true, boxWidth: 8, font: { size: 10, weight: "700" } } },
+            tooltip: {
+              backgroundColor: "rgba(255,255,255,.99)", titleColor: "#17231f", bodyColor: "#43544d", borderColor: "#dce6e1", borderWidth: 1, padding: 11,
+              callbacks: {
+                title: items => items[0]?.label || "",
+                label: () => "",
+                afterBody: items => {
+                  const index = items[0]?.dataIndex ?? -1;
+                  if (index < 0) return [];
+                  const lines = [`${totals[index]} ${totals[index] === 1 ? "control" : "controale"}`, `${problems[index]} cu probleme`];
+                  if (yearlyFine[index].available) lines.push(`${formatEntityMoney(yearlyFine[index].value)} amenzi`);
+                  return lines;
+                }
+              }
+            }
+          },
+          scales: {
+            x: { stacked: true, ticks: { color: "#43544d", font: { size: 11, weight: "700" } }, grid: { display: false } },
+            y: { stacked: true, beginAtZero: true, grace: "15%", ticks: { precision: 0, color: "#66736e", font: { size: 10 } }, grid: { color: "#e4ebe7" } }
+          }
+        }
+      });
+    }
+
+    function entityGroupRows(stats) {
+      return Object.values(stats.groups || {}).map(group => {
+        const controls = group.controls || [];
+        const conform = controls.filter(control => getControlResult(control) === "conform").length;
+        const problems = controls.filter(isControlProblem).length;
+        const fine = entityKnownAmountSummary(controls, getControlFine);
+        const damage = entityKnownAmountSummary(controls, getControlDamage);
+        const latest = [...controls].sort((a, b) => entityOfficialDateValue(b) - entityOfficialDateValue(a))[0] || {};
+        return { ...group, controls, conform, problems, problemRate: controls.length ? problems / controls.length * 100 : 0, fine, damage, latest, type: getEntityTypeLabel(latest), guard: guardDisplayName(latest.garda), locality: latest.localitate || latest.judet || "-" };
+      });
+    }
+
+    function entityDatabaseIconTone(type) {
+      const key = normalizeText(type);
+      if (key.includes("ocol") || key.includes("silvic")) return "forest";
+      if (key.includes("operator") || key.includes("societ") || key.includes("firma")) return "company";
+      if (key.includes("primarie") || key.includes("autoritate") || key.includes("institutie")) return "institution";
+      if (key.includes("persoana")) return "person";
+      if (key.includes("cineget")) return "hunting";
+      return "neutral";
+    }
+
+    function entityDatabaseIcon(type) {
+      const tone = entityDatabaseIconTone(type);
+      if (tone === "forest") return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18M5 21V8h8v13M8 11h2M8 15h2M8 19h2"></path><path d="m17 5-3 5h2l-3 5h3v6M17 5l3 5h-2l3 5h-3"></path></svg>';
+      if (tone === "company") return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18M5 21V7h9v14M14 11h5v10M8 10h3M8 14h3M8 18h3M16 14h1M16 18h1"></path></svg>';
+      if (tone === "institution") return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10h18M5 10v9M9 10v9M15 10v9M19 10v9M2 21h20M12 3l9 5H3l9-5Z"></path></svg>';
+      if (tone === "person") return '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c.8-5 3.5-7 8-7s7.2 2 8 7"></path></svg>';
+      if (tone === "hunting") return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4 5 2M8 7 4 6M16 4l3-2M16 7l4-1M8 4c0 4 1 6 4 8 3-2 4-4 4-8"></path><circle cx="12" cy="15" r="4"></circle><path d="M10.5 15h.01M13.5 15h.01M12 19v3"></path></svg>';
+      return ENTITY_ICON_SVGS.building;
+    }
+
+    function renderEntityDatabase(stats) {
+      let rows = entityGroupRows(stats);
+      const query = normalizeText(safeValue("entityDatabaseSearch", ""));
+      const display = safeValue("entityDatabaseDisplay", "toate");
+      const sort = safeValue("entityDatabaseSort", "controls");
+      if (query) rows = rows.filter(row => normalizeText([row.name, row.cui, row.type, row.guard, row.locality].join(" ")).includes(query));
+      if (display === "with_problems") rows = rows.filter(row => row.problems > 0);
+      const effectiveSort = display === "most_controlled" ? "controls" : display === "most_problems" ? "problemCount" : display === "fines" ? "financial" : sort;
+      rows.sort((a, b) => effectiveSort === "name" ? a.name.localeCompare(b.name, "ro") : effectiveSort === "latest" ? entityDateValue(b.latest) - entityDateValue(a.latest) : effectiveSort === "problems" ? b.problemRate - a.problemRate : effectiveSort === "problemCount" ? b.problems - a.problems || b.problemRate - a.problemRate : effectiveSort === "financial" ? (b.fine.available ? b.fine.value : -1) - (a.fine.available ? a.fine.value : -1) : b.controls.length - a.controls.length);
+      const totalPages = Math.max(1, Math.ceil(rows.length / ENTITY_DATABASE_PAGE_SIZE));
+      entityDatabasePage = Math.min(Math.max(1, entityDatabasePage), totalPages);
+      const visible = rows.slice((entityDatabasePage - 1) * ENTITY_DATABASE_PAGE_SIZE, entityDatabasePage * ENTITY_DATABASE_PAGE_SIZE);
+      setText("entityDatabaseCount", `${rows.length} entitati · pagina ${entityDatabasePage} din ${totalPages}`);
+      setHtml("entityDatabaseTable", visible.map(row => `<div class="entity-database-row" data-entity="${escapeAttr(row.name)}" tabindex="0"><div class="entity-database-identity"><span class="entity-type-icon tone-${entityDatabaseIconTone(row.type)}">${entityDatabaseIcon(row.type)}</span><span><strong>${escapeHtml(row.name)}</strong><small>${row.cui ? `CUI ${escapeHtml(row.cui)}` : "CUI indisponibil"}</small></span></div><div><strong>${escapeHtml(row.type)}</strong></div><div><strong>${escapeHtml(row.guard || "-")}</strong><small>${escapeHtml(row.locality)}</small></div><div class="entity-conform-total"><strong>${row.conform}</strong></div><div class="entity-problem-total"><strong>${row.problems}</strong></div><div><strong>${escapeHtml(formatDay(getEntityOfficialControlDate(row.latest)))}</strong></div><div class="entity-financial-total"><strong>${row.fine.available ? escapeHtml(formatEntityMoney(row.fine.value)) : "—"}</strong>${row.damage.available ? `<small>Prejudicii ${escapeHtml(formatEntityMoney(row.damage.value))}</small>` : ""}</div><button type="button" class="entity-database-open" data-entity="${escapeAttr(row.name)}">Profil →</button></div>`).join("") || '<div class="entity-empty-state">Nu exista entitati pentru selectia curenta.</div>');
+      setHtml("entityDatabasePagination", `<button type="button" onclick="setEntityDatabasePage(${entityDatabasePage - 1})" ${entityDatabasePage <= 1 ? "disabled" : ""}>← Anterior</button><span>${rows.length} rezultate</span><button type="button" onclick="setEntityDatabasePage(${entityDatabasePage + 1})" ${entityDatabasePage >= totalPages ? "disabled" : ""}>Urmator →</button>`);
+    }
+
+    function setEntityDatabasePage(page) { entityDatabasePage = Math.max(1, Number(page) || 1); renderEntitiesView(); }
+
+    function renderEntityProfileV1(stats, globalStats) {
+      const empty = q("entityProfileEmpty");
+      const dossier = q("entityDossier");
+      if (!stats || !stats.hasSelection) { if (empty) empty.hidden = false; if (dossier) dossier.hidden = true; return; }
+      if (empty) empty.hidden = true;
+      if (dossier) dossier.hidden = false;
+      setText("entityDossierName", stats.selectedEntity || "Entitate");
+      renderEntityConnections(stats);
+      renderEntityDossierSummary(stats);
+      const identityControls = stats.identityControls || stats.displayControls || [];
+      const fine = entityKnownAmountSummary(identityControls, getControlFine);
+      const damage = entityKnownAmountSummary(identityControls, getControlDamage);
+      const problemRate = stats.totalControls ? stats.problemControls.length / stats.totalControls * 100 : 0;
+      const sortedControls = [...identityControls].sort((a, b) => entityOfficialDateValue(b) - entityOfficialDateValue(a));
+      const lastControl = sortedControls[0] || null;
+      const financial = fine.available ? formatEntityMoney(fine.value) : damage.available ? formatEntityMoney(damage.value) : "—";
+      const financialNote = fine.available || damage.available ? (damage.available ? `Prejudicii ${formatEntityMoney(damage.value)}` : "Amenzi inregistrate") : "Date indisponibile";
+      setHtml("entityProfileKpis", [
+        entitySharedKpi("building", "Total controale", identityControls.length, "istoric exact", "total"),
+        entitySharedKpi("alert", "Cu probleme", `${stats.problemControls.length} / ${stats.totalControls}`, formatPercent(problemRate), "problems"),
+        entitySharedKpi("repeat", "Ultimul control", lastControl ? formatDay(getEntityOfficialControlDate(lastControl)) : "—", "activitate recenta", "density"),
+        entitySharedKpi("coins", "Amenzi / prejudicii", financial, financialNote, "time")
+      ].join(""));
+      const typeKey = getEntityTypeKey(stats.identityGroup?.latest || identityControls[0] || {});
+      const peerGroups = (stats.profileGroups || []).filter(group => group.key !== stats.identityKey && getEntityTypeKey(group.latest || group.controls[0] || {}) === typeKey);
+      const peerTotals = peerGroups.map(group => group.controls.length);
+      const average = values => values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : null;
+      const peerAverage = average(peerTotals);
+      setHtml("entityProfileBenchmarks", `<section class="entity-reference-primary"><span>Total controale</span><strong>${identityControls.length}</strong><small>asociere exacta</small></section><section><span>Controale cu probleme</span><strong>${stats.problemControls.length}</strong><small>${formatPercent(problemRate)}</small></section><section><span>Ultimul control</span><strong>${lastControl ? escapeHtml(formatDay(getEntityOfficialControlDate(lastControl))) : "—"}</strong><small>data oficiala</small></section><section><span>Amenzi cumulate</span><strong>${fine.available ? escapeHtml(formatEntityMoney(fine.value)) : "—"}</strong><small>${fine.available ? `${fine.count} valori disponibile` : "Date indisponibile"}</small></section>${damage.available ? `<section><span>Prejudicii</span><strong>${escapeHtml(formatEntityMoney(damage.value))}</strong><small>${damage.count} valori disponibile</small></section>` : ""}<section class="entity-reference-neutral"><span>Media entitatilor de acelasi tip</span><strong>${peerAverage === null ? "—" : peerAverage.toFixed(1)}</strong><small>${peerGroups.length} entitati reper · informatie neutra</small></section>`);
+
+      renderEntityAnnualActivityChart(identityControls);
+      renderEntityYearHistory(identityControls, stats);
+    }
+
+    function renderEntityEvolutionV1(stats) {
+      const groups = entityGroupRows(stats);
+      const fine = entityKnownAmountSummary(stats.allControls, getControlFine);
+      setHtml("entityEvolutionKpis", [
+        entitySharedKpi("building", "Entitati in perioada", stats.totalEntities, getModulePeriodLabel("entity"), "total"),
+        entitySharedKpi("repeat", "Entitati noi", groups.filter(row => row.controls.length === 1).length, "o singura verificare", "density"),
+        entitySharedKpi("repeat", "Entitati reverificate", stats.repeatedEntities.length, "minimum doua verificari", "time"),
+        entitySharedKpi("coins", "Amenzi inregistrate", fine.available ? formatEntityMoney(fine.value) : "—", fine.available ? `${fine.count} valori` : "date indisponibile", "problems")
+      ].join(""));
+      const stableGroups = buildEntityProfileGroups(stats.allControls || []);
+      const monthlyEntities = {};
+      const monthlyProblemEntities = {};
+      const monthlyNew = {};
+      const monthlyRepeated = {};
+      stableGroups.forEach(group => {
+        const months = [...new Set(group.controls.map(entityOfficialMonthKey).filter(Boolean))].sort();
+        months.forEach((key, index) => {
+          (monthlyEntities[key] ||= new Set()).add(group.key);
+          if (index === 0) (monthlyNew[key] ||= new Set()).add(group.key);
+          else (monthlyRepeated[key] ||= new Set()).add(group.key);
+          if (group.controls.some(control => entityOfficialMonthKey(control) === key && isControlProblem(control))) (monthlyProblemEntities[key] ||= new Set()).add(group.key);
+        });
+      });
+      const labels = [...new Set([...Object.keys(monthlyEntities), ...Object.keys(monthlyNew), ...Object.keys(monthlyRepeated)])].sort();
+      const verifiedValues = labels.map(key => monthlyEntities[key].size);
+      const problemValues = labels.map(key => monthlyProblemEntities[key] ? monthlyProblemEntities[key].size : 0);
+      const newValues = labels.map(key => monthlyNew[key] ? monthlyNew[key].size : 0);
+      const repeatedValues = labels.map(key => monthlyRepeated[key] ? monthlyRepeated[key].size : 0);
+      document.querySelectorAll("#entityV1Evolution [data-entity-evolution-mode]").forEach(button => button.classList.toggle("active", button.dataset.entityEvolutionMode === entityEvolutionMode));
+      if (entityEvolutionMode === "newRepeated") {
+        setText("entityEvolutionSubtitle", "Entitati noi si reverificate pe perioade");
+        const id = "chartEntityEvolutionMain";
+        const canvas = q(id);
+        if (charts[id]) charts[id].destroy();
+        if (canvas) charts[id] = new Chart(canvas.getContext("2d"), {
+          type: "bar",
+          data: { labels: labels.map(monthLabel), datasets: [
+            { label: "Entitati noi", data: newValues, backgroundColor: "#25c66f", borderColor: "#0b8f58", borderWidth: 1, borderRadius: 6, maxBarThickness: 42 },
+            { label: "Entitati reverificate", data: repeatedValues, backgroundColor: "#1687c9", borderColor: "#0d6fa8", borderWidth: 1, borderRadius: 6, maxBarThickness: 42 }
+          ] },
+          options: { responsive:true, maintainAspectRatio:false, interaction:{mode:"index",intersect:false}, plugins:{ valueLabelPlugin:{display:false}, legend:{position:"top",align:"end",labels:{color:"#51635c",usePointStyle:true,boxWidth:8,font:{size:10,weight:"700"}}}, tooltip:{backgroundColor:"rgba(255,255,255,.99)",titleColor:"#17231f",bodyColor:"#43544d",borderColor:"#dce6e1",borderWidth:1,padding:10} }, scales:{x:{ticks:{color:"#66736e",font:{size:10,weight:"600"}},grid:{display:false}},y:{beginAtZero:true,ticks:{precision:0,color:"#66736e"},grid:{color:"#e4ebe7"}}} }
+        });
+        const totalNew = new Set(Object.values(monthlyNew).flatMap(set => [...set])).size;
+        const totalRepeated = new Set(Object.values(monthlyRepeated).flatMap(set => [...set])).size;
+        setHtml("entityEvolutionSummary", `<div><span>Entitati noi</span><strong>${totalNew}</strong><small>${formatPercent(stats.totalEntities ? totalNew / stats.totalEntities * 100 : 0)}</small></div><div><span>Entitati reverificate</span><strong>${totalRepeated}</strong><small>${formatPercent(stats.totalEntities ? totalRepeated / stats.totalEntities * 100 : 0)}</small></div>`);
+      } else {
+        setText("entityEvolutionSubtitle", "Entitati verificate si entitati cu probleme");
+        renderEntityLineChart("chartEntityEvolutionMain", labels, [
+          { label: "Entitati verificate", data: verifiedValues, borderColor: "#0b8f58", backgroundColor: "rgba(11,143,88,.13)", fill: true, tension: .35, pointRadius: 3 },
+          { label: "Entitati cu probleme", data: problemValues, borderColor: "#ff7417", backgroundColor: "rgba(255,116,23,.06)", fill: false, borderWidth: 2.4, tension: .35, pointRadius: 3 }
+        ], { labelFormatter: key => new Date(`${key}-01T12:00:00`).toLocaleDateString("ro-RO", { month: "long", year: "numeric" }), tooltipCallbacks: { label: context => `${context.dataset.label}: ${Number(context.parsed.y || 0).toLocaleString("ro-RO")}`, afterBody: items => { const index = items[0] ? items[0].dataIndex : -1; const total = verifiedValues[index] || 0; const problems = problemValues[index] || 0; return `Rata entitatilor cu probleme: ${formatPercent(total ? problems / total * 100 : 0)}`; } } });
+        setHtml("entityEvolutionSummary", "");
+      }
+      const types = topEntries(countBy(stats.allControls, getEntityTypeLabel), 5).map(row => row[0]);
+      const typeMonths = [...new Set(stats.allControls.map(entityMonthKey).filter(Boolean))].sort();
+      renderEntityLineChart("chartEntityEvolutionTypes", typeMonths, types.map((type, index) => ({ label: type, data: typeMonths.map(month => stats.allControls.filter(control => entityMonthKey(control) === month && getEntityTypeLabel(control) === type).length), borderColor: QUANTITATIVE_PALETTE[Math.min(QUANTITATIVE_PALETTE.length - 1, index + 2)], backgroundColor: "transparent", tension: .35, pointRadius: 2 })));
+      const problemByMonth = {};
+      (stats.allControls || []).forEach(control => { const key = entityMonthKey(control); if (!key) return; if (!problemByMonth[key]) problemByMonth[key] = { total: 0, problem: 0 }; problemByMonth[key].total += 1; if (isControlProblem(control)) problemByMonth[key].problem += 1; });
+      const problemLabels = Object.keys(problemByMonth).sort();
+      renderEntityLineChart("chartEntityEvolutionProblems", problemLabels, [{ label: "% probleme", data: problemLabels.map(key => Number((problemByMonth[key].problem / problemByMonth[key].total * 100).toFixed(1))), borderColor: "#ff5a52", backgroundColor: "rgba(255,90,82,.13)", fill: true, borderWidth: 2.5, tension: .35, pointRadius: 3, pointBackgroundColor: "#ff5a52" }]);
+    }
+
+    function setEntityEvolutionMode(mode) {
+      entityEvolutionMode = mode === "newRepeated" ? "newRepeated" : "verified";
+      renderEntitiesView();
+    }
+    window.setEntityEvolutionMode = setEntityEvolutionMode;
 
     function renderEntitiesView() {
       if (!isInternalMode) return;
 
       const baseControls = getEntityBaseControls();
       const globalStats = buildEntityStats(baseControls, "");
-      const searchValue = safeValue("entitySearch", "").trim();
-      const searchNorm = normalizeText(searchValue);
-      const entityNames = [...new Set(baseControls.map(getEntityName).filter(Boolean))];
-      const exactEntity = searchNorm ? entityNames.find(name => normalizeText(name) === searchNorm) : "";
-      const selectedStats = exactEntity ? buildEntityStats(baseControls, exactEntity) : null;
-      const hasSelectedEntity = Boolean(selectedStats && selectedStats.hasSelection);
+      let selectedStats = null;
+      if (entityV1Section === "profile") {
+        const profileGroups = getEntityProfileGroups();
+        const searchNorm = normalizeText(safeValue("entitySearch", "").trim());
+        const selectedGroup = selectedEntityProfileKey
+          ? profileGroups.find(group => group.key === selectedEntityProfileKey)
+          : searchNorm
+            ? profileGroups.find(group => normalizeText(group.name) === searchNorm || normalizeText(group.cui) === searchNorm || group.aliases.some(alias => normalizeText(alias) === searchNorm))
+            : null;
+        if (selectedGroup) {
+          selectedEntityProfileKey = selectedGroup.key;
+          selectedStats = buildEntityStats(selectedGroup.controls, selectedGroup.name);
+          selectedStats.identityKey = selectedGroup.key;
+          selectedStats.identityControls = selectedGroup.controls;
+          selectedStats.identityGroup = selectedGroup;
+          selectedStats.profileGroups = profileGroups;
+        }
+      }
+      document.querySelectorAll("#view-entities [data-entity-section]").forEach(button => button.classList.toggle("active", button.dataset.entitySection === entityV1Section));
+      const panelIds = { overview: "entityV1Overview", database: "entityV1Database", profile: "entityV1Profile", evolution: "entityV1Evolution" };
+      Object.entries(panelIds).forEach(([key, id]) => { const panel = q(id); if (panel) panel.hidden = key !== entityV1Section; });
 
-      // No explanatory context line below the selector. The selected dossier itself is the context.
-      setText("entitySummary", "");
-
-      const mapSection = q("entityGeneralMapSection");
-      const chartsSection = q("entityGeneralChartsSection");
-      if (mapSection) mapSection.hidden = hasSelectedEntity;
-      if (chartsSection) chartsSection.hidden = hasSelectedEntity;
-      q("view-entities")?.classList.toggle("entity-selection-active", hasSelectedEntity);
-
-      const dossier = q("entityDossier");
-      if (!hasSelectedEntity) {
-        if (dossier) dossier.classList.remove("active");
-        setText("entityDossierName", "Selecteaza o entitate");
-        setHtml("entityDossierMeta", "");
-        setHtml("entityDossierStats", "");
-        setHtml("entityQuickActions", "");
-        setHtml("entityYearTabs", "");
-        setHtml("entityTimeline", "");
-        setHtml("entitySecondaryKpis", "");
-
-        // General view: map + national/entity portfolio analytics remain the visual focus.
+      if (entityV1Section === "overview") {
         renderEntityStatsMap(baseControls, globalStats);
         renderEntityMainCharts(globalStats);
         setTimeout(() => {
           if (entityStatsMap) entityStatsMap.invalidateSize();
           refreshCharts();
         }, 100);
-        return;
-      }
-
-      if (dossier) dossier.classList.add("active");
-      const selectedKey = normalizeText(selectedStats.selectedEntity || "");
-      if (selectedKey !== entityTimelineKey) {
-        entityTimelineKey = selectedKey;
-        entityLatestLimit = 5;
-        selectedEntityHistoryYear = "";
-      }
-
-      setText("entityDossierName", selectedStats.selectedEntity || "Entitate");
-      renderEntityConnections(selectedStats);
-      renderEntityDossierSummary(selectedStats);
-      renderEntityYearHistory(selectedStats.displayControls, selectedStats);
-
-      if (isCollapseOpen("collapseEntityStats")) {
-        renderEntityKpiCards(selectedStats);
-        renderEntityAdvancedStatistics(selectedStats);
-      }
+      } else if (entityV1Section === "database") renderEntityDatabase(globalStats);
+      else if (entityV1Section === "profile") renderEntityProfileV1(selectedStats, globalStats);
+      else if (entityV1Section === "evolution") renderEntityEvolutionV1(globalStats);
     }
 
 
@@ -6285,14 +7879,16 @@
       const petitionNumber = getPetitionNumber(control);
       const petitionDate = getPetitionRegisteredDate(control);
       const confirmation = getPetitionConfirmation(control);
-      const responseDays = getPetitionResponseDays(control);
+      const responseDays = petitionResponseValue(control);
       const hasReport = getControlHasReport(control);
       const reportStatus = getPetitionReportStatus(control);
+      const operationalStatus = petitionOperationalStatus(control);
+      const operationalLabel = { resolved:"Solutionata", pending:"In lucru", near:"Aproape de termen", late:"Peste termen" }[operationalStatus] || "In lucru";
       const controlDate = firstValue(control, ["field_submitted_at", "data_control", "created_at"]);
       const domain = getPopupDomain(control) || getControlDomainRaw(control);
       const category = getControlCategory(control) || getControlCategoryRaw(control);
       const gps = controlGpsLabel(control);
-      const reportLine = getPetitionResponseText(control);
+      const reportLine = responseDays === null ? "Nu exista o data structurata a raspunsului final pentru calculul duratei." : `Raspuns in ${formatDays(responseDays)}.`;
       const subject = getPetitionSubject(control) || "Obiectul sesizarii nu este completat separat in fisa controlului.";
       const content = firstValue(control, ["continut_sesizare", "descriere_sesizare", "rezumat_sesizare", "motiv_sesizare"]);
 
@@ -6341,15 +7937,32 @@
           ? `<button class="control-full-btn control-report-open-pdf" type="button" data-control-id="${escapeAttr(control.id)}">Deschide raport PDF</button>`
           : `<div class="control-full-notice">Raportul de control nu a fost incarcat.</div>`
       ].join("") : [
-        detailRow("Status raport", hasReport ? "Control finalizat administrativ" : "Raport administrativ in lucru"),
+        detailRow("Status raport", hasReport ? "Control finalizat administrativ" : "Statusul documentului nu este publicat"),
         `<div class="control-full-notice">Documentul PDF nu este disponibil public.</div>`
       ].join("");
 
       const timeRows = [
-        detailRow("Timp raspuns administrativ", formatDays(responseDays)),
+        detailRow("Timp raspuns administrativ", responseDays === null ? "Date indisponibile" : formatDays(responseDays)),
         detailLongBlock("Interpretare", reportLine),
-        `<div class="control-full-long report-time-detail"><span>Grafic termen</span>${renderResponseTimeBar(responseDays, hasReport)}</div>`
+        responseDays === null ? "" : `<div class="control-full-long report-time-detail"><span>Grafic termen</span>${renderResponseTimeBar(responseDays, hasReport)}</div>`
       ].join("");
+
+      const assignedRaw = firstValue(control, ["data_repartizare", "repartizat_la", "assigned_at"]);
+      const assignedDate = assignedRaw ? new Date(assignedRaw) : null;
+      const verifiedDate = controlDate ? new Date(controlDate) : null;
+      const responseRaw = firstValue(control, ["data_raspuns", "report_uploaded_at", "report_date"]);
+      const responseDate = responseRaw ? new Date(responseRaw) : null;
+      const timelineDate = value => value && !isNaN(value) ? formatDay(value) : "Data indisponibila";
+      const timelineDuration = (start, end) => {
+        const days = start && end && !isNaN(start) && !isNaN(end) ? daysBetweenDates(start, end) : null;
+        return days === null ? "Durata indisponibila" : formatDays(Math.max(0, days));
+      };
+      const timeline = `<div class="petition-timeline">
+        <div class="petition-timeline-step${petitionDate ? "" : " pending"}"><b>Inregistrata</b><span>${escapeHtml(timelineDate(petitionDate))}</span><small>Punct de pornire</small></div>
+        <div class="petition-timeline-step${assignedDate && !isNaN(assignedDate) ? "" : " pending"}"><b>Repartizata</b><span>${escapeHtml(timelineDate(assignedDate))}</span><small>${escapeHtml(timelineDuration(petitionDate, assignedDate))} de la inregistrare</small></div>
+        <div class="petition-timeline-step${verifiedDate && !isNaN(verifiedDate) ? "" : " pending"}"><b>Verificata</b><span>${escapeHtml(timelineDate(verifiedDate))}</span><small>${escapeHtml(timelineDuration(assignedDate, verifiedDate))} de la repartizare</small></div>
+        <div class="petition-timeline-step${responseDate && !isNaN(responseDate) ? "" : " pending"}"><b>Raspuns transmis</b><span>${escapeHtml(timelineDate(responseDate))}</span><small>${escapeHtml(timelineDuration(verifiedDate, responseDate))} de la verificare</small></div>
+      </div>`;
 
       const subtitle = [petitionNumber ? `Sesizare ${petitionNumber}` : "Sesizare", control.garda, formatDay(controlDate)].filter(Boolean).join(" - ");
       const quickActions = `<div class="quick-actions petition-full-actions">
@@ -6367,13 +7980,14 @@
               <h2 id="petitionFullTitle">Fisa petitiei / sesizarii</h2>
               <span>${escapeHtml(subtitle || "-")}</span>
             </div>
-            <b class="control-full-result" style="--detail-color:${color};">${escapeHtml(reportStatus.label)}</b>
+            <b class="control-full-result" style="--detail-color:${color};">${escapeHtml(operationalLabel)}</b>
             <button class="control-full-close" type="button" aria-label="Inchide fisa">x</button>
           </header>
           <div class="control-full-body">
             <nav class="detail-breadcrumb" aria-label="Context sesizare"><span>Petitii / sesizari</span><b>/</b><span>${escapeHtml(petitionNumber || "Sesizare")}</span><b>/</b><span>Control #${escapeHtml(control.id || "-")}</span></nav>
             ${quickActions}
             <div class="control-full-grid">
+              ${detailSection("Traseul sesizarii", timeline)}
               ${detailSection("A. Date sesizare", petitionRows)}
               ${detailSection("B. Control asociat", controlRows)}
               ${detailSection("C. Elemente din fisa controlului", findingsRows)}
@@ -6662,19 +8276,29 @@
     function reportStatusLabel(item) {
       if (!item) return "-";
       if (getControlHasReport(item)) return "Finalizat";
+      if (!reportWorkflowHasPopulatedData()) return "Date indisponibile";
       const days = getControlDaysToReport(item);
       if (Number(days) > 10 || item.response_time_level === "red" || item.deadline_status === "intarziat") return "Intarziat";
       if (Number(days) > 5 || item.response_time_level === "yellow" || item.deadline_status === "atentie") return "Atentie";
-      return "In termen";
+      return "In lucru";
     }
 
     function reportStatusClass(item) {
       if (!item) return "pending";
       if (getControlHasReport(item)) return "done";
+      if (!reportWorkflowHasPopulatedData()) return "unknown";
       const days = getControlDaysToReport(item);
       if (Number(days) > 10 || item.response_time_level === "red" || item.deadline_status === "intarziat") return "late";
       if (Number(days) > 5 || item.response_time_level === "yellow" || item.deadline_status === "atentie") return "warn";
       return "ok";
+    }
+
+    function reportWorkflowHasPopulatedData() {
+      return (reportWorkflowItems || []).some(item => getControlHasReport(item));
+    }
+
+    function reportIsReliableOverdue(item) {
+      return reportWorkflowHasPopulatedData() && !getControlHasReport(item) && Number(getControlDaysToReport(item)) > 10;
     }
 
     function reportControlFromWorkflowItem(item) {
@@ -6756,8 +8380,17 @@
       if (q("reportWorkflowPeriod")) q("reportWorkflowPeriod").value = "90";
       if (q("reportWorkflowGarda")) q("reportWorkflowGarda").value = "";
       if (q("reportWorkflowSearch")) q("reportWorkflowSearch").value = "";
+      if (q("reportWorkflowControlId")) q("reportWorkflowControlId").value = "";
       setReportWorkflowPeriodDates("90");
+      toggleReportWorkflowFilters(false);
       loadReportWorkflowItems(true);
+    }
+
+    function toggleReportWorkflowFilters(force) {
+      const shell = document.querySelector("#inspectorReportsSection .report-workflow-filters");
+      if (!shell) return;
+      const expanded = typeof force === "boolean" ? force : !shell.classList.contains("advanced-open");
+      shell.classList.toggle("advanced-open", expanded);
     }
 
     async function loadReportWorkflowItems(force = false) {
@@ -6819,11 +8452,12 @@
 
     function getFilteredReportWorkflowItems(items) {
       const term = normalizeText(safeValue("reportWorkflowSearch", ""));
-      if (!term) return [...(items || [])];
+      const controlId = normalizeText(safeValue("reportWorkflowControlId", "")).replace(/^#/, "");
+      if (!term && !controlId) return [...(items || [])];
       return (items || []).filter(item => {
         const id = normalizeText(String(item.id || ""));
         const inspectors = normalizeText(reportInspectorNames(item).join(" "));
-        return id.includes(term) || inspectors.includes(term);
+        return (!term || inspectors.includes(term)) && (!controlId || id.includes(controlId));
       });
     }
 
@@ -6832,15 +8466,26 @@
       return formatDays(values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : null);
     }
 
+    function reportWorkflowMedianDays(items) {
+      const values = (items || []).map(reportElaborationDays).filter(Number.isFinite).sort((a, b) => a - b);
+      if (!values.length) return null;
+      const middle = Math.floor(values.length / 2);
+      return values.length % 2 ? values[middle] : (values[middle - 1] + values[middle]) / 2;
+    }
+
     function renderReportsWorkflowKpis(items) {
       const missing = items.filter(x => !getControlHasReport(x)).length;
-      const overdue = items.filter(x => !getControlHasReport(x) && Number(getControlDaysToReport(x)) > 10).length;
+      const reliable = reportWorkflowHasPopulatedData();
+      const overdue = reliable ? items.filter(reportIsReliableOverdue).length : 0;
       const finished = items.filter(getControlHasReport).length;
       const completionRate = items.length ? (finished / items.length) * 100 : 0;
       setText("reportKpiMissing", missing);
+      setText("reportKpiMissingNote", reliable ? "fara document incarcat" : "stare administrativa necunoscuta");
       setText("reportKpiOverdue", overdue);
-      setText("reportKpiAverage", reportWorkflowAverageDays(items));
-      setText("reportKpiCompletionRate", completionRate.toFixed(1) + "%");
+      const medianDays = reportWorkflowMedianDays(items);
+      setText("reportKpiAverage", formatDays(medianDays));
+      setText("reportKpiAverageNote", medianDays === null ? "Date insuficiente" : "de la transmiterea din teren");
+      setText("reportKpiCompletionRate", reliable ? completionRate.toFixed(1) + "%" : "—");
     }
 
     function reportTimeColor(value, min, max) {
@@ -6862,7 +8507,7 @@
             if (Number.isFinite(days)) row.days.push(days);
           } else {
             row.missing += 1;
-            if (Number(getControlDaysToReport(item)) > 10) row.overdue += 1;
+            if (reportIsReliableOverdue(item)) row.overdue += 1;
           }
         });
       });
@@ -6874,20 +8519,53 @@
     }
 
     function renderReportInspectorMetrics(items) {
-      const rows = buildReportInspectorMetrics(items);
+      const reliable = reportWorkflowHasPopulatedData();
+      if (!reliable) {
+        setHtml("reportInspectorMetrics", `<div class="report-data-neutral"><span>i</span><div><strong>Date raport nepopulate</strong><small>Rapoartele PDF nu sunt inca incarcate suficient pentru calculul intarzierilor reale.</small></div></div>`);
+        return;
+      }
+      const rows = buildReportInspectorMetrics(items).filter(row => row.overdue || row.missing).sort((a, b) => b.overdue - a.overdue || b.missing - a.missing).slice(0, 8);
       if (!rows.length) {
-        setHtml("reportInspectorMetrics", `<div class="empty">Nu exista inspectori in selectia curenta.</div>`);
+        setHtml("reportInspectorMetrics", `<div class="inspector-v1-empty">Nu exista rapoarte care necesita atentie.</div>`);
         return;
       }
       setHtml("reportInspectorMetrics", rows.map(row => `
-        <article class="report-inspector-row">
-          <div class="report-inspector-name"><strong title="${escapeAttr(row.name)}">${escapeHtml(row.name)}</strong><small>${row.total} controale</small></div>
-          <div><span>Timp mediu</span><b>${escapeHtml(formatDays(row.average))}</b></div>
-          <div><span>Fara raport</span><b>${row.missing}</b></div>
-          <div><span>&gt;10 zile</span><b class="${row.overdue ? "is-late" : ""}">${row.overdue}</b></div>
-          <div><span>Finalizate</span><b>${row.completionRate.toFixed(1)}%</b></div>
+        <article class="report-attention-row">
+          <span class="report-attention-icon ${row.overdue ? "late" : "pending"}">${row.overdue ? "!" : "DOC"}</span>
+          <div><strong title="${escapeAttr(row.name)}">${escapeHtml(row.name)}</strong><small>${row.overdue ? `${row.overdue} intarzieri reale` : `${row.missing} rapoarte in lucru`}</small></div>
+          <b>${row.completionRate.toFixed(0)}%</b>
         </article>
       `).join(""));
+    }
+
+    function renderReportGuardTimeChart(items) {
+      const canvas = q("chartReportGuardTime");
+      if (!canvas) return;
+      if (charts.chartReportGuardTime) charts.chartReportGuardTime.destroy();
+      const groups = {};
+      (items || []).forEach(item => {
+        const days = reportElaborationDays(item);
+        const guard = guardDisplayName(item.garda || "Garda neprecizata");
+        if (!Number.isFinite(days)) return;
+        if (!groups[guard]) groups[guard] = [];
+        groups[guard].push(days);
+      });
+      const rows = Object.entries(groups).map(([guard, values]) => {
+        const sorted = [...values].sort((a, b) => a - b);
+        const middle = Math.floor(sorted.length / 2);
+        const median = sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2;
+        return { guard, median, count: values.length };
+      }).sort((a, b) => a.median - b.median);
+      const empty = q("reportGuardChartEmpty");
+      if (empty) empty.hidden = !!rows.length;
+      canvas.hidden = !rows.length;
+      if (!rows.length) return;
+      const range = getQuantitativeRange(rows.map(row => row.median));
+      charts.chartReportGuardTime = new Chart(canvas, {
+        type: "bar",
+        data: { labels: rows.map(row => row.guard.replace(/^Garda Forestiera /, "GF ")), datasets: [{ label: "Timp median", data: rows.map(row => row.median), backgroundColor: rows.map(row => quantitativeColor(row.median, range.min, range.max, true)), borderRadius: 7, borderSkipped: false, maxBarThickness: 42 }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, valueLabelPlugin: { display: false }, tooltip: { backgroundColor: "#fff", titleColor: "#17231f", bodyColor: "#66736e", borderColor: "#dce6e1", borderWidth: 1, callbacks: { label: context => `${formatDays(context.parsed.y)} · ${rows[context.dataIndex].count} rapoarte` } } }, scales: { x: { grid: { display: false }, ticks: { color: "#66736e", maxRotation: 0, autoSkip: false } }, y: { beginAtZero: true, grid: { color: "#edf2ef" }, ticks: { color: "#66736e" } } } }
+      });
     }
 
     function initReportStatsMap() {
@@ -6976,33 +8654,31 @@
         const statusClass = reportStatusClass(item);
         const control = reportControlFromWorkflowItem(item);
         const hasReport = getControlHasReport(item);
+        const reliable = reportWorkflowHasPopulatedData();
         const elaborationDays = reportElaborationDays(item);
         const pendingRaw = getControlDaysToReport(item);
         const pendingDays = pendingRaw === null || pendingRaw === undefined ? null : Number(pendingRaw);
-        const timeText = Number.isFinite(elaborationDays)
+        const timeText = !reliable && !hasReport
+          ? "—"
+          : Number.isFinite(elaborationDays)
           ? formatDays(elaborationDays)
-          : (Number.isFinite(pendingDays) ? `${Math.max(0, pendingDays)} zile in asteptare` : "-");
+          : (Number.isFinite(pendingDays) ? (pendingDays > 10 ? `Depasit cu ${Math.max(0, pendingDays - 10)} zile` : `${Math.max(0, pendingDays)} zile`) : "—");
         const inspectors = reportInspectorNames(item);
         const focusClass = String(item.id) === String(reportWorkflowFocusId) ? " report-row-focus" : "";
         return `<tr class="report-row ${statusClass}${focusClass}" data-control-id="${escapeAttr(item.id)}" role="button" tabindex="0" aria-label="Deschide fisa controlului ${escapeAttr(item.id)}">
           <td><b class="report-control-id">#${escapeHtml(item.id)}</b></td>
+          <td>${escapeHtml(formatDay(item.field_submitted_at || item.data_control || item.created_at))}</td>
           <td><span class="report-inspector-cell" title="${escapeAttr(inspectors.join(", ") || "Inspector neprecizat")}">${escapeHtml(inspectors.join(", ") || "Inspector neprecizat")}</span></td>
           <td>${escapeHtml(item.garda || "-")}</td>
-          <td>${escapeHtml(formatDay(item.field_submitted_at || item.data_control || item.created_at))}</td>
-          <td><span class="report-time-value ${!hasReport && pendingDays > 10 ? "late" : ""}">${escapeHtml(timeText)}</span></td>
           <td><span class="report-status ${statusClass}">${escapeHtml(reportStatusLabel(item))}</span></td>
-          <td>
-            <div class="report-actions">
-              ${hasReport
-                ? `<button class="report-open-pdf-btn" type="button" data-control-id="${escapeAttr(item.id)}">Deschide PDF</button>`
-                : `<button class="report-upload-open-btn" type="button" data-control-id="${escapeAttr(item.id)}">Incarca PDF</button>`}
-            </div>
-          </td>
-          <td>${control ? `<button class="secondary report-open-sheet-btn" type="button" data-control-id="${escapeAttr(item.id)}">Vezi fisa</button>` : "-"}</td>
+          <td><span class="report-time-value ${reportIsReliableOverdue(item) ? "late" : ""}">${escapeHtml(timeText)}</span></td>
+          <td>${hasReport
+            ? `<button class="report-row-action report-open-pdf-btn" type="button" data-control-id="${escapeAttr(item.id)}">Deschide <span aria-hidden="true">&rarr;</span></button>`
+            : `<button class="report-row-action report-upload-open-btn" type="button" data-control-id="${escapeAttr(item.id)}">Deschide <span aria-hidden="true">&rarr;</span></button>`}</td>
         </tr>`;
       }).join("");
       setHtml("reportWorkflowTable", `<table class="report-workflow-table">
-        <thead><tr><th>ID control</th><th>Inspector</th><th>Garda</th><th>Data teren</th><th>Timp raport</th><th>Status</th><th>Raport</th><th>Detalii</th></tr></thead>
+        <thead><tr><th>Control</th><th>Data</th><th>Inspector</th><th>Garda</th><th>Status raport</th><th>Timp / zile</th><th>Actiune</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>`);
       if (reportWorkflowFocusId) {
@@ -7030,6 +8706,7 @@
         : "Controalele efectuate de tine si rapoartele care trebuie incarcate.");
       renderReportsWorkflowKpis(visibleItems);
       renderReportInspectorMetrics(visibleItems);
+      renderReportGuardTimeChart(visibleItems);
       renderReportsWorkflowTable(visibleItems);
       renderReportStatsMap(visibleItems);
     }
@@ -7146,14 +8823,15 @@
         <div class="account-strip">
           <div class="account-avatar">IG</div>
           <div style="min-width:0;">
-            <div class="account-title">Cont intern GFN</div>
-            <div class="account-email">${escapeHtml(email)}</div>
-            <div class="account-update">actualizat: <span id="lastUpdateInline">${escapeHtml(updated)}</span></div>
+            <div class="account-title">${escapeHtml(email)}</div>
+            <div class="account-email">Cont intern GFN</div>
           </div>
+          <button class="account-menu-toggle" type="button" aria-label="Actiuni cont" aria-expanded="false" title="Actiuni cont">&#8942;</button>
         </div>
-        <div class="account-actions">
+        <div id="sidebarAccountMenu" class="account-actions" hidden>
+          <div class="account-update">Actualizat: <span id="lastUpdateInline">${escapeHtml(updated)}</span></div>
+          <button class="secondary reload-mini" onclick="loadControls()">Reincarca datele</button>
           <button class="secondary logout-mini" onclick="logout()">Iesire</button>
-          <button class="secondary reload-mini" onclick="loadControls()">Reincarca</button>
         </div>
       `;
       box.style.setProperty("display", "block", "important");
@@ -7209,15 +8887,21 @@
       const control = getControlById(controlId);
       if (!control || !map) return false;
 
+      const revealFocusedMarker = () => {
+        const activeMarker = getControlMarker(controlId);
+        if (!activeMarker) return false;
+        selectedPopupControlId = String(controlId);
+        activeMarker.openPopup();
+        return true;
+      };
+
       const openExisting = () => {
         const marker = getControlMarker(controlId);
         if (!marker) return false;
         const ll = marker.getLatLng();
         map.flyTo(ll, Math.max(map.getZoom(), 12), { duration: 0.55 });
-        setTimeout(() => {
-          const activeMarker = getControlMarker(controlId);
-          if (activeMarker) activeMarker.openPopup();
-        }, 600);
+        setTimeout(revealFocusedMarker, 620);
+        setTimeout(revealFocusedMarker, 980);
         return true;
       };
 
@@ -7230,9 +8914,10 @@
       clearTimeout(markerRenderTimer);
       markerRenderTimer = setTimeout(() => {
         renderMarkers(mapRenderControls.length ? mapRenderControls : filteredControls);
-        const marker = getControlMarker(controlId);
-        if (marker) marker.openPopup();
+        revealFocusedMarker();
       }, 680);
+      setTimeout(revealFocusedMarker, 980);
+      setTimeout(revealFocusedMarker, 1320);
 
       return true;
     }
@@ -7657,7 +9342,17 @@
     window.showMoreEntityLatestControls = showMoreEntityLatestControls;
     window.showMorePetitions = showMorePetitions;
     window.resetReportWorkflowFilters = resetReportWorkflowFilters;
+    window.toggleReportWorkflowFilters = toggleReportWorkflowFilters;
     window.setInspectorSection = setInspectorSection;
+    window.toggleControlsFilterDrawer = toggleControlsFilterDrawer;
+    window.setControlsSideTab = setControlsSideTab;
+    window.toggleShellSidebar = toggleShellSidebar;
+    window.openAuthModal = openAuthModal;
+    window.closeAuthModal = closeAuthModal;
+    window.togglePasswordVisibility = togglePasswordVisibility;
+    window.setEntityV1Section = setEntityV1Section;
+    window.toggleEntityV1Filters = toggleEntityV1Filters;
+    window.setEntityDatabasePage = setEntityDatabasePage;
 
     const originalSetModePatched = setMode;
     setMode = function(internal) {
@@ -7684,6 +9379,7 @@
     setView = function(view) {
       if (!isInternalMode && ["inspectori", "entities", "reports-workflow"].includes(view)) view = "map";
       originalSetViewForAccess(view);
+      toggleShellSidebar(false);
     };
     window.activateMainTab = function(view) {
       setView(view);
@@ -7702,6 +9398,7 @@
       syncViewChrome();
       setMode(false);
       renderNav();
+      initControlsSearch();
       loadPublicControls();
     }
 
@@ -7711,6 +9408,20 @@
       startDashboard();
     }
     document.addEventListener("click", event => {
+      const accountMenuToggle = event.target.closest ? event.target.closest(".account-menu-toggle") : null;
+      if (accountMenuToggle) {
+        event.preventDefault();
+        const menu = q("sidebarAccountMenu");
+        if (menu) {
+          menu.hidden = !menu.hidden;
+          accountMenuToggle.setAttribute("aria-expanded", menu.hidden ? "false" : "true");
+        }
+        return;
+      }
+      const accountArea = event.target.closest ? event.target.closest(".shell-account") : null;
+      if (!accountArea && q("sidebarAccountMenu")) q("sidebarAccountMenu").hidden = true;
+      const searchArea = event.target.closest ? event.target.closest("#controlsGlobalSearch") : null;
+      if (!searchArea) closeControlsSearch();
       const inspectorFilterChip = event.target.closest ? event.target.closest(".inspector-active-filter-chip[data-inspector-filter-id]") : null;
       if (inspectorFilterChip) {
         event.preventDefault();
@@ -7787,15 +9498,45 @@
       if (entityYearTab) {
         event.preventDefault();
         selectedEntityHistoryYear = entityYearTab.dataset.year || "";
+        entityTimelineLimit = 10;
         renderEntitiesView();
+        return;
+      }
+      const entityHistoryAll = event.target.closest ? event.target.closest(".entity-history-all-btn") : null;
+      if (entityHistoryAll) {
+        event.preventDefault();
+        entityTimelineLimit = Number.MAX_SAFE_INTEGER;
+        renderEntitiesView();
+        return;
+      }
+      const entitySuggestion = event.target.closest ? event.target.closest(".entity-suggest-item[data-entity]") : null;
+      if (entitySuggestion) {
+        event.preventDefault();
+        selectEntitySuggestion(entitySuggestion.dataset.entity || "", entitySuggestion.dataset.entityKey || "");
+        return;
+      }
+      const entityGuardDetails = event.target.closest ? event.target.closest(".entity-guard-details-btn[data-guard]") : null;
+      if (entityGuardDetails) {
+        event.preventDefault();
+        openEntityGuardDetails(entityGuardDetails.dataset.guard || "");
         return;
       }
       const entityRankRow = event.target.closest ? event.target.closest(".entity-rank-row[data-entity]") : null;
       if (entityRankRow) {
         event.preventDefault();
+        selectedEntityProfileKey = "";
         if (q("entitySearch")) q("entitySearch").value = toAsciiText(entityRankRow.dataset.entity || "");
         selectedEntityHistoryYear = "";
-        renderEntitiesView();
+        setEntityV1Section("profile");
+        return;
+      }
+      const entityDatabaseRow = event.target.closest ? event.target.closest(".entity-database-row[data-entity], .entity-database-open[data-entity]") : null;
+      if (entityDatabaseRow) {
+        event.preventDefault();
+        selectedEntityProfileKey = "";
+        if (q("entitySearch")) q("entitySearch").value = toAsciiText(entityDatabaseRow.dataset.entity || "");
+        selectedEntityHistoryYear = "";
+        setEntityV1Section("profile");
         return;
       }
       const petitionMapButton = event.target.closest ? event.target.closest(".petition-map-btn[data-control-id]") : null;
@@ -7839,7 +9580,14 @@
       const guardMapButton = event.target.closest ? event.target.closest(".guard-map-btn[data-guard]") : null;
       if (guardMapButton) {
         event.preventDefault();
+        closeGuardProfile();
         openGuardControls(guardMapButton.dataset.guard);
+        return;
+      }
+      const guardProfileTrigger = event.target.closest ? event.target.closest("#view-garzi [data-guard]") : null;
+      if (guardProfileTrigger) {
+        event.preventDefault();
+        openGuardProfile(guardProfileTrigger.dataset.guard);
         return;
       }
       const entityMapButton = event.target.closest ? event.target.closest(".entity-map-btn[data-entity]") : null;
@@ -7864,7 +9612,8 @@
       if (entityResetButton) {
         event.preventDefault();
         if (q("entitySearch")) q("entitySearch").value = "";
-        entityTimelineLimit = 20;
+        selectedEntityProfileKey = "";
+        entityTimelineLimit = 10;
         entityTimelineKey = "";
         selectedEntityHistoryYear = "";
         renderEntitiesView();
@@ -8031,10 +9780,26 @@
         openPetitionFullModal(petitionRow.dataset.controlId);
         return;
       }
+      const guardRow = event.target && event.target.closest ? event.target.closest("#view-garzi [data-guard]") : null;
+      if (guardRow && (event.key === "Enter" || event.key === " ")) {
+        event.preventDefault();
+        openGuardProfile(guardRow.dataset.guard);
+        return;
+      }
       if (event.key === "Escape" && q("controlFullModal") && !q("controlFullModal").classList.contains("hidden")) {
         closeControlFullModal();
       }
       if (event.key === "Escape" && q("reportUploadModal") && !q("reportUploadModal").classList.contains("hidden")) {
         closeReportUploadModal();
+      }
+      if (event.key === "Escape" && q("authModal") && !q("authModal").classList.contains("hidden")) {
+        closeAuthModal();
+      }
+      if (event.key === "Escape" && q("globalAdvancedFilters") && q("globalAdvancedFilters").open) {
+        toggleControlsFilterDrawer(false);
+      }
+      if (event.key === "Escape") {
+        toggleGuardFilterDrawer(false);
+        closeGuardProfile();
       }
     });

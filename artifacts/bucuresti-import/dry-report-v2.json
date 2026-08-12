@@ -1,0 +1,457 @@
+{
+  "source_file": "/tmp/bucuresti.xlsx",
+  "source_sha256": "352e5e457a53090827cad8e9a63995a29b3874d136a2ace0e92c443e1d844640",
+  "source_sheet": "Model raportare",
+  "source_rows": 587,
+  "valid_rows": 587,
+  "ignored_rows": 0,
+  "import_batch": "real_excel_20260811165347",
+  "unique_inspectors": 23,
+  "inspector_participations": 876,
+  "unique_guards": 1,
+  "valid_coordinates": 553,
+  "potential_duplicate_groups": 5,
+  "potential_duplicate_rows": 12,
+  "distributions": {
+    "guards": {
+      "Garda Forestiera Bucuresti": 587
+    },
+    "months": {
+      "2026-07": 252,
+      "2026-06": 108,
+      "2026-05": 91,
+      "2026-04": 47,
+      "2026-02": 45,
+      "2026-03": 33,
+      "2026-01": 9,
+      "2025-05": 2
+    },
+    "types": {
+      "necunoscut": 274,
+      "operativ": 255,
+      "sesizare": 41,
+      "solicitare": 9,
+      "tematic": 8
+    },
+    "results": {
+      "necunoscut": 475,
+      "conform": 92,
+      "sesizare_penala": 10,
+      "sanctiune": 10
+    },
+    "inspectors": {
+      "Ungureanu Cristian": 258,
+      "Dulgheru Dănuța": 240,
+      "Ceaușu Daniel": 74,
+      "Miu Valentin": 72,
+      "Gavrilescu Ion": 58,
+      "Popa Nicolae": 37,
+      "Cămărașu Adrian": 34,
+      "Pop Vasile": 27,
+      "Ghera": 19,
+      "Vulcu Dorel Ioan": 17,
+      "Ciobanu Fănel": 13,
+      "Apostu Cornel": 6,
+      "Ghera Ionuț": 4,
+      "Isctr Giurgiu": 4,
+      "Pop": 3,
+      "Avps": 2,
+      "Daj Constanța": 2,
+      "Bratu Mihai": 1,
+      "Vătui Florin": 1,
+      "Scs. Iurea Ionuț": 1,
+      "Membrii Comisiei": 1,
+      "Ghera. Pop": 1,
+      "Hapciuc V": 1
+    },
+    "team_sizes": {
+      "1": 292,
+      "2": 289,
+      "0": 4,
+      "3": 2
+    },
+    "coordinate_status": {
+      "valid": 553,
+      "missing_or_ambiguous": 34
+    },
+    "date_status": {
+      "interval_inferred_year": 248,
+      "valid": 154,
+      "interval_inferred_month": 109,
+      "month_only": 74,
+      "interval_full": 2
+    },
+    "sanction_amount_status": {
+      "missing": 489,
+      "valid": 98
+    }
+  },
+  "top_inspectors": [
+    [
+      "Ungureanu Cristian",
+      258
+    ],
+    [
+      "Dulgheru Dănuța",
+      240
+    ],
+    [
+      "Ceaușu Daniel",
+      74
+    ],
+    [
+      "Miu Valentin",
+      72
+    ],
+    [
+      "Gavrilescu Ion",
+      58
+    ],
+    [
+      "Popa Nicolae",
+      37
+    ],
+    [
+      "Cămărașu Adrian",
+      34
+    ],
+    [
+      "Pop Vasile",
+      27
+    ],
+    [
+      "Ghera",
+      19
+    ],
+    [
+      "Vulcu Dorel Ioan",
+      17
+    ],
+    [
+      "Ciobanu Fănel",
+      13
+    ],
+    [
+      "Apostu Cornel",
+      6
+    ],
+    [
+      "Ghera Ionuț",
+      4
+    ],
+    [
+      "Isctr Giurgiu",
+      4
+    ],
+    [
+      "Pop",
+      3
+    ],
+    [
+      "Avps",
+      2
+    ],
+    [
+      "Daj Constanța",
+      2
+    ],
+    [
+      "Bratu Mihai",
+      1
+    ],
+    [
+      "Vătui Florin",
+      1
+    ],
+    [
+      "Scs. Iurea Ionuț",
+      1
+    ]
+  ],
+  "issues": {
+    "uncertain_inspector_split": {
+      "count": 2,
+      "samples": [
+        {
+          "row": 64,
+          "value": "Cămărasu Adrian,GNM,ABADL,ISU DOBROGEA"
+        },
+        {
+          "row": 75,
+          "value": "Cămărașu Adrian + IPJ Călărași"
+        }
+      ]
+    },
+    "missing_inspectors": {
+      "count": 4,
+      "samples": [
+        {
+          "row": 69,
+          "value": null
+        },
+        {
+          "row": 87,
+          "value": "GF+ISCTR"
+        },
+        {
+          "row": 571,
+          "value": null
+        },
+        {
+          "row": 580,
+          "value": null
+        }
+      ]
+    },
+    "invalid_coordinates": {
+      "count": 34,
+      "samples": [
+        {
+          "row": 433,
+          "lat": "44.190043,",
+          "lon": 26.133942,
+          "reason": "missing_or_ambiguous"
+        },
+        {
+          "row": 541,
+          "lat": null,
+          "lon": null,
+          "reason": "missing_or_ambiguous"
+        },
+        {
+          "row": 553,
+          "lat": "A - 44.427900107359626,                             B - 44.41020400909929,                                           ",
+          "lon": "26169906338582600 26.168548942942317   ",
+          "reason": "missing_or_ambiguous"
+        },
+        {
+          "row": 554,
+          "lat": null,
+          "lon": null,
+          "reason": "missing_or_ambiguous"
+        },
+        {
+          "row": 555,
+          "lat": null,
+          "lon": null,
+          "reason": "missing_or_ambiguous"
+        },
+        {
+          "row": 556,
+          "lat": null,
+          "lon": null,
+          "reason": "missing_or_ambiguous"
+        },
+        {
+          "row": 557,
+          "lat": null,
+          "lon": null,
+          "reason": "missing_or_ambiguous"
+        },
+        {
+          "row": 558,
+          "lat": null,
+          "lon": null,
+          "reason": "missing_or_ambiguous"
+        },
+        {
+          "row": 562,
+          "lat": null,
+          "lon": null,
+          "reason": "missing_or_ambiguous"
+        },
+        {
+          "row": 563,
+          "lat": null,
+          "lon": null,
+          "reason": "missing_or_ambiguous"
+        },
+        {
+          "row": 564,
+          "lat": null,
+          "lon": null,
+          "reason": "missing_or_ambiguous"
+        },
+        {
+          "row": 565,
+          "lat": null,
+          "lon": null,
+          "reason": "missing_or_ambiguous"
+        },
+        {
+          "row": 566,
+          "lat": null,
+          "lon": null,
+          "reason": "missing_or_ambiguous"
+        },
+        {
+          "row": 567,
+          "lat": null,
+          "lon": null,
+          "reason": "missing_or_ambiguous"
+        },
+        {
+          "row": 568,
+          "lat": null,
+          "lon": null,
+          "reason": "missing_or_ambiguous"
+        },
+        {
+          "row": 569,
+          "lat": null,
+          "lon": null,
+          "reason": "missing_or_ambiguous"
+        },
+        {
+          "row": 570,
+          "lat": null,
+          "lon": null,
+          "reason": "missing_or_ambiguous"
+        },
+        {
+          "row": 571,
+          "lat": null,
+          "lon": null,
+          "reason": "missing_or_ambiguous"
+        },
+        {
+          "row": 572,
+          "lat": null,
+          "lon": null,
+          "reason": "missing_or_ambiguous"
+        },
+        {
+          "row": 573,
+          "lat": null,
+          "lon": null,
+          "reason": "missing_or_ambiguous"
+        },
+        {
+          "row": 574,
+          "lat": null,
+          "lon": null,
+          "reason": "missing_or_ambiguous"
+        },
+        {
+          "row": 575,
+          "lat": null,
+          "lon": null,
+          "reason": "missing_or_ambiguous"
+        },
+        {
+          "row": 578,
+          "lat": null,
+          "lon": null,
+          "reason": "missing_or_ambiguous"
+        },
+        {
+          "row": 579,
+          "lat": null,
+          "lon": null,
+          "reason": "missing_or_ambiguous"
+        },
+        {
+          "row": 580,
+          "lat": null,
+          "lon": null,
+          "reason": "missing_or_ambiguous"
+        },
+        {
+          "row": 581,
+          "lat": null,
+          "lon": null,
+          "reason": "missing_or_ambiguous"
+        },
+        {
+          "row": 582,
+          "lat": null,
+          "lon": null,
+          "reason": "missing_or_ambiguous"
+        },
+        {
+          "row": 583,
+          "lat": null,
+          "lon": null,
+          "reason": "missing_or_ambiguous"
+        },
+        {
+          "row": 584,
+          "lat": null,
+          "lon": null,
+          "reason": "missing_or_ambiguous"
+        },
+        {
+          "row": 585,
+          "lat": null,
+          "lon": null,
+          "reason": "missing_or_ambiguous"
+        },
+        {
+          "row": 587,
+          "lat": null,
+          "lon": null,
+          "reason": "missing_or_ambiguous"
+        },
+        {
+          "row": 590,
+          "lat": null,
+          "lon": null,
+          "reason": "missing_or_ambiguous"
+        },
+        {
+          "row": 591,
+          "lat": null,
+          "lon": null,
+          "reason": "missing_or_ambiguous"
+        },
+        {
+          "row": 592,
+          "lat": null,
+          "lon": null,
+          "reason": "missing_or_ambiguous"
+        }
+      ]
+    },
+    "dates_outside_2026": {
+      "count": 2,
+      "samples": [
+        {
+          "row": 553,
+          "value": "09.05.2025-01.06.2025",
+          "date_start": "2025-05-09",
+          "date_end": "2025-06-01"
+        },
+        {
+          "row": 554,
+          "value": "14.05.2025-10.2025",
+          "date_start": "2025-05-14",
+          "date_end": "2025-05-14"
+        }
+      ]
+    }
+  },
+  "potential_duplicate_samples": [
+    [
+      59,
+      60,
+      61,
+      62
+    ],
+    [
+      162,
+      163
+    ],
+    [
+      218,
+      222
+    ],
+    [
+      299,
+      397
+    ],
+    [
+      336,
+      387
+    ]
+  ]
+}

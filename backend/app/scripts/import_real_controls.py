@@ -1,9 +1,11 @@
 import json
 import hashlib
+import math
 import os
 import re
 import sys
 import unicodedata
+from calendar import monthrange
 from collections import Counter, defaultdict
 from dataclasses import dataclass
 from datetime import date, datetime, time
@@ -28,9 +30,10 @@ from app.models.user import User
 SOURCE_SHEET = "Model raportare"
 HEADER_ROW = 4
 DATA_START_ROW = 6
-EXPECTED_COLUMNS = 15
+EXPECTED_COLUMNS = 17
 IMPORT_CONFIRM = os.getenv("GFN_REAL_IMPORT_CONFIRM", "").lower() == "true"
 IMPORT_REPLACE = os.getenv("GFN_REAL_IMPORT_REPLACE", "").lower() == "true"
+IMPORT_APPEND = os.getenv("GFN_REAL_IMPORT_APPEND", "").lower() == "true"
 IMPORT_FILE = Path(os.getenv("GFN_REAL_IMPORT_FILE", "/app/imports/centralizare_controale_reale.xlsx"))
 IMPORT_BATCH = os.getenv("GFN_REAL_IMPORT_BATCH", f"real_excel_{datetime.now():%Y%m%d%H%M%S}")
 REPORT_FILE = Path(os.getenv("GFN_REAL_IMPORT_REPORT", f"/tmp/{IMPORT_BATCH}_report.json"))
@@ -70,11 +73,12 @@ INSTITUTION_WORDS = {
     "ipj", "politie", "jandarmi", "personal", "echipa", "reprezentanti",
     "reprezentant", "comisariat", "garda", "ocol", "silvic", "silivc",
     "gf", "gfj", "ds", "gnm", "isu", "aba", "dsv", "sop", "sjpt",
+    "isctr", "avps", "daj", "membrii", "comisiei",
 }
 
 PERSON_TITLE_RE = (
     r"(?:ing(?:iner)?|insp(?:ector)?|ins|cons(?:ilier)?|cns|"
-    r"scms|cms|comisar|ag(?:ent)?|sef|adj|af|ap|ppc|pr|p[aă]d(?:urar)?|tehn(?:ician)?)"
+    r"scms|scs|cms|comisar|ag(?:ent)?|sef|adj|af|ap|ppc|pr|p[aă]d(?:urar)?|tehn(?:ician)?)"
 )
 PARTNER_TITLE_RE = r"(?:scms|cms|comisar|ag(?:ent)?|sef|adj|af|ap|ppc)"
 AFFILIATION_RE = (
@@ -211,6 +215,27 @@ def parse_control_dates(value: Any) -> tuple[Optional[date], Optional[date], Opt
     if not raw:
         return None, None, "missing"
 
+    month_names = {
+        "ianuarie": 1, "ian": 1,
+        "februarie": 2, "feb": 2,
+        "martie": 3, "mar": 3,
+        "aprilie": 4, "apr": 4,
+        "mai": 5,
+        "iunie": 6, "iun": 6,
+        "iulie": 7, "iul": 7,
+        "august": 8, "aug": 8,
+        "septembrie": 9, "sept": 9, "sep": 9,
+        "octombrie": 10, "oct": 10,
+        "noiembrie": 11, "nov": 11,
+        "decembrie": 12, "dec": 12,
+    }
+    month_only = re.fullmatch(r"([a-z]+)\s+(\d{4})", ascii_key(raw))
+    if month_only and month_only.group(1) in month_names:
+        year = int(month_only.group(2))
+        month = month_names[month_only.group(1)]
+        if 2000 <= year <= 2100:
+            return date(year, month, 1), date(year, month, monthrange(year, month)[1]), "month_only"
+
     try:
         parsed = datetime.fromisoformat(raw.replace("Z", "+00:00")).date()
         if 2000 <= parsed.year <= 2100:
@@ -270,6 +295,27 @@ def parse_control_dates(value: Any) -> tuple[Optional[date], Optional[date], Opt
         return end, end, None
 
     return None, None, "unparsed"
+
+
+def normalize_explicit_amount(value: Any) -> tuple[Optional[float], str]:
+    if value is None or value == "":
+        return None, "missing"
+    if isinstance(value, (int, float)):
+        amount = float(value)
+    else:
+        text = clean_spaces(value).lower().replace("ron", "").replace("lei", "")
+        text = text.replace(" ", "")
+        if text.count(",") == 1 and text.count(".") == 0:
+            text = text.replace(",", ".")
+        else:
+            text = text.replace(",", "")
+        try:
+            amount = float(text)
+        except ValueError:
+            return None, "invalid"
+    if not math.isfinite(amount) or amount < 0:
+        return None, "invalid"
+    return round(amount, 2), "valid"
 
 
 def parse_coord(value: Any) -> Optional[float]:
@@ -357,6 +403,11 @@ def split_raw_inspector_segments(value: Any) -> list[str]:
     if value is None:
         return []
     text = str(value).replace("\u00a0", " ").replace("\r", "\n")
+    text = re.sub(
+        r"\b([A-Za-zĂÂÎȘȚăâîșț]{4,})\.\s+(?=[A-ZĂÂÎȘȚ])",
+        r"\1 | ",
+        text,
+    )
     text = re.sub(
         rf"\s+(?=(?:{PERSON_TITLE_RE})\b\.?\s*)",
         " | ",
@@ -487,9 +538,12 @@ def build_inspector_candidates(raw_values: list[Any]) -> dict[str, str]:
     for key in list(candidates):
         if len(key.split()) != 1:
             continue
-        matches = list(dict.fromkeys(full_by_surname.get(key, [])))
+        matches = list(dict.fromkeys(
+            candidates[full_key]
+            for full_key in full_by_surname.get(key, [])
+        ))
         if len(matches) == 1:
-            candidates[key] = candidates[matches[0]]
+            candidates[key] = matches[0]
 
     full_by_initial: defaultdict[tuple[str, str], list[str]] = defaultdict(list)
     for key in candidates:
@@ -603,6 +657,7 @@ def read_source_rows(path: Path) -> tuple[list[tuple[int, tuple[Any, ...]]], lis
 
 def parse_rows(path: Path) -> tuple[list[ParsedRow], dict[str, Any]]:
     source_rows, inspector_values = read_source_rows(path)
+    source_sha256 = hashlib.sha256(path.read_bytes()).hexdigest()
     candidates = build_inspector_candidates(inspector_values)
     parsed_rows: list[ParsedRow] = []
     issues: defaultdict[str, list[Any]] = defaultdict(list)
@@ -615,13 +670,14 @@ def parse_rows(path: Path) -> tuple[list[ParsedRow], dict[str, Any]]:
         "team_sizes": Counter(),
         "coordinate_status": Counter(),
         "date_status": Counter(),
+        "sanction_amount_status": Counter(),
     }
 
     for excel_row, values in source_rows:
         (
             nr, raw_date, raw_guard, raw_locality, raw_county, raw_lat, raw_lon,
             raw_type, raw_entity, raw_cui, raw_inspectors, raw_findings,
-            raw_result, raw_measures, raw_act,
+            raw_result, raw_measures, raw_act, raw_sanction_amount, _unused,
         ) = values
         date_start, date_end, date_status = parse_control_dates(raw_date)
         distributions["date_status"][date_status or "valid"] += 1
@@ -666,6 +722,13 @@ def parse_rows(path: Path) -> tuple[list[ParsedRow], dict[str, Any]]:
 
         control_type = normalize_control_type(raw_type)
         result, result_group = normalize_result(raw_result)
+        sanction_amount, sanction_amount_status = normalize_explicit_amount(raw_sanction_amount)
+        distributions["sanction_amount_status"][sanction_amount_status] += 1
+        if sanction_amount_status == "invalid":
+            issues["invalid_sanction_amount"].append({
+                "row": excel_row,
+                "value": json_value(raw_sanction_amount),
+            })
         cui = clean_spaces(raw_cui)
         if cui.endswith(".0"):
             cui = cui[:-2]
@@ -686,10 +749,12 @@ def parse_rows(path: Path) -> tuple[list[ParsedRow], dict[str, Any]]:
             "rezultat": json_value(raw_result),
             "masuri_dispuse": json_value(raw_measures),
             "numar_act_control": json_value(raw_act),
+            "valoare_sanctiune_lei": json_value(raw_sanction_amount),
         }
         payload = {
             "source_kind": "real_excel",
             "source_workbook": path.name,
+            "source_sha256": source_sha256,
             "source_sheet": SOURCE_SHEET,
             "source_row": excel_row,
             "source_number": clean_spaces(nr),
@@ -698,6 +763,7 @@ def parse_rows(path: Path) -> tuple[list[ParsedRow], dict[str, Any]]:
             "data_control": date_start.isoformat(),
             "date_start": date_start.isoformat(),
             "date_end": date_end.isoformat(),
+            "date_precision": "month" if date_status == "month_only" else ("interval" if date_start != date_end else "day"),
             "data_control_original": json_value(raw_date),
             "garda": guard,
             "garda_original": json_value(raw_guard),
@@ -725,8 +791,8 @@ def parse_rows(path: Path) -> tuple[list[ParsedRow], dict[str, Any]]:
             "masuri_dispuse_original": json_value(raw_measures),
             "numar_act_control": clean_spaces(raw_act) or None,
             "documente": [clean_spaces(raw_act)] if clean_spaces(raw_act) else [],
-            "financial_data_available": False,
-            "cuantum_amenda_ron": None,
+            "financial_data_available": sanction_amount_status == "valid",
+            "cuantum_amenda_ron": sanction_amount,
             "valoare_prejudiciu_ron": None,
         }
 
@@ -754,7 +820,7 @@ def parse_rows(path: Path) -> tuple[list[ParsedRow], dict[str, Any]]:
 
     report = {
         "source_file": str(path),
-        "source_sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+        "source_sha256": source_sha256,
         "source_sheet": SOURCE_SHEET,
         "source_rows": len(source_rows),
         "valid_rows": len(parsed_rows),
@@ -800,19 +866,37 @@ def import_controls(rows: list[ParsedRow], report: dict[str, Any]) -> None:
     if not IMPORT_CONFIRM:
         print("DRY RUN: datele NU au fost modificate. Pentru import seteaza GFN_REAL_IMPORT_CONFIRM=true.")
         return
-    if not IMPORT_REPLACE:
+    if IMPORT_REPLACE == IMPORT_APPEND:
         raise RuntimeError(
-            "Importul real necesita GFN_REAL_IMPORT_REPLACE=true pentru inlocuirea explicita a datelor demo."
+            "Alege exact un mod: GFN_REAL_IMPORT_REPLACE=true sau GFN_REAL_IMPORT_APPEND=true."
         )
 
     with SessionLocal() as db:
         user = find_import_user(db)
         old_total = db.scalar(select(func.count()).select_from(Control)) or 0
         try:
-            db.execute(delete(ControlAuditLog))
-            deleted_controls = db.execute(delete(Control)).rowcount or 0
+            deleted_controls = 0
+            skipped_existing = 0
+            rows_to_insert = rows
+            if IMPORT_REPLACE:
+                db.execute(delete(ControlAuditLog))
+                deleted_controls = db.execute(delete(Control)).rowcount or 0
+            else:
+                source_sha256 = report["source_sha256"]
+                existing_source_rows = {
+                    int(source_row)
+                    for source_row in db.execute(
+                        select(Control.payload["source_row"].astext)
+                        .where(Control.deleted_at.is_(None))
+                        .where(Control.payload["source_sha256"].astext == source_sha256)
+                    ).scalars()
+                    if source_row and str(source_row).isdigit()
+                }
+                rows_to_insert = [row for row in rows if row.excel_row not in existing_source_rows]
+                skipped_existing = len(rows) - len(rows_to_insert)
+
             controls = []
-            for index, row in enumerate(rows):
+            for index, row in enumerate(rows_to_insert):
                 created_at = datetime.combine(row.date_start, time(12, 0, 0)).replace(microsecond=index % 1_000_000)
                 controls.append(
                     Control(
@@ -833,6 +917,8 @@ def import_controls(rows: list[ParsedRow], report: dict[str, Any]) -> None:
             "controls_before_import": old_total,
             "deleted_existing_controls": deleted_controls,
             "inserted_controls": len(controls),
+            "skipped_existing_source_rows": skipped_existing,
+            "import_mode": "replace" if IMPORT_REPLACE else "append",
             "created_by_user_id": user.id,
             "created_by_role": user.role,
         }
@@ -863,7 +949,7 @@ def main() -> None:
     }, ensure_ascii=False, indent=2))
     import_controls(rows, report)
     if IMPORT_CONFIRM:
-        print(f"Import finalizat: {len(rows)} controale reale.")
+        print(f"Import finalizat: vezi raportul {REPORT_FILE} pentru numarul de controale adaugate.")
 
 
 if __name__ == "__main__":
